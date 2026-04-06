@@ -1,26 +1,15 @@
-<!DOCTYPE html>
-<html class="light" lang="en"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Asset Management Pro — Institutional Grade</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-<script>
-tailwind.config={darkMode:"class",theme:{extend:{colors:{"primary":"#395ca9","primary-dim":"#2b509c","on-primary":"#f9f8ff","primary-container":"#a8c0ff","on-primary-container":"#083884","surface":"#f9f9f9","surface-container-lowest":"#ffffff","surface-container-low":"#f3f4f4","surface-container":"#eceeee","surface-container-high":"#e6e9e9","surface-container-highest":"#e0e3e4","on-surface":"#2f3334","on-surface-variant":"#5c6060","outline":"#777b7c","outline-variant":"#afb3b3","tertiary":"#006d4e","tertiary-container":"#8cfecf","on-tertiary-container":"#006146","secondary":"#3d6759","secondary-container":"#cdfbe8","error":"#ac3434","error-container":"#f56965","on-error-container":"#65000b","fin-primary":"#0F172A","fin-primary-dim":"#1e293b"},fontFamily:{headline:["Manrope"],body:["Inter"],label:["Inter"]},borderRadius:{DEFAULT:"0.5rem",lg:"1rem",xl:"1.5rem",full:"9999px"}}}}
-</script>
-<style>
-.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;display:inline-block;vertical-align:middle}
-body{background-color:#f7f9fb;color:#2f3334;font-family:'Inter',sans-serif}
-.headline-font{font-family:'Manrope',sans-serif}
-.monolith-shadow{box-shadow:0 12px 32px -4px rgba(42,52,57,0.04)}
-.fade-in{animation:fadeIn .35s ease}
-@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:#e0e3e4;border-radius:10px}
-.tabular-nums{font-variant-numeric:tabular-nums}
-</style>
-</head>
-<body class="font-body selection:bg-primary-container selection:text-on-primary-container">
-<div id="app"></div>
-<script src="app.js"></script>
-</body></html>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Asset Management Pro | Institutional Grade</title>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+  </head>
+  <body class="bg-slate-50 text-slate-900 antialiased overflow-hidden">
+    <div id="app" class="h-screen flex flex-col"></div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

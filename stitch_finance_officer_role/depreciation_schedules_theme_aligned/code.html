@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Depreciation Schedules - Equity Ledger</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#0F172A",
+              "primary-dim": "#1E293B",
+              "primary-container": "#F1F5F9",
+              "on-primary-container": "#0F172A",
+              "surface": "#F8FAFC",
+              "surface-container-lowest": "#FFFFFF",
+              "surface-container-low": "#F1F5F9",
+              "surface-container": "#E2E8F0",
+              "surface-container-high": "#CBD5E1",
+              "surface-container-highest": "#94A3B8",
+              "on-surface": "#0F172A",
+              "on-surface-variant": "#475569",
+              "outline": "#94A3B8",
+              "outline-variant": "#E2E8F0",
+              "error": "#BE123C",
+              "tertiary": "#4F46E5",
+              "tertiary-container": "#EEF2FF",
+              "on-tertiary-container": "#312E81"
+            },
+            fontFamily: {
+              "headline": ["Manrope", "sans-serif"],
+              "body": ["Manrope", "sans-serif"],
+              "label": ["Manrope", "sans-serif"]
+            },
+            borderRadius: {
+              "DEFAULT": "0.75rem",
+              "lg": "0.75rem",
+              "xl": "1rem",
+              "full": "9999px"
+            },
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .tabular-nums {
+            font-variant-numeric: tabular-nums;
+        }
+        body {
+            letter-spacing: -0.01em;
+        }
+    </style>
+</head>
+<body class="bg-surface font-body text-on-surface antialiased flex min-h-screen">
+<!-- SideNavBar Component -->
+<aside class="h-screen w-64 left-0 sticky bg-white flex flex-col border-r border-outline-variant">
+<div class="px-6 py-8">
+<div class="flex items-center gap-3 mb-10">
+<div class="w-10 h-10 bg-primary text-white rounded flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="account_balance" style="font-variation-settings: 'FILL' 1;">account_balance</span>
+</div>
+<div>
+<h1 class="font-bold tracking-tight text-primary text-lg leading-tight">Equity Ledger</h1>
+<p class="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Financial Control</p>
+</div>
+</div>
+<nav class="space-y-1">
+<a class="flex items-center gap-3 px-3 py-2.5 text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-lg font-medium text-sm" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="dashboard">dashboard</span>
+<span>Overview</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 bg-surface-container-low text-primary font-bold rounded-lg font-medium text-sm" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="account_balance" style="font-variation-settings: 'FILL' 1;">account_balance</span>
+<span>Fixed Assets</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-lg font-medium text-sm" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="payments">payments</span>
+<span>Liabilities</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-lg font-medium text-sm" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="receipt_long">receipt_long</span>
+<span>Grant Ledger</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-lg font-medium text-sm" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="analytics">analytics</span>
+<span>Reporting</span>
+</a>
+</nav>
+<div class="mt-10">
+<button class="w-full bg-primary text-white py-3 rounded-lg shadow-sm flex items-center justify-center gap-2 font-bold text-sm hover:bg-primary-dim transition-colors">
+<span class="material-symbols-outlined text-[18px]" data-icon="add">add</span>
+                New Entry
+            </button>
+</div>
+</div>
+<div class="mt-auto px-6 py-8 border-t border-outline-variant">
+<nav class="space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-lg font-medium text-sm" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="contact_support">contact_support</span>
+<span>Support</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-lg font-medium text-sm" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="inventory_2">inventory_2</span>
+<span>Archive</span>
+</a>
+</nav>
+</div>
+</aside>
+<main class="flex-1 flex flex-col min-w-0">
+<!-- TopNavBar Component -->
+<header class="flex justify-between items-center w-full px-8 py-4 border-b border-outline-variant bg-white sticky top-0 z-50">
+<div class="flex items-center gap-10">
+<span class="text-lg font-extrabold tracking-tight text-primary">Asset Management Pro</span>
+<nav class="hidden md:flex gap-8 items-center">
+<a class="text-on-surface-variant hover:text-primary transition-colors font-semibold text-sm" href="#">Dashboard</a>
+<a class="text-primary font-bold text-sm relative after:absolute after:-bottom-[19px] after:left-0 after:right-0 after:h-0.5 after:bg-primary" href="#">Depreciation</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors font-semibold text-sm" href="#">Grants</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors font-semibold text-sm" href="#">Audit</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors font-semibold text-sm" href="#">Settings</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex gap-1">
+<button class="w-10 h-10 flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
+</button>
+</div>
+<button class="bg-primary text-white px-5 py-2.5 rounded-lg text-sm font-bold hover:bg-primary-dim transition-colors shadow-sm">
+                Export Report
+            </button>
+<div class="ml-2 p-0.5 rounded-full border-2 border-primary/10">
+<img alt="Finance Officer Profile" class="w-9 h-9 rounded-full object-cover" data-alt="close-up headshot of a professional finance officer in a modern corporate setting with soft natural light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAkjO37pAydr72y0WgmtfOM-6J156PRrZs0pznqq-FgRnIliiXWo8T5IeiiHcVsWBiZ_LlExI--4rOEE1CQiOR0gDwKqXPkLPzmWBIy2niYU7ucupzZbEP3y_dBegOG4nXzDxAW44ZjtjCJCzYZNXP1utK2-6DXd2e4wd81DDoBZdzZ5YPELIDpZ3BUMM2tvJaJy889_FCzMHsVmSIuSyC1Ljy2kMlPYreL7zMn4dYVBW7WyXotCy1_nXn7sI8QLpN6KdDkvPi_65I"/>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<div class="p-10 max-w-[1600px] mx-auto w-full">
+<div class="mb-12 flex flex-col md:flex-row md:items-start justify-between gap-8">
+<div>
+<h2 class="font-headline font-extrabold text-4xl text-primary tracking-tight mb-3">Depreciation Schedules</h2>
+<p class="text-on-surface-variant max-w-2xl text-lg font-medium leading-relaxed">Financial year summary and automated calculation of periodic value adjustments across the complete asset register.</p>
+</div>
+<div class="flex flex-col gap-4">
+<div class="bg-white px-6 py-4 rounded-xl border border-outline-variant shadow-sm flex items-center gap-5 min-w-[280px]">
+<div class="w-1.5 h-10 bg-primary rounded-full"></div>
+<div>
+<p class="text-[10px] font-bold text-outline uppercase tracking-widest mb-1">Total Net Book Value</p>
+<p class="text-2xl font-extrabold font-headline tabular-nums text-primary">$12,458,902.50</p>
+</div>
+</div>
+<div class="bg-white px-6 py-4 rounded-xl border border-outline-variant shadow-sm flex items-center gap-5 min-w-[280px]">
+<div class="w-1.5 h-10 bg-tertiary rounded-full"></div>
+<div>
+<p class="text-[10px] font-bold text-outline uppercase tracking-widest mb-1">FY24 Depreciation Run</p>
+<p class="text-2xl font-extrabold font-headline tabular-nums text-primary">$842,100.00</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Advanced Filter Bar -->
+<section class="bg-white border border-outline-variant rounded-xl p-5 mb-10 flex flex-wrap items-center gap-6">
+<div class="flex-1 min-w-[280px] relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline" data-icon="search">search</span>
+<input class="w-full bg-surface-container-low border-none focus:ring-2 focus:ring-primary/20 rounded-lg pl-12 py-3 text-sm font-medium" placeholder="Search by Asset ID or Name..." type="text"/>
+</div>
+<div class="flex items-center gap-3">
+<label class="text-[11px] font-bold text-on-surface-variant uppercase whitespace-nowrap tracking-wider">Category:</label>
+<select class="bg-surface-container-low border-none text-xs font-bold py-3 pr-10 rounded-lg focus:ring-2 focus:ring-primary/20 cursor-pointer">
+<option>All Assets</option>
+<option>IT Infrastructure</option>
+<option>Heavy Machinery</option>
+<option>Office Fleet</option>
+<option>Real Estate</option>
+</select>
+</div>
+<div class="flex items-center gap-3">
+<label class="text-[11px] font-bold text-on-surface-variant uppercase whitespace-nowrap tracking-wider">Grant Source:</label>
+<select class="bg-surface-container-low border-none text-xs font-bold py-3 pr-10 rounded-lg focus:ring-2 focus:ring-primary/20 cursor-pointer">
+<option>Consolidated</option>
+<option>Federal Grant 402</option>
+<option>State Dev Fund</option>
+<option>Municipal Trust</option>
+</select>
+</div>
+<div class="flex items-center gap-3">
+<label class="text-[11px] font-bold text-on-surface-variant uppercase whitespace-nowrap tracking-wider">Period:</label>
+<div class="bg-surface-container-low flex items-center rounded-lg px-3 gap-3">
+<input class="bg-transparent border-none text-xs py-3 font-bold focus:ring-0 w-28" type="date"/>
+<span class="text-outline text-xs font-bold uppercase">to</span>
+<input class="bg-transparent border-none text-xs py-3 font-bold focus:ring-0 w-28" type="date"/>
+</div>
+</div>
+<button class="bg-surface-container-low text-primary p-3 rounded-lg hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[22px]" data-icon="filter_list">filter_list</span>
+</button>
+</section>
+<!-- Table Container -->
+<div class="bg-white rounded-xl border border-outline-variant shadow-sm overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low/50 border-b border-outline-variant">
+<th class="px-8 py-5 text-[11px] font-bold text-on-surface-variant uppercase tracking-widest">Asset ID</th>
+<th class="px-8 py-5 text-[11px] font-bold text-on-surface-variant uppercase tracking-widest">Asset Name</th>
+<th class="px-8 py-5 text-[11px] font-bold text-on-surface-variant uppercase tracking-widest">Purchase Date</th>
+<th class="px-8 py-5 text-[11px] font-bold text-on-surface-variant uppercase tracking-widest">Cost Basis</th>
+<th class="px-8 py-5 text-[11px] font-bold text-on-surface-variant uppercase tracking-widest">Method</th>
+<th class="px-8 py-5 text-[11px] font-bold text-on-surface-variant uppercase tracking-widest text-center">Rate</th>
+<th class="px-8 py-5 text-[11px] font-bold text-on-surface-variant uppercase tracking-widest text-right">Accumulated Dep.</th>
+<th class="px-8 py-5 text-[11px] font-bold text-on-surface-variant uppercase tracking-widest text-right">Net Book Value</th>
+<th class="px-8 py-5 text-[11px] font-bold text-on-surface-variant uppercase tracking-widest text-center">Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/30">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-low/30 transition-colors group">
+<td class="px-8 py-6 text-xs font-extrabold tabular-nums text-primary">FA-88029-X</td>
+<td class="px-8 py-6">
+<div class="text-sm font-bold text-primary mb-0.5">Industrial Milling Machine v4</div>
+<div class="text-[10px] text-on-surface-variant font-medium">Heavy Machinery · Plant A</div>
+</td>
+<td class="px-8 py-6 text-xs tabular-nums text-on-surface-variant font-medium">12 Jan 2021</td>
+<td class="px-8 py-6 text-sm font-bold tabular-nums text-primary">$450,000.00</td>
+<td class="px-8 py-6">
+<span class="text-[10px] font-bold px-2 py-1 bg-surface-container-low rounded uppercase tracking-wider text-on-surface-variant">Straight-Line</span>
+</td>
+<td class="px-8 py-6 text-xs tabular-nums text-center font-bold">10.0%</td>
+<td class="px-8 py-6 text-sm tabular-nums text-right text-error font-bold">$135,000.00</td>
+<td class="px-8 py-6 text-sm font-extrabold tabular-nums text-right text-primary">$315,000.00</td>
+<td class="px-8 py-6 text-center">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest bg-primary text-white">Active</span>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-low/30 transition-colors group">
+<td class="px-8 py-6 text-xs font-extrabold tabular-nums text-primary">IT-11200-S</td>
+<td class="px-8 py-6">
+<div class="text-sm font-bold text-primary mb-0.5">Server Cluster Delta-9</div>
+<div class="text-[10px] text-on-surface-variant font-medium">IT Infrastructure · HQ Data Center</div>
+</td>
+<td class="px-8 py-6 text-xs tabular-nums text-on-surface-variant font-medium">04 Nov 2023</td>
+<td class="px-8 py-6 text-sm font-bold tabular-nums text-primary">$1,280,000.00</td>
+<td class="px-8 py-6">
+<span class="text-[10px] font-bold px-2 py-1 bg-tertiary-container rounded uppercase tracking-wider text-on-tertiary-container">WDV</span>
+</td>
+<td class="px-8 py-6 text-xs tabular-nums text-center font-bold">20.0%</td>
+<td class="px-8 py-6 text-sm tabular-nums text-right text-error font-bold">$256,000.00</td>
+<td class="px-8 py-6 text-sm font-extrabold tabular-nums text-right text-primary">$1,024,000.00</td>
+<td class="px-8 py-6 text-center">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest bg-primary text-white">Active</span>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-low/30 transition-colors group">
+<td class="px-8 py-6 text-xs font-extrabold tabular-nums text-primary">VE-33491-M</td>
+<td class="px-8 py-6">
+<div class="text-sm font-bold text-primary mb-0.5">Ford F-150 Lightning Fleet</div>
+<div class="text-[10px] text-on-surface-variant font-medium">Logistics · Grant 402B</div>
+</td>
+<td class="px-8 py-6 text-xs tabular-nums text-on-surface-variant font-medium">15 May 2018</td>
+<td class="px-8 py-6 text-sm font-bold tabular-nums text-primary">$245,000.00</td>
+<td class="px-8 py-6">
+<span class="text-[10px] font-bold px-2 py-1 bg-surface-container-low rounded uppercase tracking-wider text-on-surface-variant">Straight-Line</span>
+</td>
+<td class="px-8 py-6 text-xs tabular-nums text-center font-bold">15.0%</td>
+<td class="px-8 py-6 text-sm tabular-nums text-right text-error font-bold">$220,500.00</td>
+<td class="px-8 py-6 text-sm font-extrabold tabular-nums text-right text-primary">$24,500.00</td>
+<td class="px-8 py-6 text-center">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest bg-tertiary text-white">Fully Dep.</span>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-container-low/30 transition-colors group">
+<td class="px-8 py-6 text-xs font-extrabold tabular-nums text-primary">FA-92210-C</td>
+<td class="px-8 py-6">
+<div class="text-sm font-bold text-primary mb-0.5">Hydraulic Press System Z</div>
+<div class="text-[10px] text-on-surface-variant font-medium">Machinery · West Wing</div>
+</td>
+<td class="px-8 py-6 text-xs tabular-nums text-on-surface-variant font-medium">22 Sep 2022</td>
+<td class="px-8 py-6 text-sm font-bold tabular-nums text-primary">$675,400.00</td>
+<td class="px-8 py-6">
+<span class="text-[10px] font-bold px-2 py-1 bg-surface-container-low rounded uppercase tracking-wider text-on-surface-variant">Straight-Line</span>
+</td>
+<td class="px-8 py-6 text-xs tabular-nums text-center font-bold">8.0%</td>
+<td class="px-8 py-6 text-sm tabular-nums text-right text-error font-bold">$108,064.00</td>
+<td class="px-8 py-6 text-sm font-extrabold tabular-nums text-right text-primary">$567,336.00</td>
+<td class="px-8 py-6 text-center">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest bg-primary text-white">Active</span>
+</td>
+</tr>
+<!-- Row 5 -->
+<tr class="hover:bg-surface-container-low/30 transition-colors group">
+<td class="px-8 py-6 text-xs font-extrabold tabular-nums text-primary">IT-55091-L</td>
+<td class="px-8 py-6">
+<div class="text-sm font-bold text-primary mb-0.5">Workstation Lease - Batch 22</div>
+<div class="text-[10px] text-on-surface-variant font-medium">IT Infrastructure · Regional Hub</div>
+</td>
+<td class="px-8 py-6 text-xs tabular-nums text-on-surface-variant font-medium">30 Jun 2023</td>
+<td class="px-8 py-6 text-sm font-bold tabular-nums text-primary">$112,000.00</td>
+<td class="px-8 py-6">
+<span class="text-[10px] font-bold px-2 py-1 bg-tertiary-container rounded uppercase tracking-wider text-on-tertiary-container">WDV</span>
+</td>
+<td class="px-8 py-6 text-xs tabular-nums text-center font-bold">33.3%</td>
+<td class="px-8 py-6 text-sm tabular-nums text-right text-error font-bold">$37,296.00</td>
+<td class="px-8 py-6 text-sm font-extrabold tabular-nums text-right text-primary">$74,704.00</td>
+<td class="px-8 py-6 text-center">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest bg-primary text-white">Active</span>
+</td>
+</tr>
+</tbody>
+<tfoot>
+<tr class="bg-surface-container-low/80 font-extrabold">
+<td class="px-8 py-6 text-sm text-primary" colspan="3">Portfolio Totals</td>
+<td class="px-8 py-6 text-sm tabular-nums">$14,582,341.00</td>
+<td colspan="2"></td>
+<td class="px-8 py-6 text-sm tabular-nums text-right text-error">$2,123,438.50</td>
+<td class="px-8 py-6 text-sm tabular-nums text-right text-primary">$12,458,902.50</td>
+<td></td>
+</tr>
+</tfoot>
+</table>
+</div>
+<div class="px-8 py-5 bg-white border-t border-outline-variant flex items-center justify-between text-[11px] font-extrabold uppercase tracking-widest text-on-surface-variant">
+<div>Showing 1 to 5 of 124 Assets</div>
+<div class="flex gap-2">
+<button class="px-4 py-2 border border-outline-variant rounded-lg hover:bg-surface-container-low transition-colors">Previous</button>
+<button class="px-4 py-2 bg-primary text-white rounded-lg">1</button>
+<button class="px-4 py-2 border border-outline-variant rounded-lg hover:bg-surface-container-low transition-colors">2</button>
+<button class="px-4 py-2 border border-outline-variant rounded-lg hover:bg-surface-container-low transition-colors">3</button>
+<button class="px-4 py-2 border border-outline-variant rounded-lg hover:bg-surface-container-low transition-colors">Next</button>
+</div>
+</div>
+</div>
+<!-- Contextual Insight Cards (Bento) -->
+<div class="mt-10 grid grid-cols-1 md:grid-cols-3 gap-8">
+<div class="bg-white p-8 rounded-xl border border-outline-variant shadow-sm relative overflow-hidden group">
+<div class="absolute -top-4 -right-4 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity">
+<span class="material-symbols-outlined text-[120px]" data-icon="trending_down">trending_down</span>
+</div>
+<h3 class="text-[11px] font-extrabold text-on-surface-variant uppercase tracking-widest mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-primary" data-icon="auto_awesome">auto_awesome</span>
+                    Depreciation Insight
+                </h3>
+<p class="text-base text-on-surface font-medium leading-relaxed mb-6">
+                    Total depreciation is projected to increase by <span class="font-extrabold text-error">12.4%</span> in Q4 due to the new server cluster activation.
+                </p>
+<div class="pt-6 border-t border-outline-variant">
+<a class="text-xs font-extrabold text-primary flex items-center gap-2 hover:gap-3 transition-all" href="#">
+                        VIEW FULL PROJECTION <span class="material-symbols-outlined text-[16px]" data-icon="arrow_forward">arrow_forward</span>
+</a>
+</div>
+</div>
+<div class="bg-white p-8 rounded-xl border border-outline-variant border-l-[6px] border-l-tertiary shadow-sm flex flex-col">
+<h3 class="text-[11px] font-extrabold text-on-surface-variant uppercase tracking-widest mb-6">Grant Compliance</h3>
+<div class="flex items-center gap-4 mb-4 mt-auto">
+<div class="flex-1 h-3 bg-surface-container-low rounded-full overflow-hidden">
+<div class="h-full bg-tertiary w-[88%]"></div>
+</div>
+<span class="text-sm font-extrabold tabular-nums text-primary">88%</span>
+</div>
+<p class="text-[12px] text-on-surface-variant font-bold leading-relaxed">Asset valuation for Federal Grant 402 is synchronized with federal audit requirements.</p>
+</div>
+<div class="bg-white p-8 rounded-xl border border-outline-variant shadow-sm flex flex-col justify-between">
+<div>
+<h3 class="text-[11px] font-extrabold text-on-surface-variant uppercase tracking-widest mb-4">Audit Status</h3>
+<div class="flex items-center gap-3 text-primary mb-6">
+<span class="material-symbols-outlined text-[24px]" data-icon="verified_user" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+<span class="text-base font-bold italic tracking-tight">Verified FY24-Q3</span>
+</div>
+</div>
+<button class="text-xs font-extrabold py-3.5 bg-surface-container-low text-primary rounded-lg hover:bg-surface-container transition-colors uppercase tracking-widest">
+                    GENERATE AUDIT LOG
+                </button>
+</div>
+</div>
+</div>
+</main>
+</body></html>
