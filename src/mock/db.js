@@ -199,25 +199,62 @@ const INITIAL_ASSETS = RAW_EMPLOYEES.map((emp, i) => {
     };
 });
 
+// --- SUPABASE STORAGE ADAPTER ABSTRACTION ---
+// This adapter seamlessly manages LocalStorage right now, but is structurally 
+// isolated so you can instantly switch to Supabase queries in the future.
+class StorageAdapter {
+    constructor() {
+        this.cachePrefix = 'amp_';
+        this.schemaVersion = '2.5';
+    }
+
+    async initCheck() {
+        if (localStorage.getItem(this.cachePrefix + 'schema_version') !== this.schemaVersion) {
+            localStorage.clear();
+            localStorage.setItem(this.cachePrefix + 'schema_version', this.schemaVersion);
+        }
+    }
+
+    async fetchCollection(table, fallbackData) {
+        // [FUTURE SUPABASE]: const { data } = await supabase.from(table).select('*')
+        const stored = JSON.parse(localStorage.getItem(this.cachePrefix + table));
+        if (!stored || (Array.isArray(stored) && stored.length === 0)) {
+            await this.writeCollection(table, fallbackData);
+            return fallbackData;
+        }
+        return stored;
+    }
+
+    async writeCollection(table, data) {
+        // [FUTURE SUPABASE]: await supabase.from(table).upsert(data)
+        localStorage.setItem(this.cachePrefix + table, JSON.stringify(data));
+    }
+
+    async syncAll(state) {
+        // Batch sync for optimistic UI
+        await this.writeCollection('assets', state.assets);
+        await this.writeCollection('grants', state.grants);
+        await this.writeCollection('maint', state.maintenanceLogs);
+        await this.writeCollection('requests', state.requests);
+        await this.writeCollection('transfers', state.transfers);
+    }
+}
+
 export class AssetDB {
     constructor() {
-        const currentVersion = '2.5';
-        if (localStorage.getItem('amp_schema_version') !== currentVersion) {
-            localStorage.removeItem('amp_assets');
-            localStorage.removeItem('amp_grants');
-            localStorage.removeItem('amp_maint');
-            localStorage.removeItem('amp_requests');
-            localStorage.removeItem('amp_transfers');
-            localStorage.setItem('amp_schema_version', currentVersion);
-        }
+        this.adapter = new StorageAdapter();
+        this.adapter.initCheck();
 
-        let storedAssets = JSON.parse(localStorage.getItem('amp_assets'));
-        if (!storedAssets || storedAssets.length < 10 || !storedAssets[0].fundingSource) {
-            storedAssets = INITIAL_ASSETS;
+        // Synchronous initial hydration for immediate UI rendering
+        // [FUTURE SUPABASE]: We will shift this to an async initialization lifecycle hook in main.js
+        this.assets = JSON.parse(localStorage.getItem('amp_assets'));
+        if (!this.assets || this.assets.length < 10 || !this.assets[0].fundingSource) {
+            this.assets = INITIAL_ASSETS;
             localStorage.setItem('amp_assets', JSON.stringify(INITIAL_ASSETS));
         }
-        this.assets = storedAssets.filter(a => a.category !== 'Logistics');
+
         this.grants = JSON.parse(localStorage.getItem('amp_grants')) || INITIAL_GRANTS;
+        
         let storedMaint = JSON.parse(localStorage.getItem('amp_maint'));
         if (!storedMaint || storedMaint.length === 0) {
             storedMaint = [];
@@ -255,14 +292,9 @@ export class AssetDB {
             storedTransfers = [];
             // Seed elaborate transfer hops (Chain of Custody)
             this.assets.forEach((asset, i) => {
-                // Every asset has an origin transfer from Depot to First Assignee
                 const originDate = new Date(asset.purchaseDate);
-                
-                // Some assets have hopped between multiple employees
                 if (i % 3 === 0) {
                     const prevEmp = RAW_EMPLOYEES[(i + 5) % RAW_EMPLOYEES.length];
-                    
-                    // Hop 1: Depot -> Previous Employee
                     storedTransfers.push({
                         id: 'T-' + (10000 + i * 3),
                         assetId: asset.id,
@@ -272,10 +304,8 @@ export class AssetDB {
                         toAssignee: prevEmp.name,
                         toDesignation: "Field Officer",
                         toLocation: "Bangalore HQ",
-                        date: new Date(originDate.getTime() + 86400000 * 5).toISOString() // 5 days after purchase
+                        date: new Date(originDate.getTime() + 86400000 * 5).toISOString()
                     });
-                    
-                    // Hop 2: Previous Employee -> Current Employee
                     storedTransfers.push({
                         id: 'T-' + (10001 + i * 3),
                         assetId: asset.id,
@@ -285,10 +315,9 @@ export class AssetDB {
                         toAssignee: asset.assignedTo,
                         toDesignation: asset.assignedToDesignation,
                         toLocation: asset.location,
-                        date: new Date(originDate.getTime() + 86400000 * 200).toISOString() // 200 days later
+                        date: new Date(originDate.getTime() + 86400000 * 200).toISOString()
                     });
                 } else {
-                    // Direct transfer: Depot -> Current
                     storedTransfers.push({
                         id: 'T-' + (20000 + i),
                         assetId: asset.id,
@@ -307,12 +336,16 @@ export class AssetDB {
         this.transfers = storedTransfers;
     }
 
-    save() {
-        localStorage.setItem('amp_assets', JSON.stringify(this.assets));
-        localStorage.setItem('amp_grants', JSON.stringify(this.grants));
-        localStorage.setItem('amp_maint', JSON.stringify(this.maintenanceLogs));
-        localStorage.setItem('amp_requests', JSON.stringify(this.requests));
-        localStorage.setItem('amp_transfers', JSON.stringify(this.transfers));
+    // This method effectively models an async network push to Supabase.
+    // It is called in the background after UI state mutations.
+    async syncToCloud() {
+        await this.adapter.syncAll({
+            assets: this.assets,
+            grants: this.grants,
+            maintenanceLogs: this.maintenanceLogs,
+            requests: this.requests,
+            transfers: this.transfers
+        });
     }
 
     reportIssue(assetId, description, reporter) {
@@ -330,7 +363,7 @@ export class AssetDB {
             status: 'Pending'
         };
         this.maintenanceLogs.unshift(log);
-        this.save();
+        this.syncToCloud();
         return log;
     }
 
@@ -346,7 +379,7 @@ export class AssetDB {
             financeApproved: false
         };
         this.requests.unshift(request);
-        this.save();
+        this.syncToCloud();
         return request;
     }
 
@@ -378,7 +411,7 @@ export class AssetDB {
         if (req && !req.status.startsWith('Rejected')) {
             req.managerApproved = true;
             this._evaluateRequestStatus(req);
-            this.save();
+            this.syncToCloud();
         }
         return req;
     }
@@ -388,7 +421,7 @@ export class AssetDB {
         if (req && !req.status.startsWith('Rejected')) {
             req.financeApproved = true;
             this._evaluateRequestStatus(req);
-            this.save();
+            this.syncToCloud();
         }
         return req;
     }
@@ -397,7 +430,7 @@ export class AssetDB {
         const req = this.requests.find(r => r.id === requestId);
         if (req) {
             req.status = "Rejected by Manager";
-            this.save();
+            this.syncToCloud();
         }
         return req;
     }
@@ -406,7 +439,7 @@ export class AssetDB {
         const req = this.requests.find(r => r.id === requestId);
         if (req) {
             req.status = "Rejected by Finance";
-            this.save();
+            this.syncToCloud();
         }
         return req;
     }
@@ -426,7 +459,7 @@ export class AssetDB {
             depreciation: 0
         };
         this.assets.unshift(newAsset);
-        this.save();
+        this.syncToCloud();
         return newAsset;
     }
 
@@ -453,8 +486,7 @@ export class AssetDB {
                 asset.assignedToId = newAssigneeId;
             }
             if (newLocation) asset.location = newLocation;
-            
-            this.save();
+            this.syncToCloud();
         }
         return asset;
     }

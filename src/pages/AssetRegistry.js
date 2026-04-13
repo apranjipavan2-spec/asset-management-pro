@@ -13,7 +13,7 @@ export function renderAssetRegistry() {
                         <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
                         <input type="text" placeholder="Filter by ID or Name..." class="bg-white border border-slate-200 rounded-xl px-4 py-2 pl-9 text-xs focus:border-accent outline-none w-64 shadow-sm" />
                     </div>
-                    <button class="px-4 py-2 bg-slate-900 text-white text-[10px] font-bold rounded-xl hover:bg-slate-800 transition-all uppercase tracking-widest shadow-lg shadow-slate-900/10 flex items-center gap-2">
+                    <button onclick="app.showAddAssetModal()" class="px-4 py-2 bg-slate-900 text-white text-[10px] font-bold rounded-xl hover:bg-slate-800 transition-all uppercase tracking-widest shadow-lg shadow-slate-900/10 flex items-center gap-2">
                         <span class="material-symbols-outlined text-sm">add</span> Add New Asset
                     </button>
                 </div>

@@ -538,6 +538,98 @@ class App {
         });
     }
 
+    showAddAssetModal() {
+        const modalHtml = `
+            <div id="add-asset-modal-backdrop" class="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-300">
+                <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-300 border border-slate-200">
+                    <div class="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center shadow-lg shadow-slate-900/20">
+                                <span class="material-symbols-outlined text-2xl">add_circle</span>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-black text-slate-900 font-headline uppercase tracking-tight">Register New Asset</h3>
+                                <p class="text-xs text-slate-400 font-black uppercase tracking-widest">Institutional Procurement Entry</p>
+                            </div>
+                        </div>
+                        <button onclick="document.getElementById('add-asset-modal-backdrop').remove()" class="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400 group">
+                            <span class="material-symbols-outlined group-hover:rotate-90 transition-transform">close</span>
+                        </button>
+                    </div>
+                    <div class="p-8 space-y-5">
+                        <div>
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Asset Name</label>
+                            <input id="new-asset-name" type="text" placeholder="e.g. Dell Latitude 7450" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold focus:border-slate-900 outline-none transition-colors" />
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Category</label>
+                                <select id="new-asset-category" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold focus:border-slate-900 outline-none transition-colors">
+                                    <option value="Equipment">Equipment</option>
+                                    <option value="Infrastructure">Infrastructure</option>
+                                    <option value="Office">Office</option>
+                                    <option value="Vehicle">Vehicle</option>
+                                    <option value="Software">Software</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Status</label>
+                                <select id="new-asset-status" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold focus:border-slate-900 outline-none transition-colors">
+                                    <option value="Active">Active</option>
+                                    <option value="Storage">Storage</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Location</label>
+                                <input id="new-asset-location" type="text" placeholder="e.g. Bangalore HQ" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold focus:border-slate-900 outline-none transition-colors" />
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Acquisition Cost (₹)</label>
+                                <input id="new-asset-amount" type="number" placeholder="0" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold focus:border-slate-900 outline-none transition-colors tabular-nums" />
+                            </div>
+                        </div>
+                        <div id="new-asset-error" class="hidden text-xs text-rose-500 font-bold text-center"></div>
+                        <button onclick="app.submitNewAsset()" class="w-full py-4 bg-slate-900 text-white text-xs font-black rounded-xl hover:bg-slate-800 transition-all uppercase tracking-[.2em] shadow-lg shadow-slate-900/20 flex items-center justify-center gap-2 group">
+                            <span class="material-symbols-outlined text-sm group-hover:rotate-90 transition-transform">check_circle</span>
+                            Commit to Registry
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const modalDiv = document.createElement('div');
+        modalDiv.innerHTML = modalHtml;
+        document.body.appendChild(modalDiv.firstChild);
+
+        document.getElementById('add-asset-modal-backdrop').addEventListener('click', (e) => {
+            if (e.target.id === 'add-asset-modal-backdrop') e.target.remove();
+        });
+    }
+
+    submitNewAsset() {
+        const name = document.getElementById('new-asset-name').value.trim();
+        const category = document.getElementById('new-asset-category').value;
+        const status = document.getElementById('new-asset-status').value;
+        const location = document.getElementById('new-asset-location').value.trim();
+        const amount = document.getElementById('new-asset-amount').value;
+        const errorEl = document.getElementById('new-asset-error');
+
+        if (!name || !location || !amount) {
+            errorEl.textContent = 'All fields are required.';
+            errorEl.classList.remove('hidden');
+            return;
+        }
+
+        db.addNewAsset({ name, category, status, location, amount });
+
+        // Close modal and refresh registry view
+        document.getElementById('add-asset-modal-backdrop').remove();
+        this.navigate('registry');
+    }
+
     getNavItems() {
         const roles = {
             'employee': [
