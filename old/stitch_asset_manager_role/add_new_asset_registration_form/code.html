@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Register New Asset | The Ledger</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-primary-container": "#083884",
+                        "surface-bright": "#f9f9f9",
+                        "on-primary-fixed-variant": "#18428e",
+                        "tertiary-container": "#8cfecf",
+                        "tertiary-fixed-dim": "#7eefc1",
+                        "on-tertiary-container": "#006146",
+                        "secondary-container": "#cdfbe8",
+                        "primary-container": "#a8c0ff",
+                        "inverse-on-surface": "#9c9d9d",
+                        "on-surface": "#2f3334",
+                        "background": "#f9f9f9",
+                        "on-tertiary-fixed": "#004d36",
+                        "on-tertiary": "#e5fff0",
+                        "error-dim": "#70030f",
+                        "surface-variant": "#e0e3e4",
+                        "surface-container-lowest": "#ffffff",
+                        "inverse-surface": "#0c0f0f",
+                        "primary": "#395ca9",
+                        "primary-fixed": "#a8c0ff",
+                        "on-error": "#fff7f6",
+                        "primary-dim": "#2b509c",
+                        "on-secondary-container": "#386254",
+                        "inverse-primary": "#88a9fc",
+                        "on-primary": "#f9f8ff",
+                        "surface-tint": "#395ca9",
+                        "error": "#ac3434",
+                        "on-surface-variant": "#5c6060",
+                        "on-error-container": "#65000b",
+                        "surface-container": "#eceeee",
+                        "secondary-fixed-dim": "#bfecda",
+                        "secondary-fixed": "#cdfbe8",
+                        "on-secondary-fixed": "#254f42",
+                        "surface-container-low": "#f3f4f4",
+                        "secondary-dim": "#315b4d",
+                        "tertiary": "#006d4e",
+                        "outline-variant": "#afb3b3",
+                        "outline": "#777b7c",
+                        "primary-fixed-dim": "#93b2ff",
+                        "on-background": "#2f3334",
+                        "surface": "#f9f9f9",
+                        "on-tertiary-fixed-variant": "#006d4e",
+                        "on-primary-fixed": "#00245e",
+                        "tertiary-dim": "#005f44",
+                        "on-secondary-fixed-variant": "#436c5e",
+                        "surface-container-high": "#e6e9e9",
+                        "secondary": "#3d6759",
+                        "on-secondary": "#e4fff3",
+                        "surface-dim": "#d7dbdb",
+                        "error-container": "#f56965",
+                        "tertiary-fixed": "#8cfecf",
+                        "surface-container-highest": "#e0e3e4"
+                    },
+                    fontFamily: {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .scale-98-on-click:active {
+            transform: scale(0.98);
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-surface font-body text-on-surface antialiased no-scrollbar">
+<!-- SideNavBar -->
+<aside class="h-screen w-64 fixed left-0 top-0 bg-slate-50 dark:bg-slate-950 flex flex-col py-6 px-4 z-[60]">
+<div class="mb-10 flex items-center gap-3 px-2">
+<div class="w-8 h-8 bg-primary rounded flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-lg" style="font-variation-settings: 'FILL' 1;">account_balance</span>
+</div>
+<div>
+<h1 class="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100 font-headline">The Ledger</h1>
+<p class="text-[10px] uppercase tracking-widest text-on-surface-variant font-semibold">Precise Asset Management</p>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded text-slate-500 dark:text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">dashboard</span>
+<span class="font-medium text-sm">Overview</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-bold shadow-sm group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform" style="font-variation-settings: 'FILL' 1;">inventory_2</span>
+<span class="font-bold text-sm">Registry</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded text-slate-500 dark:text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">move_up</span>
+<span class="font-medium text-sm">Transfers</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded text-slate-500 dark:text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">build</span>
+<span class="font-medium text-sm">Maintenance</span>
+</a>
+</nav>
+<div class="mt-auto space-y-1 pt-6 border-t border-slate-200 dark:border-slate-800">
+<button class="w-full mb-4 flex items-center justify-center gap-2 bg-primary text-on-primary py-2.5 rounded-md font-bold text-sm shadow-md hover:bg-primary-dim transition-all scale-98-on-click">
+<span class="material-symbols-outlined text-sm">add</span>
+                New Asset
+            </button>
+<a class="flex items-center gap-3 px-3 py-2 rounded text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-sm">Settings</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">help</span>
+<span class="text-sm">Support</span>
+</a>
+</div>
+</aside>
+<!-- TopNavBar -->
+<header class="fixed top-0 right-0 w-[calc(100%-16rem)] h-16 bg-white/70 dark:bg-slate-900/70 backdrop-blur-md z-50 flex justify-between items-center px-8 border-b border-transparent">
+<div class="flex-1 max-w-md">
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-xl">search</span>
+<input class="w-full bg-surface-container-low border-none rounded-md py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-primary/20 transition-all" placeholder="Search the ledger..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:text-primary transition-colors relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-error rounded-full border-2 border-white"></span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">history</span>
+</button>
+</div>
+<div class="h-8 w-px bg-slate-200"></div>
+<div class="flex items-center gap-3 cursor-pointer group">
+<div class="text-right">
+<p class="text-xs font-bold text-slate-900 dark:text-white leading-none">System Administrator</p>
+<p class="text-[10px] text-on-surface-variant mt-1">Asset Manager</p>
+</div>
+<img alt="System Administrator Profile" class="w-10 h-10 rounded-full border border-slate-100 shadow-sm object-cover group-hover:ring-2 group-hover:ring-primary transition-all" data-alt="portrait of a professional male system administrator with glasses in a modern office setting, soft professional lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBrBHCZOOiJieLqVKs07FYygx9NXmBTyy8BjbP8DEIQKRODKYN7iACMMLpeJCcD3mJjSTGFE_dwXrEWkPvddKjlo8xNsiR90WyRIifUn6Chl7hK0sL_ANQ-4zf93dKBNHVW6CzQfKhN3tpns82SrS88O8iemfYXT__Ym9F80I6Y_PpwXLnKCOT-ChjjHA-3Nvz7s8cQ9hKkNrX-XveXKKFWKK1dE1dBCCe7onC2dUtY9ht6vupoLgfW84VCbPLeqiuDNzpE3Paoh64"/>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="ml-64 pt-24 pb-12 px-12 min-h-screen">
+<!-- Page Header & Narrative -->
+<div class="mb-10 flex items-end justify-between">
+<div class="space-y-1">
+<nav class="flex items-center gap-2 text-xs font-medium text-on-surface-variant mb-4">
+<span>Registry</span>
+<span class="material-symbols-outlined text-[12px]">chevron_right</span>
+<span class="text-primary">New Registration</span>
+</nav>
+<h2 class="text-4xl font-extrabold tracking-tight font-headline text-on-surface">Register New Asset</h2>
+<p class="text-on-surface-variant max-w-lg">Assign a new tangible or intangible asset to the central ledger with high-precision metadata.</p>
+</div>
+<!-- Progress Stepper -->
+<div class="flex items-center gap-8 bg-surface-container-low px-6 py-4 rounded-xl shadow-sm border border-slate-100/50">
+<div class="flex flex-col items-center gap-2">
+<div class="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center font-bold text-sm shadow-lg shadow-primary/20">01</div>
+<span class="text-[10px] font-bold uppercase tracking-wider text-primary">Identity</span>
+</div>
+<div class="w-12 h-px bg-slate-300"></div>
+<div class="flex flex-col items-center gap-2 opacity-40">
+<div class="w-10 h-10 rounded-full bg-surface-container-high text-on-surface flex items-center justify-center font-bold text-sm">02</div>
+<span class="text-[10px] font-bold uppercase tracking-wider">Financial</span>
+</div>
+<div class="w-12 h-px bg-slate-300"></div>
+<div class="flex flex-col items-center gap-2 opacity-40">
+<div class="w-10 h-10 rounded-full bg-surface-container-high text-on-surface flex items-center justify-center font-bold text-sm">03</div>
+<span class="text-[10px] font-bold uppercase tracking-wider">Deployment</span>
+</div>
+</div>
+</div>
+<!-- Multi-Step Form Container -->
+<div class="grid grid-cols-12 gap-8">
+<!-- Form Section -->
+<div class="col-span-8 space-y-8">
+<!-- Section 1: Basic Information -->
+<section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm border border-slate-100/50 relative overflow-hidden">
+<div class="absolute top-0 left-0 w-1 h-full bg-primary"></div>
+<div class="flex items-center gap-4 mb-8">
+<div class="w-12 h-12 bg-primary-container/30 rounded flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">info</span>
+</div>
+<div>
+<h3 class="text-lg font-bold font-headline leading-none">Basic Information</h3>
+<p class="text-sm text-on-surface-variant mt-1">Core identification data for the system audit trail.</p>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-6">
+<div class="col-span-2">
+<label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1.5 ml-1">Asset Name</label>
+<input class="w-full bg-surface-container-highest/50 border-b-2 border-outline focus:border-primary border-t-0 border-l-0 border-r-0 focus:ring-0 text-sm font-medium px-4 py-3 transition-all placeholder:text-on-surface-variant/40" placeholder="e.g. Enterprise Server Cluster - North" type="text"/>
+</div>
+<div>
+<label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1.5 ml-1">Category</label>
+<select class="w-full bg-surface-container-highest/50 border-b-2 border-outline focus:border-primary border-t-0 border-l-0 border-r-0 focus:ring-0 text-sm font-medium px-4 py-3 transition-all">
+<option>Hardware</option>
+<option>Software</option>
+<option>Infrastructure</option>
+<option>Intangible Asset</option>
+</select>
+</div>
+<div>
+<label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1.5 ml-1">Manufacturer</label>
+<input class="w-full bg-surface-container-highest/50 border-b-2 border-outline focus:border-primary border-t-0 border-l-0 border-r-0 focus:ring-0 text-sm font-medium px-4 py-3 transition-all" placeholder="e.g. Dell EMC" type="text"/>
+</div>
+<div>
+<label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1.5 ml-1">Model Number</label>
+<input class="w-full bg-surface-container-highest/50 border-b-2 border-outline focus:border-primary border-t-0 border-l-0 border-r-0 focus:ring-0 text-sm font-medium px-4 py-3 transition-all" placeholder="e.g. PowerEdge R750" type="text"/>
+</div>
+<div>
+<label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1.5 ml-1">Serial Number</label>
+<input class="w-full bg-surface-container-highest/50 border-b-2 border-outline focus:border-primary border-t-0 border-l-0 border-r-0 focus:ring-0 text-sm font-medium px-4 py-3 transition-all" placeholder="e.g. SN-8829-XJ-01" type="text"/>
+</div>
+</div>
+</section>
+<!-- Section 2: Financial & Grant Data -->
+<section class="bg-surface-container-low/50 rounded-xl p-8 border border-slate-200/50 opacity-60">
+<div class="flex items-center gap-4 mb-8">
+<div class="w-12 h-12 bg-slate-200 rounded flex items-center justify-center">
+<span class="material-symbols-outlined text-slate-500">payments</span>
+</div>
+<div>
+<h3 class="text-lg font-bold font-headline leading-none">Financial &amp; Grant Data</h3>
+<p class="text-sm text-on-surface-variant mt-1">Valuation, depreciation schedules and allocation.</p>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-6 blur-[1px]">
+<div>
+<label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1.5 ml-1">Purchase Date</label>
+<input class="w-full bg-transparent border-b-2 border-outline/30 focus:ring-0 text-sm font-medium px-4 py-3 opacity-50 cursor-not-allowed" disabled="" type="date"/>
+</div>
+<div>
+<label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1.5 ml-1">Purchase Amount (USD)</label>
+<input class="w-full bg-transparent border-b-2 border-outline/30 focus:ring-0 text-sm font-medium px-4 py-3 opacity-50 cursor-not-allowed" disabled="" placeholder="0.00" type="text"/>
+</div>
+</div>
+</section>
+<!-- Section 3: Deployment & Condition -->
+<section class="bg-surface-container-low/50 rounded-xl p-8 border border-slate-200/50 opacity-60">
+<div class="flex items-center gap-4 mb-8">
+<div class="w-12 h-12 bg-slate-200 rounded flex items-center justify-center">
+<span class="material-symbols-outlined text-slate-500">location_on</span>
+</div>
+<div>
+<h3 class="text-lg font-bold font-headline leading-none">Deployment &amp; Condition</h3>
+<p class="text-sm text-on-surface-variant mt-1">Operational status and geographic assignment.</p>
+</div>
+</div>
+<div class="h-24 flex items-center justify-center border-2 border-dashed border-slate-200 rounded-lg">
+<span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Complete Identity &amp; Financial Steps First</span>
+</div>
+</section>
+</div>
+<!-- Side Helper / Preview Card -->
+<div class="col-span-4">
+<div class="sticky top-24 space-y-6">
+<!-- Live Preview Card -->
+<div class="bg-primary text-on-primary rounded-xl p-6 shadow-xl shadow-primary/20 overflow-hidden relative">
+<div class="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+<p class="text-[10px] font-bold uppercase tracking-[0.2em] opacity-70 mb-6">Ledger Preview</p>
+<div class="space-y-4">
+<div>
+<h4 class="text-2xl font-extrabold font-headline leading-tight">Untitled Asset</h4>
+<span class="inline-block mt-2 px-2 py-0.5 bg-white/20 rounded text-[10px] font-bold uppercase tracking-wider">Uncategorized</span>
+</div>
+<div class="pt-6 border-t border-white/10 grid grid-cols-2 gap-4">
+<div>
+<p class="text-[9px] uppercase tracking-wider opacity-60 mb-1">Status</p>
+<p class="text-sm font-bold">Drafting...</p>
+</div>
+<div>
+<p class="text-[9px] uppercase tracking-wider opacity-60 mb-1">Value</p>
+<p class="text-sm font-bold">$0.00</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Guidelines -->
+<div class="bg-surface-container-high/50 rounded-xl p-6 border border-slate-200">
+<h4 class="text-xs font-bold uppercase tracking-widest text-on-surface mb-4">Registration Rules</h4>
+<ul class="space-y-4">
+<li class="flex gap-3">
+<span class="material-symbols-outlined text-primary text-sm mt-0.5">verified_user</span>
+<p class="text-xs text-on-surface-variant leading-relaxed"><strong>Audit Trail:</strong> All changes are logged with timestamp and user ID.</p>
+</li>
+<li class="flex gap-3">
+<span class="material-symbols-outlined text-primary text-sm mt-0.5">schema</span>
+<p class="text-xs text-on-surface-variant leading-relaxed"><strong>Naming:</strong> Use consistent naming conventions as per ISO-27001 guidelines.</p>
+</li>
+<li class="flex gap-3">
+<span class="material-symbols-outlined text-primary text-sm mt-0.5">inventory</span>
+<p class="text-xs text-on-surface-variant leading-relaxed"><strong>Serialization:</strong> Unique serial numbers prevent duplicate registration in the registry.</p>
+</li>
+</ul>
+</div>
+<!-- Image Visual -->
+<div class="rounded-xl overflow-hidden aspect-video relative group">
+<img alt="Data Center Server Rack" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" data-alt="dramatic wide angle shot of a clean, high-tech server room with blue LED lighting and rows of sleek black server racks" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBnvb6rhz2WPydvDGlEepQ5OUTX0vP4B18FaA5AG_zybNKQ7sf-EZiyJBhUzedXknSbUUagkpd49xBQrniCYP4D1eAO8OeAD5H3lcDOFPZBKzIcp0KuInajbRywF6YZ8vPkjdE3Ey00XmGqOzus0drFZ7s9IeZ1NWfnj0RlbuTPe9i4nrDNSI0sIReGYFKrTxUaeVFxGAd91vtZFMUWM4FaZ1T26MTeWTwWiyir33n4etXqufHw9urpax_qYN145vbiGaknmhT_LSM"/>
+<div class="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent"></div>
+<div class="absolute bottom-4 left-4">
+<p class="text-white text-[10px] font-bold uppercase tracking-wider">Example: Infrastructure Asset</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Sticky Footer Actions -->
+<div class="fixed bottom-0 right-0 w-[calc(100%-16rem)] bg-white/80 backdrop-blur-md border-t border-slate-100 px-12 py-6 flex justify-between items-center z-[55]">
+<button class="flex items-center gap-2 text-on-surface-variant font-bold text-sm hover:text-error transition-colors px-4 py-2">
+<span class="material-symbols-outlined text-sm">close</span>
+                Cancel
+            </button>
+<div class="flex items-center gap-4">
+<button class="bg-surface-container-high text-on-surface font-bold text-sm px-6 py-2.5 rounded-md hover:bg-slate-300 transition-all scale-98-on-click">
+                    Save as Draft
+                </button>
+<button class="bg-primary text-on-primary font-bold text-sm px-8 py-2.5 rounded-md shadow-lg shadow-primary/25 hover:bg-primary-dim transition-all scale-98-on-click flex items-center gap-2">
+                    Register Asset
+                    <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+</div>
+</main>
+</body></html>

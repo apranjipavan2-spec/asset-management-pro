@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>System Settings | Asset Management Pro</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary-container": "#a8c0ff",
+              "on-primary-fixed-variant": "#18428e",
+              "tertiary-fixed-dim": "#7eefc1",
+              "error-container": "#f56965",
+              "secondary-dim": "#315b4d",
+              "secondary-container": "#cdfbe8",
+              "surface-container-high": "#e6e9e9",
+              "on-surface-variant": "#5c6060",
+              "tertiary-container": "#8cfecf",
+              "surface-container-lowest": "#ffffff",
+              "on-error": "#fff7f6",
+              "on-primary-container": "#083884",
+              "on-tertiary-fixed": "#004d36",
+              "on-secondary": "#e4fff3",
+              "inverse-on-surface": "#9c9d9d",
+              "surface-container": "#eceeee",
+              "outline-variant": "#afb3b3",
+              "on-secondary-fixed": "#254f42",
+              "inverse-surface": "#0c0f0f",
+              "on-surface": "#2f3334",
+              "background": "#f9f9f9",
+              "primary-dim": "#2b509c",
+              "surface-tint": "#395ca9",
+              "surface": "#f9f9f9",
+              "on-secondary-fixed-variant": "#436c5e",
+              "on-error-container": "#65000b",
+              "surface-dim": "#d7dbdb",
+              "tertiary": "#006d4e",
+              "on-background": "#2f3334",
+              "outline": "#777b7c",
+              "on-secondary-container": "#386254",
+              "surface-container-highest": "#e0e3e4",
+              "primary-fixed": "#a8c0ff",
+              "on-primary": "#f9f8ff",
+              "on-tertiary-container": "#006146",
+              "secondary": "#3d6759",
+              "on-primary-fixed": "#00245e",
+              "error-dim": "#70030f",
+              "surface-bright": "#f9f9f9",
+              "tertiary-fixed": "#8cfecf",
+              "primary-fixed-dim": "#93b2ff",
+              "primary": "#395ca9",
+              "error": "#ac3434",
+              "on-tertiary": "#e5fff0",
+              "tertiary-dim": "#005f44",
+              "secondary-fixed": "#cdfbe8",
+              "secondary-fixed-dim": "#bfecda",
+              "on-tertiary-fixed-variant": "#006d4e",
+              "surface-variant": "#e0e3e4",
+              "inverse-primary": "#88a9fc",
+              "surface-container-low": "#f3f4f4"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f9f9f9;
+        }
+        h1, h2, h3, .headline {
+            font-family: 'Manrope', sans-serif;
+        }
+        .tabular-nums {
+            font-variant-numeric: tabular-nums;
+        }
+        .glass-panel {
+            background: rgba(224, 227, 228, 0.7);
+            backdrop-filter: blur(12px);
+        }
+    </style>
+</head>
+<body class="flex min-h-screen">
+<!-- SideNavBar Anchor -->
+<aside class="flex flex-col h-screen w-64 left-0 sticky bg-slate-100 dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800">
+<div class="p-6">
+<div class="flex items-center gap-3 mb-8">
+<div class="w-10 h-10 bg-primary rounded-md flex items-center justify-center text-white">
+<span class="material-symbols-outlined" data-icon="account_balance">account_balance</span>
+</div>
+<div>
+<h2 class="font-black tracking-tighter text-slate-900 dark:text-white text-lg">Equity Ledger</h2>
+<p class="text-[0.6875rem] font-medium text-on-surface-variant uppercase tracking-widest">Financial Control</p>
+</div>
+</div>
+<nav class="space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-900 hover:translate-x-1 transition-transform duration-200 rounded-md" href="#">
+<span class="material-symbols-outlined text-xl" data-icon="dashboard">dashboard</span>
+<span class="font-label text-sm">Overview</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-900 hover:translate-x-1 transition-transform duration-200 rounded-md" href="#">
+<span class="material-symbols-outlined text-xl" data-icon="account_balance">account_balance</span>
+<span class="font-label text-sm">Fixed Assets</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-900 hover:translate-x-1 transition-transform duration-200 rounded-md" href="#">
+<span class="material-symbols-outlined text-xl" data-icon="payments">payments</span>
+<span class="font-label text-sm">Liabilities</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-900 hover:translate-x-1 transition-transform duration-200 rounded-md" href="#">
+<span class="material-symbols-outlined text-xl" data-icon="receipt_long">receipt_long</span>
+<span class="font-label text-sm">Grant Ledger</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-900 hover:translate-x-1 transition-transform duration-200 rounded-md" href="#">
+<span class="material-symbols-outlined text-xl" data-icon="analytics">analytics</span>
+<span class="font-label text-sm">Reporting</span>
+</a>
+</nav>
+</div>
+<div class="mt-auto p-6 space-y-4">
+<button class="w-full py-3 px-4 bg-gradient-to-br from-primary to-primary-dim text-white rounded-md font-semibold text-sm shadow-sm active:opacity-80 transition-opacity">
+                New Entry
+            </button>
+<div class="space-y-1">
+<a class="flex items-center gap-3 px-4 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-900 rounded-md transition-colors" href="#">
+<span class="material-symbols-outlined text-xl" data-icon="contact_support">contact_support</span>
+<span class="font-label text-sm">Support</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-900 rounded-md transition-colors" href="#">
+<span class="material-symbols-outlined text-xl" data-icon="inventory_2">inventory_2</span>
+<span class="font-label text-sm">Archive</span>
+</a>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 flex flex-col min-h-screen">
+<!-- TopNavBar Anchor -->
+<header class="flex justify-between items-center w-full px-6 py-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 z-50 sticky top-0">
+<div class="flex items-center gap-8">
+<h1 class="text-lg font-bold tracking-tight text-slate-900 dark:text-slate-100">Asset Management Pro</h1>
+<nav class="hidden lg:flex items-center gap-6">
+<a class="text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-700 transition-colors" href="#">Dashboard</a>
+<a class="text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-700 transition-colors" href="#">Depreciation</a>
+<a class="text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-700 transition-colors" href="#">Grants</a>
+<a class="text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-700 transition-colors" href="#">Audit</a>
+<a class="text-sm font-medium text-slate-900 dark:text-slate-50 border-b-2 border-slate-700 dark:border-slate-300 pb-1" href="#">Settings</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
+</button>
+<div class="h-8 w-[1px] bg-slate-200 dark:bg-slate-800 mx-2"></div>
+<div class="flex items-center gap-3">
+<div class="text-right">
+<p class="text-xs font-bold text-slate-900 dark:text-slate-100">Alex Sterling</p>
+<p class="text-[10px] text-slate-500 uppercase tracking-tighter">Finance Officer</p>
+</div>
+<img alt="Finance Officer Profile" class="w-8 h-8 rounded-full border border-slate-200" data-alt="professional headshot of a middle-aged male finance officer with glasses in a clean office setting, sharp focus" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDdUSg7EEgOswMJ05imt877LQmhvn_6CS9svGY9fYkGkIn4DCDmfzGvUSDbFhfUpPkJPzmh7tUcfiPEQLKvjix16cibGw9D9LCH8BgjjGQW_-ETxfxjRtvg1yyJgocECp0rUVepEiicW4OAFsi-y8zDAY1wxTdW2hWbkKOBItlzAflpOH_zqDl9dPswu0XAdb4XMz1Bbwwqs8w8KlIIhf_QbjKrJo2sZ_WnSAeQwVX6idg00ObqjdGASj373J8mgMkiLuaHdWOq65I"/>
+</div>
+</div>
+</header>
+<!-- Settings Content Area -->
+<div class="flex-1 p-8 max-w-6xl mx-auto w-full">
+<div class="mb-10">
+<h2 class="text-3xl font-extrabold text-on-surface mb-2 tracking-tight">System Settings</h2>
+<p class="text-on-surface-variant max-w-2xl">Configure global preferences, security protocols, and personal information for your Equity Ledger instance.</p>
+</div>
+<!-- Bento Layout for Settings -->
+<div class="grid grid-cols-12 gap-6">
+<!-- Navigation Tabs (Asymmetric Layout) -->
+<div class="col-span-12 md:col-span-3 space-y-2">
+<button class="w-full flex items-center gap-3 px-4 py-3 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-semibold shadow-sm rounded-md transition-all">
+<span class="material-symbols-outlined text-primary" data-icon="person">person</span>
+<span class="text-sm">Profile</span>
+</button>
+<button class="w-full flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-900 transition-colors rounded-md">
+<span class="material-symbols-outlined" data-icon="security">security</span>
+<span class="text-sm">Security</span>
+</button>
+<button class="w-full flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-900 transition-colors rounded-md">
+<span class="material-symbols-outlined" data-icon="notifications_active">notifications_active</span>
+<span class="text-sm">Notifications</span>
+</button>
+<button class="w-full flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-900 transition-colors rounded-md">
+<span class="material-symbols-outlined" data-icon="tune">tune</span>
+<span class="text-sm">Preferences</span>
+</button>
+</div>
+<!-- Main Configuration Panel -->
+<div class="col-span-12 md:col-span-9 space-y-6">
+<!-- Profile Section Card -->
+<div class="bg-surface-container-lowest p-8 rounded-md shadow-sm border-l-[3px] border-primary">
+<div class="flex justify-between items-start mb-8">
+<div>
+<h3 class="text-xl font-bold text-on-surface mb-1">Public Profile</h3>
+<p class="text-sm text-on-surface-variant">Update your personal details and how you appear to the team.</p>
+</div>
+<button class="px-4 py-2 border border-outline-variant text-on-surface text-sm font-semibold rounded-md hover:bg-surface-container-low transition-colors">
+                                Edit Profile
+                            </button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+<div class="space-y-6">
+<div class="space-y-1">
+<label class="text-[0.6875rem] font-bold text-on-surface-variant uppercase tracking-wider">Full Name</label>
+<div class="bg-surface-container-highest p-3 border-b-2 border-outline-variant text-on-surface font-medium focus-within:border-primary transition-colors">
+                                        Alex Sterling
+                                    </div>
+</div>
+<div class="space-y-1">
+<label class="text-[0.6875rem] font-bold text-on-surface-variant uppercase tracking-wider">Work Email</label>
+<div class="bg-surface-container-highest p-3 border-b-2 border-outline-variant text-on-surface font-medium focus-within:border-primary transition-colors">
+                                        a.sterling@equityledger.pro
+                                    </div>
+</div>
+</div>
+<div class="flex flex-col items-center justify-center p-6 bg-surface-container-low rounded-md">
+<div class="relative mb-4">
+<img alt="Finance Officer Profile Large" class="w-24 h-24 rounded-full border-4 border-white shadow-md" data-alt="close-up portrait of a professional man in high key lighting, crisp business style aesthetic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCmiVSltLaApUNzhPRZMqaJ25TZNsh33MDLAGrlvL1dM4IJpikkJ8vWcW-IBGGomNWwcc9xY4cNmQm584W8C1iOYCO_6suSCADnOlLbQdIt2UCQ1BExEXz7sPpur72gKmJKWleLa4hYFeJSxg2ssaLuMhyaVxDjplf4XnaWp-cVq7vTC02IS0jOK-SyeYokb_udbTl3nsQm4DJLEGwQIHhB0Q4VAJRSAvu-Do9dVWh3fuPV0dOPsCD_B_EhL2r42jcgPl6TCXuJK30"/>
+<button class="absolute bottom-0 right-0 p-2 bg-primary text-white rounded-full shadow-lg">
+<span class="material-symbols-outlined text-sm" data-icon="photo_camera">photo_camera</span>
+</button>
+</div>
+<p class="text-xs font-bold text-on-surface">Alex Sterling</p>
+<p class="text-[10px] text-on-surface-variant uppercase">Authorized Personnel</p>
+</div>
+</div>
+</div>
+<!-- Security Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<!-- Password & 2FA Card -->
+<div class="bg-surface-container-lowest p-6 rounded-md shadow-sm border-l-[3px] border-tertiary">
+<h3 class="text-lg font-bold text-on-surface mb-4">Access Security</h3>
+<div class="space-y-4">
+<div class="flex items-center justify-between p-3 bg-surface-container-low rounded-sm">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary" data-icon="lock_reset">lock_reset</span>
+<span class="text-sm font-semibold">Password Management</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer" data-icon="chevron_right">chevron_right</span>
+</div>
+<div class="flex items-center justify-between p-3 bg-tertiary-container/30 rounded-sm">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-tertiary-container" data-icon="verified_user">verified_user</span>
+<div>
+<p class="text-sm font-semibold text-on-tertiary-container">2FA Protected</p>
+<p class="text-[10px] text-on-tertiary-container/70 uppercase">Active via Authenticator App</p>
+</div>
+</div>
+<span class="text-[10px] font-bold text-tertiary uppercase cursor-pointer underline">Configure</span>
+</div>
+</div>
+</div>
+<!-- Login History/Audit Card -->
+<div class="bg-surface-container-lowest p-6 rounded-md shadow-sm border-l-[3px] border-on-surface-variant">
+<h3 class="text-lg font-bold text-on-surface mb-4">System Preferences</h3>
+<div class="space-y-3">
+<div class="flex justify-between items-center text-sm">
+<span class="text-on-surface-variant">Reporting Currency</span>
+<span class="font-bold tabular-nums">USD ($)</span>
+</div>
+<div class="flex justify-between items-center text-sm">
+<span class="text-on-surface-variant">Date Format</span>
+<span class="font-bold">DD/MM/YYYY</span>
+</div>
+<div class="flex justify-between items-center text-sm">
+<span class="text-on-surface-variant">Time Zone</span>
+<span class="font-bold">GMT -5 (EST)</span>
+</div>
+<div class="flex justify-between items-center text-sm">
+<span class="text-on-surface-variant">System Theme</span>
+<div class="flex gap-2">
+<div class="w-4 h-4 rounded-full bg-white border border-outline-variant"></div>
+<div class="w-4 h-4 rounded-full bg-slate-900"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Notification Preferences -->
+<div class="bg-surface-container-lowest p-8 rounded-md shadow-sm border-l-[3px] border-primary-container">
+<h3 class="text-xl font-bold text-on-surface mb-6">Dispatch Settings</h3>
+<div class="space-y-6">
+<div class="flex items-start justify-between pb-6 border-b border-surface-container">
+<div>
+<p class="font-bold text-on-surface">Asset Depreciation Alerts</p>
+<p class="text-xs text-on-surface-variant">Receive automated weekly reports on salvage values and book value shifts.</p>
+</div>
+<div class="flex gap-4">
+<label class="flex items-center gap-2 cursor-pointer">
+<input checked="" class="rounded-sm border-outline-variant text-primary focus:ring-primary-container" type="checkbox"/>
+<span class="text-[10px] font-bold uppercase tracking-tighter">Email</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer">
+<input class="rounded-sm border-outline-variant text-primary focus:ring-primary-container" type="checkbox"/>
+<span class="text-[10px] font-bold uppercase tracking-tighter">Push</span>
+</label>
+</div>
+</div>
+<div class="flex items-start justify-between pb-6 border-b border-surface-container">
+<div>
+<p class="font-bold text-on-surface">Audit Compliance Reminders</p>
+<p class="text-xs text-on-surface-variant">Notifications for upcoming quarterly and annual audit windows.</p>
+</div>
+<div class="flex gap-4">
+<label class="flex items-center gap-2 cursor-pointer">
+<input checked="" class="rounded-sm border-outline-variant text-primary focus:ring-primary-container" type="checkbox"/>
+<span class="text-[10px] font-bold uppercase tracking-tighter">Email</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer">
+<input checked="" class="rounded-sm border-outline-variant text-primary focus:ring-primary-container" type="checkbox"/>
+<span class="text-[10px] font-bold uppercase tracking-tighter">Push</span>
+</label>
+</div>
+</div>
+<div class="flex items-start justify-between">
+<div>
+<p class="font-bold text-on-surface">Security Event Logging</p>
+<p class="text-xs text-on-surface-variant">Instant alerts for new device logins or failed credential attempts.</p>
+</div>
+<div class="flex gap-4">
+<label class="flex items-center gap-2 cursor-pointer">
+<input checked="" class="rounded-sm border-outline-variant text-primary focus:ring-primary-container" type="checkbox"/>
+<span class="text-[10px] font-bold uppercase tracking-tighter">Email</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer">
+<input checked="" class="rounded-sm border-outline-variant text-primary focus:ring-primary-container" type="checkbox"/>
+<span class="text-[10px] font-bold uppercase tracking-tighter">Push</span>
+</label>
+</div>
+</div>
+</div>
+</div>
+<!-- Action Footer -->
+<div class="flex justify-end gap-4 pt-4">
+<button class="px-6 py-2.5 text-sm font-bold text-on-surface-variant hover:bg-surface-container transition-colors rounded-md">
+                            Discard Changes
+                        </button>
+<button class="px-8 py-2.5 bg-gradient-to-br from-primary to-primary-dim text-white text-sm font-bold rounded-md shadow-md active:scale-95 transition-all">
+                            Commit Settings
+                        </button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

@@ -39,7 +39,7 @@ export function renderEmployeeDashboard(user) {
                     <div class="absolute left-0 top-0 bottom-0 w-[4px] bg-emerald-500"></div>
                     <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-label font-bold">Pending Requests</span>
                     <div class="mt-4 flex items-center justify-between">
-                        <h3 class="text-3xl font-extrabold text-slate-900">${db.requests.filter(r => r.user === user.name && r.status === 'Pending').length}</h3>
+                        <h3 class="text-3xl font-extrabold text-slate-900">${db.requests.filter(r => r.user === user.name && r.status.includes('Pending')).length}</h3>
                         <span class="material-symbols-outlined text-slate-100 text-4xl">shopping_cart</span>
                     </div>
                 </div>

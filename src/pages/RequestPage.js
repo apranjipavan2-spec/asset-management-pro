@@ -49,7 +49,11 @@ export function renderRequestPage(user) {
                                         <p class="text-[10px] text-slate-400 uppercase font-bold">${new Date(r.date).toLocaleDateString()}</p>
                                     </td>
                                     <td class="px-6 py-4">
-                                        <span class="px-2 py-0.5 text-[9px] font-bold uppercase rounded border ${r.status === 'Pending' ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}">
+                                        <span class="px-2 py-0.5 text-[9px] font-bold uppercase rounded border ${
+                                            r.status === 'Approved' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                            r.status.startsWith('Rejected') ? 'bg-rose-50 text-rose-600 border-rose-100' :
+                                            'bg-amber-50 text-amber-600 border-amber-100'
+                                        }">
                                             ${r.status}
                                         </span>
                                     </td>

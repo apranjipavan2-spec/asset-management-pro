@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Maintenance Hub | The Architectural Ledger</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-tertiary-container": "#006146",
+              "on-secondary": "#e4fff3",
+              "outline": "#777b7c",
+              "on-error-container": "#65000b",
+              "tertiary-fixed-dim": "#7eefc1",
+              "inverse-on-surface": "#9c9d9d",
+              "on-background": "#2f3334",
+              "tertiary-container": "#8cfecf",
+              "primary-dim": "#2b509c",
+              "on-primary-fixed-variant": "#18428e",
+              "surface-container-high": "#e6e9e9",
+              "on-primary-container": "#083884",
+              "on-tertiary": "#e5fff0",
+              "on-secondary-fixed": "#254f42",
+              "on-secondary-container": "#386254",
+              "on-error": "#fff7f6",
+              "surface-container-low": "#f3f4f4",
+              "secondary": "#3d6759",
+              "on-primary": "#f9f8ff",
+              "secondary-fixed-dim": "#bfecda",
+              "on-surface-variant": "#5c6060",
+              "tertiary": "#006d4e",
+              "surface-container-highest": "#e0e3e4",
+              "on-surface": "#2f3334",
+              "error": "#ac3434",
+              "secondary-fixed": "#cdfbe8",
+              "inverse-primary": "#88a9fc",
+              "surface-variant": "#e0e3e4",
+              "surface-container": "#eceeee",
+              "primary-container": "#a8c0ff",
+              "inverse-surface": "#0c0f0f",
+              "primary-fixed": "#a8c0ff",
+              "on-tertiary-fixed": "#004d36",
+              "error-dim": "#70030f",
+              "surface-bright": "#f9f9f9",
+              "on-secondary-fixed-variant": "#436c5e",
+              "secondary-dim": "#315b4d",
+              "outline-variant": "#afb3b3",
+              "background": "#f9f9f9",
+              "tertiary-fixed": "#8cfecf",
+              "primary-fixed-dim": "#93b2ff",
+              "on-primary-fixed": "#00245e",
+              "surface-tint": "#395ca9",
+              "surface-dim": "#d7dbdb",
+              "surface": "#f9f9f9",
+              "secondary-container": "#cdfbe8",
+              "primary": "#395ca9",
+              "surface-container-lowest": "#ffffff",
+              "on-tertiary-fixed-variant": "#006d4e",
+              "error-container": "#f56965",
+              "tertiary-dim": "#005f44"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #e0e3e4; border-radius: 10px; }
+        .precise-monolith-shadow { box-shadow: 0 12px 32px -4px rgba(42, 52, 57, 0.08); }
+        .glass-panel { background: rgba(225, 233, 238, 0.7); backdrop-filter: blur(12px); }
+    </style>
+</head>
+<body class="bg-surface font-body text-on-surface">
+<!-- SideNavBar (Authority: JSON & Design System) -->
+<aside class="fixed left-0 top-0 h-full w-64 bg-[#ffffff] dark:bg-slate-900 shadow-[4px_0_24px_rgba(42,52,57,0.04)] flex flex-col h-full py-8 px-4 z-50">
+<div class="mb-8">
+<h1 class="text-lg font-bold text-[#0f172a] dark:text-white font-headline">Asset Ledger</h1>
+<p class="text-[0.6875rem] uppercase tracking-widest text-outline font-label">Institutional Grade</p>
+</div>
+<nav class="flex flex-col gap-2">
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-[#f7f9fb] dark:hover:bg-slate-800/50 transition-all font-medium text-sm font-body" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+                Overview
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-[#f7f9fb] dark:hover:bg-slate-800/50 transition-all font-medium text-sm font-body" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+                Registry
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-[#f7f9fb] dark:hover:bg-slate-800/50 transition-all font-medium text-sm font-body" href="#">
+<span class="material-symbols-outlined" data-icon="swap_horiz">swap_horiz</span>
+                Transfers
+            </a>
+<!-- Active Tab: Maintenance -->
+<a class="flex items-center gap-3 px-4 py-3 bg-[#f0f4f7] dark:bg-slate-800 text-[#000060] dark:text-blue-400 rounded-md border-l-4 border-[#000060] font-medium text-sm font-body" href="#">
+<span class="material-symbols-outlined" data-icon="settings_wrench">reset_wrench</span>
+                Maintenance
+            </a>
+</nav>
+<div class="mt-auto pt-8">
+<div class="p-4 bg-surface-container-low rounded-md">
+<p class="text-[0.6875rem] font-label text-outline mb-1">MTTR</p>
+<p class="font-headline font-bold text-lg text-on-surface">4.2 Hours</p>
+<div class="w-full bg-surface-container-highest h-1 rounded-full mt-2">
+<div class="bg-primary h-full rounded-full" style="width: 75%"></div>
+</div>
+</div>
+<div class="p-4 mt-4 bg-surface-container-low rounded-md">
+<p class="text-[0.6875rem] font-label text-outline mb-1">Inventory Health</p>
+<p class="font-headline font-bold text-lg text-on-surface">94.2%</p>
+<div class="w-full bg-surface-container-highest h-1 rounded-full mt-2">
+<div class="bg-tertiary h-full rounded-full" style="width: 94%"></div>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-64 min-h-screen pb-12">
+<!-- TopNavBar (Authority: JSON & Design System) -->
+<header class="flex justify-between items-center w-full px-8 h-16 bg-[#f7f9fb] dark:bg-slate-950 font-headline font-bold text-lg sticky top-0 z-40">
+<div class="flex items-center gap-4">
+<span class="text-xl font-black text-[#0f172a] dark:text-white tracking-tight">Maintenance Hub</span>
+</div>
+<div class="flex items-center gap-6">
+<div class="relative">
+<input class="bg-surface-container-low border-none rounded-md px-4 py-2 text-sm focus:ring-1 focus:ring-primary w-64 font-body" placeholder="Search ledger assets..." type="text"/>
+<span class="material-symbols-outlined absolute right-3 top-2 text-outline text-lg" data-icon="search">search</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-slate-500 hover:bg-[#e1e9ee] p-2 rounded-full transition-colors" data-icon="notifications">notifications</button>
+<button class="material-symbols-outlined text-slate-500 hover:bg-[#e1e9ee] p-2 rounded-full transition-colors" data-icon="account_circle">account_circle</button>
+</div>
+</div>
+</header>
+<!-- Tool Bar -->
+<div class="px-8 py-6 flex justify-between items-end">
+<div>
+<h2 class="font-headline font-extrabold text-2xl text-on-surface tracking-tight">Active Maintenance Workflow</h2>
+<p class="text-sm text-outline font-body mt-1">Operational status across 14 high-value architectural assets.</p>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center gap-2 bg-surface-container-lowest text-on-surface font-semibold px-4 py-2 rounded-md shadow-sm border border-outline-variant/10 hover:bg-surface-container-high transition-all text-sm">
+<span class="material-symbols-outlined text-lg" data-icon="filter_list">filter_list</span>
+                    Filter View
+                </button>
+<button class="flex items-center gap-2 bg-gradient-to-br from-[#000060] to-[#485367] text-white font-bold px-6 py-2 rounded-md precise-monolith-shadow hover:opacity-90 transition-all text-sm">
+<span class="material-symbols-outlined text-lg" data-icon="add">add</span>
+                    New Ticket
+                </button>
+</div>
+</div>
+<!-- Kanban Board (Precise Monolith Philosophy: Tonal Layering) -->
+<div class="px-8 grid grid-cols-4 gap-4 h-[calc(100vh-280px)] overflow-hidden">
+<!-- Column: Reported -->
+<div class="bg-surface-container-low rounded-lg p-4 flex flex-col gap-4">
+<div class="flex items-center justify-between mb-2">
+<h3 class="font-headline font-bold text-xs uppercase tracking-widest text-outline">Reported (3)</h3>
+<span class="material-symbols-outlined text-outline text-sm" data-icon="more_horiz">more_horiz</span>
+</div>
+<div class="flex flex-col gap-3 overflow-y-auto pr-1">
+<!-- Card -->
+<div class="bg-surface-container-lowest p-4 rounded shadow-sm border-l-4 border-error hover:shadow-md transition-shadow cursor-pointer">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[0.6875rem] font-bold text-outline uppercase font-label">#T-4092</span>
+<span class="text-[0.625rem] px-2 py-0.5 bg-error-container text-on-error-container font-bold rounded">HIGH</span>
+</div>
+<h4 class="font-body font-semibold text-sm text-on-surface mb-3 leading-snug">Structural Fissure - East Wing Gallery</h4>
+<div class="flex justify-between items-center text-[0.6875rem] text-outline font-medium">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-xs" data-icon="category">category</span>
+                                Damage
+                            </div>
+<span>2h ago</span>
+</div>
+</div>
+<!-- Card -->
+<div class="bg-surface-container-lowest p-4 rounded shadow-sm border-l-4 border-primary-container hover:shadow-md transition-shadow cursor-pointer">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[0.6875rem] font-bold text-outline uppercase font-label">#T-4095</span>
+<span class="text-[0.625rem] px-2 py-0.5 bg-surface-container-highest text-on-surface-variant font-bold rounded">LOW</span>
+</div>
+<h4 class="font-body font-semibold text-sm text-on-surface mb-3 leading-snug">HVAC Filter Replacement</h4>
+<div class="flex justify-between items-center text-[0.6875rem] text-outline font-medium">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-xs" data-icon="build">build</span>
+                                Technical
+                            </div>
+<span>5h ago</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Column: In Progress -->
+<div class="bg-surface-container-low rounded-lg p-4 flex flex-col gap-4">
+<div class="flex items-center justify-between mb-2">
+<h3 class="font-headline font-bold text-xs uppercase tracking-widest text-outline">In Progress (2)</h3>
+<span class="material-symbols-outlined text-outline text-sm" data-icon="more_horiz">more_horiz</span>
+</div>
+<div class="flex flex-col gap-3 overflow-y-auto pr-1">
+<div class="bg-surface-container-lowest p-4 rounded shadow-sm border-l-4 border-primary hover:shadow-md transition-shadow cursor-pointer">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[0.6875rem] font-bold text-outline uppercase font-label">#T-4081</span>
+<span class="text-[0.625rem] px-2 py-0.5 bg-primary-container text-on-primary-container font-bold rounded">MEDIUM</span>
+</div>
+<h4 class="font-body font-semibold text-sm text-on-surface mb-3 leading-snug">Elevator Logic Controller Recalibration</h4>
+<div class="flex justify-between items-center text-[0.6875rem] text-outline font-medium">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-xs" data-icon="build">build</span>
+                                Technical
+                            </div>
+<img class="w-6 h-6 rounded-full object-cover border-2 border-surface" data-alt="close-up portrait of a technician in a professional uniform with a focused expression" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCauPpVZj40Raf7rpNz7OwsSkhK_pnNpdQzULfvxQDxHRWojZ5SLJpBTV3V26osFzQDw5ROwL0pFh48cvwvU4gDC5RoFWTruV2r5sKgh66XVNSYDRsoK7O-HVxZIBZSTxrrR0yRpEYG48lYt76l9yc-LEoR7ZVsMczLmEDbcaWOVHfNVrbtGfO724qZgv9Qtr2YA7VaOJVZUuSUBjaWZ_NIvAJcE4RV4Ikp6Jyfcop1IqR9C-gNJOR0cS5a3HD8gzvQW1u1AdzPCEE"/>
+</div>
+</div>
+</div>
+</div>
+<!-- Column: Awaiting Parts -->
+<div class="bg-surface-container-low rounded-lg p-4 flex flex-col gap-4">
+<div class="flex items-center justify-between mb-2">
+<h3 class="font-headline font-bold text-xs uppercase tracking-widest text-outline">Awaiting Parts (1)</h3>
+<span class="material-symbols-outlined text-outline text-sm" data-icon="more_horiz">more_horiz</span>
+</div>
+<div class="flex flex-col gap-3 overflow-y-auto pr-1">
+<div class="bg-surface-container-lowest p-4 rounded shadow-sm border-l-4 border-tertiary-dim hover:shadow-md transition-shadow cursor-pointer">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[0.6875rem] font-bold text-outline uppercase font-label">#T-3990</span>
+<span class="text-[0.625rem] px-2 py-0.5 bg-tertiary-container text-on-tertiary-container font-bold rounded">MEDIUM</span>
+</div>
+<h4 class="font-body font-semibold text-sm text-on-surface mb-3 leading-snug">Main Entry Glass Seal Replacement</h4>
+<div class="flex justify-between items-center text-[0.6875rem] text-outline font-medium">
+<div class="flex items-center gap-1 text-tertiary">
+<span class="material-symbols-outlined text-xs" data-icon="pending">pending</span>
+                                ETA: 48h
+                            </div>
+<span class="material-symbols-outlined text-xs" data-icon="inventory_2">inventory_2</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Column: Resolved -->
+<div class="bg-surface-container-low rounded-lg p-4 flex flex-col gap-4">
+<div class="flex items-center justify-between mb-2">
+<h3 class="font-headline font-bold text-xs uppercase tracking-widest text-outline">Resolved (5)</h3>
+<span class="material-symbols-outlined text-outline text-sm" data-icon="more_horiz">more_horiz</span>
+</div>
+<div class="flex flex-col gap-3 overflow-y-auto pr-1 opacity-70 grayscale-[0.5]">
+<div class="bg-surface-container-lowest p-4 rounded shadow-sm border-l-4 border-tertiary hover:shadow-md transition-shadow cursor-pointer">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[0.6875rem] font-bold text-outline uppercase font-label">#T-4075</span>
+<span class="text-[0.625rem] px-2 py-0.5 bg-surface-container-highest text-on-surface-variant font-bold rounded">LOW</span>
+</div>
+<h4 class="font-body font-semibold text-sm text-on-surface mb-3 leading-snug">Exterior Lighting Timer Adjustment</h4>
+<div class="flex justify-between items-center text-[0.6875rem] text-outline font-medium">
+<span class="flex items-center gap-1 text-tertiary">
+<span class="material-symbols-outlined text-xs" data-icon="check_circle">check_circle</span>
+                                Completed
+                            </span>
+<span>Yesterday</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Recent Activity Log (Bento Style Section) -->
+<div class="px-8 mt-8">
+<div class="bg-surface-container-low rounded-lg overflow-hidden">
+<div class="px-6 py-4 border-b border-outline-variant/10 bg-surface-container-high/50 flex justify-between items-center">
+<h3 class="font-headline font-bold text-sm text-on-surface">System Activity Log</h3>
+<button class="text-xs font-bold text-primary hover:underline">Download Report</button>
+</div>
+<div class="divide-y divide-outline-variant/10">
+<div class="px-6 py-4 flex items-center justify-between hover:bg-surface-container-highest/20 transition-colors">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 bg-primary-container/20 flex items-center justify-center rounded-md">
+<span class="material-symbols-outlined text-primary" data-icon="update">update</span>
+</div>
+<div>
+<p class="text-sm font-semibold font-body text-on-surface">Ticket #T-4081 status updated to 'In Progress'</p>
+<p class="text-[0.6875rem] font-label text-outline">Automated System Log • 12:45 PM</p>
+</div>
+</div>
+<div class="text-right">
+<p class="text-xs font-bold text-primary font-headline tracking-tight">ELEVATOR B-1</p>
+<p class="text-[0.6875rem] font-label text-outline">Priority High</p>
+</div>
+</div>
+<div class="px-6 py-4 flex items-center justify-between hover:bg-surface-container-highest/20 transition-colors">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 bg-tertiary-container/20 flex items-center justify-center rounded-md">
+<span class="material-symbols-outlined text-tertiary" data-icon="local_shipping">local_shipping</span>
+</div>
+<div>
+<p class="text-sm font-semibold font-body text-on-surface">Replacement seals arrived at South Warehouse</p>
+<p class="text-[0.6875rem] font-label text-outline">Logistics Update • 11:20 AM</p>
+</div>
+</div>
+<div class="text-right">
+<p class="text-xs font-bold text-tertiary font-headline tracking-tight">INVENTORY SYNC</p>
+<p class="text-[0.6875rem] font-label text-outline">Ticket #T-3990</p>
+</div>
+</div>
+<div class="px-6 py-4 flex items-center justify-between hover:bg-surface-container-highest/20 transition-colors">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 bg-error-container/20 flex items-center justify-center rounded-md">
+<span class="material-symbols-outlined text-error" data-icon="report_problem">report_problem</span>
+</div>
+<div>
+<p class="text-sm font-semibold font-body text-on-surface">New Critical Alert: Structural Fissure #T-4092</p>
+<p class="text-[0.6875rem] font-label text-outline">Sensor Array Alert • 10:02 AM</p>
+</div>
+</div>
+<div class="text-right">
+<p class="text-xs font-bold text-error font-headline tracking-tight">GALLERY EAST</p>
+<p class="text-[0.6875rem] font-label text-outline">Action Required</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- FAB Suppression: This screen has an explicit New Ticket button in the UI, but per guidelines we add a task-aligned FAB only if perfectly aligned. Since "New Ticket" is already prominent, we omit additional clutter. -->
+</body></html>
