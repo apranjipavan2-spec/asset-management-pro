@@ -39,6 +39,7 @@ export function renderAssetRegistry() {
                                 <th class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest font-label border-b border-slate-100">Condition Index</th>
                                 <th class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest font-label border-b border-slate-100">Current Status</th>
                                 <th class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest font-label border-b border-slate-100 text-right">Valuation</th>
+                                <th class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest font-label border-b border-slate-100 text-right select-none">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="registry-tbody" class="divide-y divide-slate-100">
@@ -71,6 +72,16 @@ export function renderAssetRegistry() {
                                         </span>
                                     </td>
                                     <td class="px-8 py-5 text-right text-sm font-black text-slate-900 tabular-nums">₹${asset.amount.toLocaleString()}</td>
+                                    <td class="px-8 py-5 text-right">
+                                        <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button onclick="event.stopPropagation(); app.showEditAssetModal('${asset.id}')" class="w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-400 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 flex items-center justify-center transition-all shadow-sm">
+                                                <span class="material-symbols-outlined text-[16px]">edit</span>
+                                            </button>
+                                            <button onclick="event.stopPropagation(); app.deleteAssetRequest('${asset.id}')" class="w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-400 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 flex items-center justify-center transition-all shadow-sm">
+                                                <span class="material-symbols-outlined text-[16px]">delete</span>
+                                            </button>
+                                        </div>
+                                    </td>
                                 </tr>
                             `).join('')}
                         </tbody>
