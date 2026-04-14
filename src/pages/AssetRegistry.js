@@ -11,8 +11,11 @@ export function renderAssetRegistry() {
                 <div class="flex gap-2">
                     <div class="relative">
                         <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
-                        <input type="text" placeholder="Filter by ID or Name..." class="bg-white border border-slate-200 rounded-xl px-4 py-2 pl-9 text-xs focus:border-accent outline-none w-64 shadow-sm" />
+                        <input id="registry-search" type="text" placeholder="Filter by ID or Name..." oninput="window.filterRegistryTable()" class="bg-white border border-slate-200 rounded-xl px-4 py-2 pl-9 text-xs focus:border-accent outline-none w-64 shadow-sm" />
                     </div>
+                    <button onclick="app.exportCSV('assets')" class="px-4 py-2 bg-white border border-slate-200 text-slate-600 text-[10px] font-bold rounded-xl hover:bg-slate-50 transition-all uppercase tracking-widest shadow-sm flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm">download</span> CSV
+                    </button>
                     <button onclick="app.showAddAssetModal()" class="px-4 py-2 bg-slate-900 text-white text-[10px] font-bold rounded-xl hover:bg-slate-800 transition-all uppercase tracking-widest shadow-lg shadow-slate-900/10 flex items-center gap-2">
                         <span class="material-symbols-outlined text-sm">add</span> Add New Asset
                     </button>
@@ -21,10 +24,10 @@ export function renderAssetRegistry() {
 
             <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
                 <div class="px-8 py-5 border-b border-slate-50 bg-slate-50/20 flex gap-6 text-[10px] font-black text-slate-400 uppercase tracking-[.2em]">
-                    <span class="text-slate-900 border-b-2 border-accent pb-5 -mb-5 cursor-pointer">All Assets</span>
-                    <span class="hover:text-slate-900 cursor-pointer transition-all">Active</span>
-                    <span class="hover:text-slate-900 cursor-pointer transition-all">In Maintenance</span>
-                    <span class="hover:text-slate-900 cursor-pointer transition-all">Stored</span>
+                    <span onclick="window.filterRegistryByStatus('all')" data-tab="all" class="registry-tab text-slate-900 border-b-2 border-accent pb-5 -mb-5 cursor-pointer">All Assets</span>
+                    <span onclick="window.filterRegistryByStatus('Active')" data-tab="Active" class="registry-tab hover:text-slate-900 cursor-pointer transition-all">Active</span>
+                    <span onclick="window.filterRegistryByStatus('Maintenance')" data-tab="Maintenance" class="registry-tab hover:text-slate-900 cursor-pointer transition-all">In Maintenance</span>
+                    <span onclick="window.filterRegistryByStatus('Storage')" data-tab="Storage" class="registry-tab hover:text-slate-900 cursor-pointer transition-all">Stored</span>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left">
@@ -38,9 +41,9 @@ export function renderAssetRegistry() {
                                 <th class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest font-label border-b border-slate-100 text-right">Valuation</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-slate-100">
+                        <tbody id="registry-tbody" class="divide-y divide-slate-100">
                             ${db.assets.map(asset => `
-                                <tr class="hover:bg-slate-50/50 transition-all cursor-pointer group">
+                                <tr onclick="app.showAssetModal('${asset.id}')" data-status="${asset.status}" data-name="${asset.name}" data-id="${asset.id}" class="registry-row hover:bg-slate-50/50 transition-all cursor-pointer group">
                                     <td class="px-8 py-5">
                                         <div class="flex items-center gap-4">
                                             <div class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-slate-900 group-hover:text-white transition-all duration-300">
@@ -77,3 +80,34 @@ export function renderAssetRegistry() {
         </div>
     `;
 }
+
+// --- Live Search Filter ---
+window.filterRegistryTable = () => {
+    const query = (document.getElementById('registry-search')?.value || '').toLowerCase();
+    document.querySelectorAll('.registry-row').forEach(row => {
+        const name = (row.dataset.name || '').toLowerCase();
+        const id = (row.dataset.id || '').toLowerCase();
+        const matchesSearch = !query || name.includes(query) || id.includes(query);
+        // Also respect active tab filter
+        const activeTab = document.querySelector('.registry-tab.text-slate-900');
+        const tabFilter = activeTab ? activeTab.dataset.tab : 'all';
+        const matchesTab = tabFilter === 'all' || row.dataset.status === tabFilter;
+        row.style.display = (matchesSearch && matchesTab) ? '' : 'none';
+    });
+};
+
+// --- Tab Status Filter ---
+window.filterRegistryByStatus = (status) => {
+    // Update tab visual state
+    document.querySelectorAll('.registry-tab').forEach(tab => {
+        if (tab.dataset.tab === status) {
+            tab.classList.add('text-slate-900', 'border-b-2', 'border-accent', 'pb-5', '-mb-5');
+            tab.classList.remove('text-slate-400');
+        } else {
+            tab.classList.remove('text-slate-900', 'border-b-2', 'border-accent', 'pb-5', '-mb-5');
+            tab.classList.add('text-slate-400');
+        }
+    });
+    // Re-apply filter (combines with search)
+    window.filterRegistryTable();
+};

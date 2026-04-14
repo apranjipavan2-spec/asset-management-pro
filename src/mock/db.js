@@ -446,7 +446,7 @@ export class AssetDB {
 
     addNewAsset(assetData) {
         const newAsset = {
-            id: 'AS-' + Math.floor(10000 + Math.random() * 90000), // Random 5 digit ID
+            id: 'AS-' + Math.floor(10000 + Math.random() * 90000),
             name: assetData.name,
             category: assetData.category,
             status: assetData.status || "Active",
@@ -454,9 +454,13 @@ export class AssetDB {
             health: "100.0%",
             purchaseDate: new Date().toISOString().split('T')[0],
             amount: parseFloat(assetData.amount) || 0,
-            program: "General Fleet",
-            assignedTo: "Unassigned",
-            depreciation: 0
+            program: assetData.program || "General Fleet",
+            assignedTo: assetData.assignedTo || "Unassigned",
+            assignedToId: assetData.assignedToId || "N/A",
+            assignedToDesignation: assetData.designation || "N/A",
+            depreciation: 0,
+            fundingSource: assetData.fundingSource || "General Fund",
+            fundingAmount: parseFloat(assetData.amount) || 0
         };
         this.assets.unshift(newAsset);
         this.syncToCloud();

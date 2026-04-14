@@ -732,6 +732,12 @@ class App {
                 db.grants.forEach(g => {
                     csvContent += [g.id, idSafe(g.name), idSafe(g.program), g.openingBalance, g.spent, g.closingBalance].join(",") + "\n";
                 });
+            } else if (type === 'requests') {
+                const headers = ["ID", "Category", "Reason", "User", "Date", "Status", "Manager Approved", "Finance Approved"];
+                csvContent += headers.join(",") + "\n";
+                db.requests.forEach(r => {
+                    csvContent += [r.id, idSafe(r.category), idSafe(r.reason), idSafe(r.user), new Date(r.date).toLocaleDateString(), idSafe(r.status), r.managerApproved, r.financeApproved].join(",") + "\n";
+                });
             }
 
             const encodedUri = encodeURI(csvContent);
