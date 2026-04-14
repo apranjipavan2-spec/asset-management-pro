@@ -4,7 +4,7 @@ export function renderTransferPage() {
     const transfers = db.transfers;
 
     return `
-        <div class="animate-in fade-in slide-in-from-bottom-4 duration-500 h-[calc(100vh-128px)] flex flex-col min-h-0 gap-6">
+        <div class="animate-in fade-in slide-in-from-bottom-2 duration-200 h-[calc(100vh-128px)] flex flex-col min-h-0 gap-6">
             <header class="flex items-end justify-between shrink-0">
                 <div>
                     <h2 class="text-3xl text-slate-900 font-black tracking-tight uppercase">Asset Transfers</h2>

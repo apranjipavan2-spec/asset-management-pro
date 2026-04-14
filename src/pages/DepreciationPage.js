@@ -2,7 +2,7 @@ import { db } from '../mock/db.js';
 
 export function renderDepreciationPage() {
     return `
-        <div class="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10 font-sans">
+        <div class="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-200 pb-10 font-sans">
             <header class="flex items-center justify-between">
                 <div>
                     <h2 class="text-2xl text-slate-900 font-black tracking-tightest uppercase">Depreciation Schedules</h2>

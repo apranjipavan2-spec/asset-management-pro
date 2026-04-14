@@ -5,7 +5,7 @@ export function renderFinanceDashboard() {
     const grants = db.grants;
 
     return `
-        <div class="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10 font-sans">
+        <div class="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-200 pb-10 font-sans">
             <header class="flex items-center justify-between">
                 <div>
                     <h2 class="text-2xl text-slate-900 font-black tracking-tightest uppercase">Financial Control Ledger</h2>

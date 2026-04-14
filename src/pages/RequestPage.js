@@ -2,7 +2,7 @@ import { db } from '../mock/db.js';
 
 export function renderRequestPage(user) {
     return `
-        <div class="max-w-2xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div class="max-w-2xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-200">
             <header>
                 <h2 class="text-3xl text-slate-900 font-black tracking-tight">Request New Asset</h2>
                 <p class="text-slate-500 text-sm mt-1 uppercase tracking-widest font-bold">Equipment Requisition System</p>

@@ -2,7 +2,7 @@ import { db } from '../mock/db.js';
 
 export function renderGrantLedger() {
     return `
-        <div class="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div class="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-200">
             <header class="flex items-end justify-between">
                 <div>
                     <h2 class="text-3xl text-slate-900 font-black tracking-tight uppercase">Grant Expenditure Ledger</h2>

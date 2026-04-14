@@ -59,7 +59,7 @@ export function renderAnalyticsDashboard() {
     `;
 
     return `
-        <div class="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div class="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-200">
             <header>
                 <h2 class="text-3xl text-slate-900 font-black tracking-tight uppercase">Global Analytics Matrix</h2>
                 <p class="text-slate-500 text-sm mt-1 font-bold tracking-widest uppercase">Cross-Sectional Deployment Visualizations & Audits</p>

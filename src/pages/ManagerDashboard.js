@@ -8,7 +8,7 @@ export function renderManagerDashboard() {
     const pendingCount = allRequests.filter(r => !r.managerApproved && !r.status.startsWith('Rejected')).length;
 
     return `
-        <div class="animate-in fade-in slide-in-from-bottom-4 duration-500 h-[calc(100vh-128px)] flex flex-col min-h-0">
+        <div class="animate-in fade-in slide-in-from-bottom-2 duration-200 h-[calc(100vh-128px)] flex flex-col min-h-0">
             <!-- Content Split (Enforces strict vertical gutters and exact screen height) -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0">
                 
