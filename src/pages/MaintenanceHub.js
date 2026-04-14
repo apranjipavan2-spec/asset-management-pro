@@ -18,7 +18,7 @@ export function renderMaintenanceHub() {
             }
         }
     });
-    if (needsSave) db.save();
+    if (needsSave) db.syncToCloud();
 
     const logs = db.maintenanceLogs;
     const pending = logs.filter(l => l.status === 'Pending');
@@ -26,7 +26,7 @@ export function renderMaintenanceHub() {
     const resolved = logs.filter(l => l.status === 'Resolved');
 
     return `
-        <div class="animate-in fade-in slide-in-from-bottom-4 duration-500 h-[calc(100vh-128px)] flex flex-col min-h-0 gap-6">
+        <div class="animate-in fade-in slide-in-from-bottom-2 duration-200 h-[calc(100vh-128px)] flex flex-col min-h-0 gap-6">
             <header class="shrink-0">
                 <h2 class="text-3xl text-slate-900 font-black tracking-tight uppercase">Maintenance Control Hub</h2>
                 <p class="text-slate-500 text-sm mt-1 font-bold tracking-widest uppercase">Operational Readiness & Repair Tracking</p>
@@ -309,7 +309,7 @@ window.updateMaintStatus = (id, status) => {
         }
     }
     
-    db.save();
+    db.syncToCloud();
     window.closeMaintModal();
     
     // Wait briefly for modal exit animation before hard redrawing the layout
