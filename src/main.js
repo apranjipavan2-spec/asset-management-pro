@@ -448,7 +448,7 @@ class App {
 
         const modalDiv = document.createElement('div');
         modalDiv.innerHTML = modalHtml;
-        document.body.appendChild(modalDiv.firstChild);
+        document.body.appendChild(modalDiv.firstElementChild);
 
         // Close on backdrop click
         document.getElementById('asset-modal-backdrop').addEventListener('click', (e) => {
@@ -532,7 +532,7 @@ class App {
         `;
         const modalDiv = document.createElement('div');
         modalDiv.innerHTML = modalHtml;
-        document.body.appendChild(modalDiv.firstChild);
+        document.body.appendChild(modalDiv.firstElementChild);
 
         document.getElementById('edit-asset-modal-backdrop').addEventListener('click', (e) => {
             if (e.target.id === 'edit-asset-modal-backdrop') e.target.remove();
@@ -655,7 +655,7 @@ class App {
 
         const modalDiv = document.createElement('div');
         modalDiv.innerHTML = modalHtml;
-        document.body.appendChild(modalDiv.firstChild);
+        document.body.appendChild(modalDiv.firstElementChild);
 
         // Close on backdrop click
         document.getElementById('grant-modal-backdrop').addEventListener('click', (e) => {
@@ -706,7 +706,7 @@ class App {
 
         const modalDiv = document.createElement('div');
         modalDiv.innerHTML = modalHtml;
-        document.body.appendChild(modalDiv.firstChild);
+        document.body.appendChild(modalDiv.firstElementChild);
 
         document.getElementById('add-grant-modal-backdrop').addEventListener('click', (e) => {
             if (e.target.id === 'add-grant-modal-backdrop') e.target.remove();
@@ -794,7 +794,7 @@ class App {
 
         const modalDiv = document.createElement('div');
         modalDiv.innerHTML = modalHtml;
-        document.body.appendChild(modalDiv.firstChild);
+        document.body.appendChild(modalDiv.firstElementChild);
 
         document.getElementById('add-asset-modal-backdrop').addEventListener('click', (e) => {
             if (e.target.id === 'add-asset-modal-backdrop') e.target.remove();
