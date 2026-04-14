@@ -485,6 +485,20 @@ export class AssetDB {
         this.syncToCloud();
     }
 
+    addNewGrant(grantData) {
+        const newGrant = {
+            id: 'GR-' + Math.floor(1000 + Math.random() * 9000), // Random 4 digit ID
+            name: grantData.name,
+            program: grantData.program,
+            openingBalance: parseFloat(grantData.amount) || 0,
+            spent: 0,
+            closingBalance: parseFloat(grantData.amount) || 0
+        };
+        this.grants.unshift(newGrant);
+        this.syncToCloud();
+        return newGrant;
+    }
+
     transferAsset(assetId, newAssignee, newLocation, newDesignation = "N/A", newAssigneeId = "N/A") {
         const asset = this.assets.find(a => a.id === assetId);
         if (asset) {

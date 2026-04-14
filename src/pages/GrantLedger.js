@@ -8,10 +8,14 @@ export function renderGrantLedger() {
                     <h2 class="text-3xl text-slate-900 font-black tracking-tight uppercase">Grant Expenditure Ledger</h2>
                     <p class="text-slate-500 text-sm mt-1 font-bold tracking-widest uppercase">Restricted Fund Tracking & Compliance</p>
                 </div>
-                <button onclick="app.exportCSV('grants')" class="px-5 py-2.5 bg-slate-900 text-white text-[10px] font-black uppercase tracking-[.2em] rounded-xl hover:bg-accent transition-all flex items-center gap-2 group shadow-lg shadow-slate-900/10">
-                    <span class="material-symbols-outlined text-sm group-hover:rotate-12 transition-transform">download</span>
-                    Export CSV
-                </button>
+                <div class="flex gap-2">
+                    <button onclick="app.exportCSV('grants')" class="px-4 py-2 bg-white border border-slate-200 text-slate-600 text-[10px] font-bold rounded-xl hover:bg-slate-50 transition-all uppercase tracking-widest shadow-sm flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm">download</span> CSV
+                    </button>
+                    <button onclick="app.showAddGrantModal()" class="px-4 py-2 bg-slate-900 text-white text-[10px] font-bold rounded-xl hover:bg-slate-800 transition-all uppercase tracking-widest shadow-lg shadow-slate-900/10 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm">add</span> Add New Grant
+                    </button>
+                </div>
             </header>
 
             <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">

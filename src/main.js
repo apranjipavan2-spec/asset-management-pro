@@ -663,6 +663,73 @@ class App {
         });
     }
 
+    showAddGrantModal() {
+        const modalHtml = `
+            <div id="add-grant-modal-backdrop" class="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-300">
+                <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-300 border border-slate-200">
+                    <div class="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-indigo-50/50">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-600/20">
+                                <span class="material-symbols-outlined text-2xl">workspace_premium</span>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-black text-slate-900 font-headline uppercase tracking-tight">Register New Grant</h3>
+                                <p class="text-xs text-indigo-400 font-black uppercase tracking-widest">Endowment Tracking Initiation</p>
+                            </div>
+                        </div>
+                        <button onclick="document.getElementById('add-grant-modal-backdrop').remove()" class="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400 group">
+                            <span class="material-symbols-outlined group-hover:rotate-90 transition-transform">close</span>
+                        </button>
+                    </div>
+                    <div class="p-8 space-y-5">
+                        <div>
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Grant / Endowment Name</label>
+                            <input id="new-grant-name" type="text" placeholder="e.g. World Bank Tech Initiative" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold focus:border-indigo-500 outline-none transition-colors" />
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Program Area</label>
+                            <input id="new-grant-program" type="text" placeholder="e.g. Education Technology" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold focus:border-indigo-500 outline-none transition-colors" />
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Total Awarded Amount (₹)</label>
+                            <input id="new-grant-amount" type="number" placeholder="1000000" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold focus:border-indigo-500 outline-none transition-colors tabular-nums" />
+                        </div>
+                        <div id="new-grant-error" class="hidden text-xs text-rose-500 font-bold text-center"></div>
+                        <button onclick="app.submitNewGrant()" class="w-full py-4 bg-indigo-600 text-white text-xs font-black rounded-xl hover:bg-indigo-700 transition-all uppercase tracking-[.2em] shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 group">
+                            <span class="material-symbols-outlined text-sm group-hover:rotate-90 transition-transform">save</span>
+                            Initialize Ledger
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const modalDiv = document.createElement('div');
+        modalDiv.innerHTML = modalHtml;
+        document.body.appendChild(modalDiv.firstChild);
+
+        document.getElementById('add-grant-modal-backdrop').addEventListener('click', (e) => {
+            if (e.target.id === 'add-grant-modal-backdrop') e.target.remove();
+        });
+    }
+
+    submitNewGrant() {
+        const name = document.getElementById('new-grant-name').value.trim();
+        const program = document.getElementById('new-grant-program').value.trim();
+        const amount = document.getElementById('new-grant-amount').value;
+        const errorEl = document.getElementById('new-grant-error');
+
+        if (!name || !program || !amount) {
+            errorEl.textContent = 'All fields are required.';
+            errorEl.classList.remove('hidden');
+            return;
+        }
+
+        db.addNewGrant({ name, program, amount });
+        document.getElementById('add-grant-modal-backdrop').remove();
+        if (this.currentPage === 'grants') this.navigate('grants');
+    }
+
     showAddAssetModal() {
         const modalHtml = `
             <div id="add-asset-modal-backdrop" class="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-300">
