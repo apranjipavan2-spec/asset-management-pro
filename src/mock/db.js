@@ -467,6 +467,24 @@ export class AssetDB {
         return newAsset;
     }
 
+    updateAsset(id, assetData) {
+        const index = this.assets.findIndex(a => a.id === id);
+        if (index !== -1) {
+            this.assets[index] = { ...this.assets[index], ...assetData };
+            this.syncToCloud();
+            return this.assets[index];
+        }
+        return null;
+    }
+
+    deleteAsset(id) {
+        this.assets = this.assets.filter(a => a.id !== id);
+        // Also remove associated transfers and requests to clean up
+        this.transfers = this.transfers.filter(t => t.assetId !== id);
+        this.requests = this.requests.filter(r => r.assetId !== id);
+        this.syncToCloud();
+    }
+
     transferAsset(assetId, newAssignee, newLocation, newDesignation = "N/A", newAssigneeId = "N/A") {
         const asset = this.assets.find(a => a.id === assetId);
         if (asset) {

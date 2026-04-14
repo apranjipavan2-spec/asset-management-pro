@@ -427,6 +427,20 @@ class App {
                                 `).join('') : '<div class="p-10 text-center text-slate-400 italic text-xs uppercase tracking-widest border border-dashed border-slate-200 rounded-2xl">Original Procurement • No Transfers Recorded</div>'}
                             </div>
                         </div>
+                        
+                        <!-- Administrative Actions (Manager Only) -->
+                        ${this.user.role === 'manager' ? `
+                        <div class="pt-6 mt-6 border-t border-slate-100 flex gap-4">
+                            <button onclick="app.showEditAssetModal('${asset.id}')" class="flex-1 py-4 bg-slate-100 text-slate-900 text-xs font-black rounded-xl hover:bg-slate-200 transition-all uppercase tracking-widest flex items-center justify-center gap-2">
+                                <span class="material-symbols-outlined text-sm">edit</span>
+                                Modify Registry Entry
+                            </button>
+                            <button onclick="app.deleteAssetRequest('${asset.id}')" class="flex-1 py-4 bg-white border border-rose-200 text-rose-500 text-xs font-black rounded-xl hover:bg-rose-50 hover:border-rose-300 transition-all uppercase tracking-widest flex items-center justify-center gap-2">
+                                <span class="material-symbols-outlined text-sm">delete_forever</span>
+                                Drop Asset
+                            </button>
+                        </div>
+                        ` : ''}
                     </div>
                 </div>
             </div>
@@ -444,8 +458,119 @@ class App {
 
     closeAssetModal() {
         const backdrop = document.getElementById('asset-modal-backdrop');
-        backdrop.classList.replace('opacity-100', 'opacity-0');
-        setTimeout(() => backdrop.classList.add('hidden'), 300);
+        if (backdrop) {
+            backdrop.classList.replace('opacity-100', 'opacity-0');
+            setTimeout(() => backdrop.remove(), 300);
+        }
+    }
+
+    showEditAssetModal(id) {
+        this.closeAssetModal();
+        const asset = db.assets.find(a => a.id === id);
+        if (!asset) return;
+
+        const modalHtml = `
+            <div id="edit-asset-modal-backdrop" class="fixed inset-0 z-[110] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-300">
+                <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-300 border border-slate-200">
+                    <div class="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-inner border border-indigo-100">
+                                <span class="material-symbols-outlined text-2xl">edit_document</span>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-black text-slate-900 font-headline uppercase tracking-tight">Modify Asset</h3>
+                                <p class="text-xs text-slate-400 font-black uppercase tracking-widest">${asset.id}</p>
+                            </div>
+                        </div>
+                        <button onclick="document.getElementById('edit-asset-modal-backdrop').remove()" class="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400 group">
+                            <span class="material-symbols-outlined group-hover:rotate-90 transition-transform">close</span>
+                        </button>
+                    </div>
+                    <div class="p-8 space-y-5">
+                        <div>
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Asset Name</label>
+                            <input id="edit-asset-name" type="text" value="${asset.name}" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold focus:border-slate-900 outline-none transition-colors" />
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Category</label>
+                                <select id="edit-asset-category" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold focus:border-slate-900 outline-none transition-colors">
+                                    <option value="Equipment" ${asset.category === 'Equipment' ? 'selected' : ''}>Equipment</option>
+                                    <option value="Infrastructure" ${asset.category === 'Infrastructure' ? 'selected' : ''}>Infrastructure</option>
+                                    <option value="Office" ${asset.category === 'Office' ? 'selected' : ''}>Office</option>
+                                    <option value="Vehicle" ${asset.category === 'Vehicle' ? 'selected' : ''}>Vehicle</option>
+                                    <option value="Software" ${asset.category === 'Software' ? 'selected' : ''}>Software</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Status</label>
+                                <select id="edit-asset-status" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold focus:border-slate-900 outline-none transition-colors">
+                                    <option value="Active" ${asset.status === 'Active' ? 'selected' : ''}>Active</option>
+                                    <option value="Maintenance" ${asset.status === 'Maintenance' ? 'selected' : ''}>Maintenance</option>
+                                    <option value="Storage" ${asset.status === 'Storage' ? 'selected' : ''}>Storage</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Location</label>
+                                <input id="edit-asset-location" type="text" value="${asset.location}" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold focus:border-slate-900 outline-none transition-colors" />
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Acquisition Cost (₹)</label>
+                                <input id="edit-asset-amount" type="number" value="${asset.amount}" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold focus:border-slate-900 outline-none transition-colors tabular-nums" />
+                            </div>
+                        </div>
+                        <div id="edit-asset-error" class="hidden text-xs text-rose-500 font-bold text-center"></div>
+                        <button onclick="app.submitEditAsset('${asset.id}')" class="w-full py-4 bg-slate-900 text-white text-xs font-black rounded-xl hover:bg-slate-800 transition-all uppercase tracking-[.2em] shadow-lg shadow-slate-900/20 flex items-center justify-center gap-2 group">
+                            <span class="material-symbols-outlined text-sm">save</span>
+                            Save Modifications
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        const modalDiv = document.createElement('div');
+        modalDiv.innerHTML = modalHtml;
+        document.body.appendChild(modalDiv.firstChild);
+
+        document.getElementById('edit-asset-modal-backdrop').addEventListener('click', (e) => {
+            if (e.target.id === 'edit-asset-modal-backdrop') e.target.remove();
+        });
+    }
+
+    submitEditAsset(id) {
+        const name = document.getElementById('edit-asset-name').value.trim();
+        const category = document.getElementById('edit-asset-category').value;
+        const status = document.getElementById('edit-asset-status').value;
+        const location = document.getElementById('edit-asset-location').value.trim();
+        const amount = document.getElementById('edit-asset-amount').value;
+        const errorEl = document.getElementById('edit-asset-error');
+
+        if (!name || !location || !amount) {
+            errorEl.textContent = 'All fields are required.';
+            errorEl.classList.remove('hidden');
+            return;
+        }
+
+        db.updateAsset(id, { name, category, status, location, amount: parseFloat(amount) });
+        document.getElementById('edit-asset-modal-backdrop').remove();
+        // Option 1: Re-open asset modal
+        this.showAssetModal(id);
+        // Option 2: Force complete re-render if in registry to update table
+        if (this.currentPage === 'registry') {
+             this.navigate('registry');
+             this.showAssetModal(id);
+        }
+    }
+
+    deleteAssetRequest(id) {
+        const confirmed = window.confirm('CRITICAL WARNING:\n\nYou are about to permanently drop this asset from the institutional registry. This action will erase all chain-of-custody transfers and associated metadata.\n\nProceed?');
+        if (confirmed) {
+            db.deleteAsset(id);
+            this.closeAssetModal();
+            if (this.currentPage === 'registry') this.navigate('registry');
+        }
     }
 
     showGrantModal(id) {
