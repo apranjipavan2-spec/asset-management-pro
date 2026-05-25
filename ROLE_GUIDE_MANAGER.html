@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manager Guide - Kalike Asset Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        header {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        .content {
+            padding: 40px;
+        }
+        section {
+            margin-bottom: 40px;
+        }
+        section h2 {
+            color: #f5576c;
+            border-bottom: 3px solid #f5576c;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+        section h3 {
+            color: #f093fb;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-size: 1.3em;
+        }
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        li {
+            margin-bottom: 8px;
+        }
+        .feature-box {
+            background: #fff3f6;
+            border-left: 4px solid #f5576c;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 6px;
+        }
+        .feature-box strong {
+            color: #f5576c;
+        }
+        .workflow {
+            background: #fff8f0;
+            border-left: 4px solid #ff9800;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 6px;
+        }
+        .workflow strong {
+            color: #ff9800;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        table th {
+            background: #f5576c;
+            color: white;
+            padding: 12px;
+            text-align: left;
+        }
+        table td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+        table tr:hover {
+            background: #f5f5f5;
+        }
+        .tip {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        footer {
+            background: #f5f5f5;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            border-top: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>👔 Asset Administrator Guide</h1>
+            <p>Operations & Control</p>
+        </header>
+
+        <div class="content">
+            <section>
+                <h2>Welcome to Kalike Asset Management</h2>
+                <p>As an Asset Administrator (Manager), you oversee asset allocation, approve employee requests, manage asset transfers, and monitor maintenance operations. You have control over your team's asset inventory and workflow approvals.</p>
+            </section>
+
+            <section>
+                <h2>Your Dashboard Overview</h2>
+                <div class="feature-box">
+                    <strong>📊 Dashboard shows:</strong>
+                    <ul>
+                        <li>Team asset allocation summary</li>
+                        <li>Pending asset requests from your team</li>
+                        <li>Asset transfers and movements</li>
+                        <li>Maintenance requests</li>
+                        <li>Depreciation tracking</li>
+                        <li>Key metrics and reports</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section>
+                <h2>Core Features</h2>
+
+                <h3>1️⃣ Manage Asset Registry</h3>
+                <div class="workflow">
+                    <strong>Master Asset Registry - Full Control:</strong>
+                    <ul>
+                        <li>View all company assets (complete inventory)</li>
+                        <li>Add new assets to the system</li>
+                        <li>Update asset details (location, condition, custodian)</li>
+                        <li>Mark assets as active/inactive</li>
+                        <li>Track asset lifecycle (acquisition → depreciation → disposal)</li>
+                    </ul>
+                </div>
+
+                <h3>2️⃣ Approve Asset Requests</h3>
+                <div class="workflow">
+                    <strong>Review and Approve/Reject Employee Requests:</strong>
+                    <ol>
+                        <li>View all pending requests from your team</li>
+                        <li>Review justification and business need</li>
+                        <li>Approve to authorize procurement</li>
+                        <li>Reject with feedback if not needed</li>
+                        <li>Track approval history</li>
+                    </ol>
+                </div>
+                <div class="tip">
+                    💡 <strong>Tip:</strong> Approvals trigger procurement workflow. Rejected requests can be resubmitted.
+                </div>
+
+                <h3>3️⃣ Allocate Assets to Team Members</h3>
+                <p>Assign assets from inventory to specific employees. You can:</p>
+                <ul>
+                    <li>Manually allocate assets to employees</li>
+                    <li>Bulk assign assets to multiple team members</li>
+                    <li>Generate allocation reports</li>
+                    <li>Track who has what assets</li>
+                </ul>
+
+                <h3>4️⃣ Manage Transfers</h3>
+                <div class="workflow">
+                    <strong>Asset Transfers Between Employees:</strong>
+                    <ul>
+                        <li>Approve inter-team asset transfers</li>
+                        <li>Manage asset movement tracking</li>
+                        <li>Track transfer history</li>
+                        <li>Ensure proper chain of custody</li>
+                    </ul>
+                </div>
+
+                <h3>5️⃣ Maintenance & Issues</h3>
+                <p>Oversee asset maintenance operations:</p>
+                <ul>
+                    <li>View all maintenance requests from your team</li>
+                    <li>Assign to maintenance team</li>
+                    <li>Track repair status</li>
+                    <li>Monitor asset health</li>
+                </ul>
+
+                <h3>6️⃣ View Team Data</h3>
+                <p>Your Team Visibility:</p>
+                <ul>
+                    <li>📋 See all team member tasks and worklogs</li>
+                    <li>📊 View team performance reviews</li>
+                    <li>📅 Access team leave balances</li>
+                    <li>🎯 Monitor team productivity</li>
+                </ul>
+                <div class="tip">
+                    💡 As a manager, you automatically see all data for your direct reports (users where reportsTo = your ID).
+                </div>
+            </section>
+
+            <section>
+                <h2>Request Approval Workflow</h2>
+                <table>
+                    <tr>
+                        <th>Stage</th>
+                        <th>Your Action</th>
+                        <th>Outcome</th>
+                    </tr>
+                    <tr>
+                        <td>Employee Submits</td>
+                        <td>Review request</td>
+                        <td>Request appears in your queue</td>
+                    </tr>
+                    <tr>
+                        <td>You Approve</td>
+                        <td>Click "Approve"</td>
+                        <td>Sent to Procurement</td>
+                    </tr>
+                    <tr>
+                        <td>Procurement Fulfills</td>
+                        <td>Monitor progress</td>
+                        <td>Asset acquired</td>
+                    </tr>
+                    <tr>
+                        <td>You Allocate</td>
+                        <td>Assign to employee</td>
+                        <td>Employee receives asset</td>
+                    </tr>
+                    <tr>
+                        <td>You Reject</td>
+                        <td>Click "Reject" + reason</td>
+                        <td>Employee notified, can resubmit</td>
+                    </tr>
+                </table>
+            </section>
+
+            <section>
+                <h2>Asset Inventory Management</h2>
+
+                <h3>Asset Ledger</h3>
+                <p>Complete tracking of all assets:</p>
+                <ul>
+                    <li>Asset name, serial number, category</li>
+                    <li>Purchase date and acquisition cost</li>
+                    <li>Current condition (New, Good, Fair, Poor)</li>
+                    <li>Current custodian (who has it)</li>
+                    <li>Location and department</li>
+                    <li>Depreciation value</li>
+                </ul>
+
+                <h3>Quick Actions Available</h3>
+                <ul>
+                    <li>Edit asset details</li>
+                    <li>Delete inactive assets</li>
+                    <li>View transfer history</li>
+                    <li>Generate inventory reports</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>Reports & Analytics</h2>
+                <p>You can generate reports on:</p>
+                <ul>
+                    <li>📊 Asset allocation by employee</li>
+                    <li>📊 Depreciation trends</li>
+                    <li>📊 Maintenance costs</li>
+                    <li>📊 Request approval rates</li>
+                    <li>📊 Asset utilization</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>Best Practices</h2>
+                <div class="feature-box">
+                    <ul>
+                        <li>✅ Approve requests promptly (within 24 hours ideally)</li>
+                        <li>✅ Provide feedback on rejected requests</li>
+                        <li>✅ Regularly audit your team's assets</li>
+                        <li>✅ Monitor asset condition reports</li>
+                        <li>✅ Track depreciation for financial planning</li>
+                        <li>✅ Ensure proper documentation of transfers</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section>
+                <h2>Frequently Asked Questions</h2>
+
+                <h3>Q: Can I reassign assets without employee request?</h3>
+                <p>A: Yes, as a manager you can manually allocate/reallocate assets directly.</p>
+
+                <h3>Q: How do I handle lost or damaged assets?</h3>
+                <p>A: Mark the asset condition as "Poor" or use the Issues feature. Finance will handle write-offs.</p>
+
+                <h3>Q: Can I see depreciation values?</h3>
+                <p>A: Yes, depreciation is calculated automatically and visible in asset details.</p>
+
+                <h3>Q: How do I bulk assign assets?</h3>
+                <p>A: Use the "Bulk Actions" feature in the Asset Registry to assign multiple items at once.</p>
+
+                <h3>Q: What data can I see about my team?</h3>
+                <p>A: Tasks, worklogs, reviews, and leave balances for all employees reporting to you (reportsTo field).</p>
+            </section>
+
+            <section>
+                <h2>Key Responsibilities</h2>
+                <div class="tip">
+                    <strong>Your Role Ensures:</strong>
+                    <ul>
+                        <li>Proper asset allocation to team members</li>
+                        <li>Request approvals are timely and justified</li>
+                        <li>Assets are tracked and accounted for</li>
+                        <li>Maintenance issues are addressed</li>
+                        <li>Budget efficiency through asset management</li>
+                        <li>Team productivity (visibility into tasks/performance)</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section>
+                <h2>Getting Help</h2>
+                <div class="feature-box">
+                    <ul>
+                        <li>🔍 <strong>View documentation</strong> in the help section</li>
+                        <li>📧 <strong>Contact Finance</strong> for depreciation/valuation questions</li>
+                        <li>🔧 <strong>Maintenance team</strong> manages repairs and upkeep</li>
+                        <li>❓ <strong>IT Support</strong> for system issues</li>
+                    </ul>
+                </div>
+            </section>
+        </div>
+
+        <footer>
+            <p>Kalike Asset Management System v2.2.0 | Manager Guide</p>
+            <p>For support, contact the asset management team or your director.</p>
+        </footer>
+    </div>
+</body>
+</html>

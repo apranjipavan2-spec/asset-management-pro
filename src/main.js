@@ -122,15 +122,8 @@ class App {
         `;
     }
 
-    selectRole(role) {
-        this.loginRole = role;
-        this.render();
-    }
-
-    cancelLogin() {
-        this.loginRole = null;
-        this.render();
-    }
+    // Removed selectRole() - unified login, no role selection needed
+    // Role is determined by database on login
 
     async authenticate() {
         const idInput = document.getElementById('login-id');
@@ -144,25 +137,20 @@ class App {
         const password = passInput.value;
 
         if (!userId || !password) {
-            errorMsg.innerText = "Identity and authentication key are required.";
+            errorMsg.innerText = "User ID and password are required.";
             errorMsg.classList.remove('hidden');
             return;
         }
-
-        // The role selected in the UI ('employee'|'manager'|'finance') must
-        // match the user's role in DB. Anything else (hr, operations,
-        // director, superadmin) logs in via the 'manager' lane — server
-        // still enforces the actual role from the users table.
-        const requestedRole = this.loginRole === 'employee' ? 'employee' : null;
 
         if (submitBtn) submitBtn.disabled = true;
         errorMsg.classList.add('hidden');
 
         try {
+            // Unified login: no role selection, server determines role from database
             const res = await fetch('/api/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId, password, role: requestedRole })
+                body: JSON.stringify({ userId, password })
             });
             const data = await res.json();
 
@@ -172,22 +160,14 @@ class App {
                 return;
             }
 
-            // The 'manager'/'finance' UI lanes are administrative — only
-            // accept users whose actual role grants admin-level access.
-            const adminRoles = new Set(['manager', 'finance', 'hr', 'operations', 'director', 'superadmin']);
-            if (this.loginRole !== 'employee' && !adminRoles.has(data.user.role)) {
-                errorMsg.innerText = 'This account does not have administrative access.';
-                errorMsg.classList.remove('hidden');
-                return;
-            }
-
+            // Server returns user with their actual role from database
             this.user = data.user;
             localStorage.setItem('amp_user', JSON.stringify(this.user));
             if (data.token) localStorage.setItem('amp_token', data.token);
-            this.loginRole = null;
-            // Token is now in localStorage — reload db collections with auth.
+
+            // Reload db collections with auth, then navigate to dashboard
             await db.init();
-            this.navigateTo('dashboard');
+            this.navigateTo('home');
         } catch (err) {
             console.error('Login request failed:', err);
             errorMsg.innerText = 'Could not reach the authentication server.';
@@ -237,80 +217,36 @@ class App {
     }
 
     renderLogin() {
-        const roleSelectionUI = `
-            <div class="grid grid-cols-1 gap-4 w-full">
-                <button onclick="app.selectRole('employee')" class="group relative w-full py-5 px-6 bg-white hover:bg-slate-50 border border-slate-200 rounded-2xl transition-all duration-300 flex items-center gap-5 text-left hover:shadow-xl active:scale-[0.98]">
-                    <div class="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 group-hover:rotate-6 border border-blue-100">
-                        <span class="material-symbols-outlined text-2xl">person</span>
+        // Unified login form - no role selection needed
+        const authFormUI = `
+            <div class="space-y-6 w-full animate-fade-in-up">
+                <div>
+                    <p class="text-[10px] text-slate-500 font-bold uppercase tracking-[.2em] text-center">Enter your credentials</p>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="group">
+                        <label class="text-[9px] text-slate-500 font-black uppercase tracking-widest ml-1 mb-1.5 block group-focus-within:text-blue-600 transition-colors">User ID</label>
+                        <div class="relative">
+                            <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm">badge</span>
+                            <input type="text" id="login-id" placeholder="Enter your ID" class="w-full bg-white border border-slate-300 rounded-xl px-4 py-3.5 pl-11 text-xs focus:border-blue-600 outline-none transition-all font-bold placeholder:text-slate-300" />
+                        </div>
                     </div>
-                    <div>
-                        <p class="font-extrabold text-slate-900 text-sm">Personnel Portal</p>
-                        <p class="text-[10px] text-slate-500 uppercase font-black tracking-widest mt-0.5">Asset Requisitioning</p>
+                    <div class="group">
+                        <label class="text-[9px] text-slate-500 font-black uppercase tracking-widest ml-1 mb-1.5 block group-focus-within:text-blue-600 transition-colors">Password</label>
+                        <div class="relative">
+                            <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm">lock</span>
+                            <input type="password" id="login-password" placeholder="••••••••" class="w-full bg-white border border-slate-300 rounded-xl px-4 py-3.5 pl-11 text-xs focus:border-blue-600 outline-none transition-all font-bold placeholder:text-slate-300" />
+                        </div>
                     </div>
-                    <span class="material-symbols-outlined ml-auto text-slate-400 group-hover:text-blue-600 transition-colors">chevron_right</span>
-                </button>
-                <button onclick="app.selectRole('manager')" class="group relative w-full py-5 px-6 bg-white hover:bg-slate-50 border border-slate-200 rounded-2xl transition-all duration-300 flex items-center gap-5 text-left hover:shadow-xl active:scale-[0.98]">
-                    <div class="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 group-hover:rotate-6 border border-blue-100">
-                        <span class="material-symbols-outlined text-2xl">admin_panel_settings</span>
-                    </div>
-                    <div>
-                        <p class="font-extrabold text-slate-900 text-sm">Asset Administrator</p>
-                        <p class="text-[10px] text-slate-500 uppercase font-black tracking-widest mt-0.5">Operations & Control</p>
-                    </div>
-                    <span class="material-symbols-outlined ml-auto text-slate-400 group-hover:text-blue-600 transition-colors">chevron_right</span>
-                </button>
-                <button onclick="app.selectRole('finance')" class="group relative w-full py-5 px-6 bg-white hover:bg-slate-50 border border-slate-200 rounded-2xl transition-all duration-300 flex items-center gap-5 text-left hover:shadow-xl active:scale-[0.98]">
-                    <div class="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 group-hover:rotate-6 border border-blue-100">
-                        <span class="material-symbols-outlined text-2xl">account_balance</span>
-                    </div>
-                    <div>
-                        <p class="font-extrabold text-slate-900 text-sm">Finance Controller</p>
-                        <p class="text-[10px] text-slate-500 uppercase font-black tracking-widest mt-0.5">Valuation & Ledgering</p>
-                    </div>
-                    <span class="material-symbols-outlined ml-auto text-slate-400 group-hover:text-blue-600 transition-colors">chevron_right</span>
-                </button>
+                    <div id="login-error" class="hidden text-[10px] font-black uppercase tracking-widest text-rose-600 bg-rose-50 p-4 rounded-xl border border-rose-200 animate-in fade-in slide-in-from-top-2"></div>
+                    <button onclick="app.authenticate()" class="w-full py-4.5 bg-slate-950 text-white rounded-2xl font-black uppercase tracking-[.3em] text-[10px] hover:bg-blue-600 transition-all shadow-xl active:scale-[0.97] flex items-center justify-center gap-3">
+                        <span class="material-symbols-outlined text-sm">vpn_key</span>
+                        Login
+                    </button>
+                </div>
             </div>
         `;
-
-        const authFormUI = () => {
-            const roleName = this.loginRole === 'employee' ? 'Personnel' : (this.loginRole === 'manager' ? 'Admin' : 'Finance');
-            const idPlaceholder = this.loginRole === 'employee' ? 'Employee ID (e.g. 272)' : 'System Username';
-            return `
-                <div class="space-y-6 w-full animate-fade-in-up">
-                    <div class="flex items-center gap-4 mb-2">
-                        <button onclick="app.cancelLogin()" class="w-10 h-10 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400 transition-all hover:text-slate-900">
-                            <span class="material-symbols-outlined text-xl">arrow_back</span>
-                        </button>
-                        <div>
-                            <h2 class="text-xl font-black text-slate-900 uppercase tracking-tight">${roleName} Access</h2>
-                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Multi-factor Identity Verification</p>
-                        </div>
-                    </div>
-
-                    <div class="space-y-4">
-                        <div class="group">
-                            <label class="text-[9px] text-slate-500 font-black uppercase tracking-widest ml-1 mb-1.5 block group-focus-within:text-blue-600 transition-colors">Identity Identifier</label>
-                            <div class="relative">
-                                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm">badge</span>
-                                <input type="text" id="login-id" placeholder="${idPlaceholder}" class="w-full bg-white border border-slate-300 rounded-xl px-4 py-3.5 pl-11 text-xs focus:border-blue-600 outline-none transition-all font-bold placeholder:text-slate-300" />
-                            </div>
-                        </div>
-                        <div class="group">
-                            <label class="text-[9px] text-slate-500 font-black uppercase tracking-widest ml-1 mb-1.5 block group-focus-within:text-blue-600 transition-colors">Authentication Key</label>
-                            <div class="relative">
-                                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm">lock</span>
-                                <input type="password" id="login-password" placeholder="••••••••" class="w-full bg-white border border-slate-300 rounded-xl px-4 py-3.5 pl-11 text-xs focus:border-blue-600 outline-none transition-all font-bold placeholder:text-slate-300" />
-                            </div>
-                        </div>
-                        <div id="login-error" class="hidden text-[10px] font-black uppercase tracking-widest text-rose-600 bg-rose-50 p-4 rounded-xl border border-rose-200 animate-in fade-in slide-in-from-top-2"></div>
-                        <button onclick="app.authenticate()" class="w-full py-4.5 bg-slate-950 text-white rounded-2xl font-black uppercase tracking-[.3em] text-[10px] hover:bg-blue-600 transition-all shadow-xl active:scale-[0.97] flex items-center justify-center gap-3">
-                            <span class="material-symbols-outlined text-sm">vpn_key</span>
-                            Authorize & Sync
-                        </button>
-                    </div>
-                </div>
-            `;
-        };
 
         this.appElement.innerHTML = `
             <div class="min-h-screen flex items-center justify-center bg-mesh p-6 relative overflow-hidden">
@@ -329,14 +265,7 @@ class App {
                         </div>
                     </div>
 
-                    ${!this.loginRole ? `
-                        <div class="space-y-6 w-full animate-fade-in-up">
-                            <div class="text-center">
-                                <p class="text-xs text-slate-500 font-bold uppercase tracking-[.2em]">Select Deployment Portal</p>
-                            </div>
-                            ${roleSelectionUI}
-                        </div>
-                    ` : authFormUI()}
+                    ${authFormUI}
 
                     <footer class="text-center">
                         <p class="text-[9px] text-slate-600 font-black uppercase tracking-[.3em]">Secure End-to-End Ledger v2.2.0</p>
@@ -345,9 +274,7 @@ class App {
             </div>
         `;
 
-        if (this.loginRole) {
-            setTimeout(() => document.getElementById('login-id')?.focus(), 200);
-        }
+        setTimeout(() => document.getElementById('login-id')?.focus(), 200);
     }
 
     hasPermission(permission) {
