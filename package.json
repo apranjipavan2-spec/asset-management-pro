@@ -5,14 +5,33 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "server": "node server.js",
+    "dev:full": "concurrently \"npm run server\" \"npm run dev\"",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "db:init": "node scripts/initialize_sqlite.js",
+    "db:seed": "node scripts/seed_db.js",
+    "db:import-excel": "node scripts/import_assets_excel.cjs",
+    "db:hash-passwords": "node scripts/hash_existing_passwords.js",
+    "db:restore-employee-passwords": "node scripts/restore_employee_passwords.js"
   },
   "devDependencies": {
+    "@colbymchenry/codegraph": "^0.9.4",
     "@tailwindcss/vite": "^4.0.0",
     "autoprefixer": "^10.4.27",
     "postcss": "^8.5.8",
     "tailwindcss": "^4.2.2",
-    "vite": "^8.0.1"
+    "vite": "^8.0.1",
+    "xlsx": "^0.18.5"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^12.9.0",
+    "concurrently": "^9.2.1",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "zod": "^4.4.3"
   }
 }
