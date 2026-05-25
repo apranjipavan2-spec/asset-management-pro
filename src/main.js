@@ -1,5 +1,5 @@
 import './css/style.css';
-import { db, RAW_EMPLOYEES } from './mock/db.js';
+import { db } from './mock/db.js';
 import { renderEmployeeDashboard } from './pages/EmployeeDashboard.js';
 import { renderManagerDashboard } from './pages/ManagerDashboard.js';
 import { renderRequestPage } from './pages/RequestPage.js';
@@ -11,20 +11,115 @@ import { renderTransferPage } from './pages/TransferPage.js';
 import { renderAssetsLedger } from './pages/AssetsLedger.js';
 import { renderDepreciationPage } from './pages/DepreciationPage.js';
 import { renderGrantLedger } from './pages/GrantLedger.js';
-import { renderAnalyticsDashboard } from './pages/AnalyticsDashboard.js';
+import { renderHomeDashboard } from './pages/HomeDashboard.js';
+import { renderProcurementPage } from './pages/ProcurementPage.js';
+import { renderWorklogPage } from './pages/WorklogPage.js';
+import { renderTasksPage } from './pages/TasksPage.js';
+import { renderLeavePage } from './pages/LeavePage.js';
+import { renderReimbursementPage } from './pages/ReimbursementPage.js';
+import { renderAttendancePage } from './pages/AttendancePage.js';
+import { renderOrgChartPage } from './pages/OrgChartPage.js';
+import { renderSocialHubPage } from './pages/SocialHubPage.js';
+import { renderDataCollectionPage } from './pages/DataCollectionPage.js';
+import { renderDocumentVaultPage } from './pages/DocumentVaultPage.js';
+import { renderAnnouncementsPage } from './pages/AnnouncementsPage.js';
+import { renderCalendarPage } from './pages/CalendarPage.js';
+import { renderPerformanceReviewsPage } from './pages/PerformanceReviewsPage.js';
+import { renderSettingsPage } from './pages/SettingsPage.js';
+import { renderNotificationsPage } from './pages/NotificationsPage.js';
+import { renderAuditLog } from './pages/AuditLog.js';
+import { renderEmployeeProfilePage } from './pages/EmployeeProfilePage.js';
+import { renderTeamManagementPage } from './pages/TeamManagementPage.js';
+import { renderUserManagement } from './pages/UserManagement.js';
+
+const dynamicPageCache = new Map();
+
+const loadDynamicPage = async (pageName) => {
+    if (dynamicPageCache.has(pageName)) {
+        return dynamicPageCache.get(pageName);
+    }
+    const module = await import(`./pages/${pageName}.js`);
+    const renderFn = module[`render${pageName}`];
+    dynamicPageCache.set(pageName, renderFn);
+    return renderFn;
+};
 
 class App {
     constructor() {
+        window.app = this;
         this.appElement = document.getElementById('app');
         this.user = JSON.parse(localStorage.getItem('amp_user')) || null;
-        this.currentPage = 'dashboard';
-        this.loginRole = null; // Step trace for login flow
-        this.init();
+        this.currentPage = 'home';
+        this.loginRole = null;
+        this.initialized = false;
+        
+        if (!this.appElement) {
+            document.addEventListener('DOMContentLoaded', () => {
+                this.appElement = document.getElementById('app');
+                this.init();
+            });
+        } else {
+            this.init();
+        }
     }
 
-    init() {
-        window.addEventListener('popstate', () => this.handleRouting());
-        this.handleRouting();
+    async init() {
+        try {
+            this.renderLoading();
+            await db.init();
+            this.initialized = true;
+            window.addEventListener('popstate', () => this.handleRouting());
+            this.handleRouting();
+        } catch (err) {
+            console.error('App initialization failed:', err);
+            this.appElement.innerHTML = `
+                <div class="min-h-screen flex items-center justify-center bg-slate-50 p-6">
+                    <div class="max-w-md w-full bg-white rounded-3xl p-10 border border-slate-200 text-center space-y-6">
+                        <div class="w-20 h-20 bg-rose-50 text-rose-600 rounded-3xl mx-auto flex items-center justify-center">
+                            <span class="material-symbols-outlined text-4xl">cloud_off</span>
+                        </div>
+                        <div>
+                            <h2 class="text-2xl font-black text-slate-900 uppercase tracking-tight">Sync Failure</h2>
+                            <p class="text-sm text-slate-500 mt-2">The institutional database could not be synchronized. Please check your network or server status.</p>
+                        </div>
+                        <button onclick="window.location.reload()" class="w-full py-4 bg-slate-900 text-white rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-800 transition-all">Retry Handshake</button>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    renderLoading() {
+        this.appElement.innerHTML = `
+            <div class="min-h-screen flex items-center justify-center bg-mesh p-6 relative overflow-hidden">
+                <div class="absolute -top-24 -left-24 w-96 h-96 bg-accent/10 rounded-full blur-[120px] animate-pulse"></div>
+                <div class="absolute -bottom-24 -right-24 w-96 h-96 bg-blue-400/10 rounded-full blur-[120px] animate-pulse"></div>
+                
+                <div class="max-w-[400px] w-full glass-frosted p-12 rounded-[3rem] flex flex-col items-center space-y-8 relative z-10 animate-fade-in">
+                    <div class="relative">
+                        <div class="w-24 h-24 bg-slate-900 rounded-[2rem] flex items-center justify-center shadow-2xl relative z-10 animate-float">
+                            <img src="https://kalike.org/wp-content/uploads/2025/01/Logo-Transparent-1.png" class="w-14 h-14 object-contain invert" />
+                        </div>
+                        <div class="absolute -inset-4 bg-accent/20 rounded-[2.5rem] blur-2xl animate-pulse"></div>
+                    </div>
+                    
+                    <div class="text-center space-y-2">
+                        <h1 class="text-2xl font-black text-slate-900 tracking-tightest uppercase">Initializing</h1>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.3em]">Institutional Secure Node</p>
+                    </div>
+
+                    <div class="w-full space-y-4">
+                        <div class="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                            <div class="h-full bg-accent animate-loading-bar"></div>
+                        </div>
+                        <div class="flex justify-between items-center text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                            <span class="animate-pulse">Syncing Vault...</span>
+                            <span id="sync-status">Handshake</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
     }
 
     selectRole(role) {
@@ -37,76 +132,94 @@ class App {
         this.render();
     }
 
-    authenticate() {
+    async authenticate() {
         const idInput = document.getElementById('login-id');
         const passInput = document.getElementById('login-password');
         const errorMsg = document.getElementById('login-error');
-        
+        const submitBtn = document.querySelector('[onclick="app.authenticate()"]');
+
         if (!idInput || !passInput) return;
 
         const userId = idInput.value.trim();
-        const password = passInput.value.trim();
+        const password = passInput.value;
 
-        if (this.loginRole === 'employee') {
-            const employee = RAW_EMPLOYEES.find(e => e.id === userId || e.id === `#Kalike/EMP/${userId}`);
-            if (!employee) {
-                errorMsg.innerText = "Invalid Employee ID.";
-                errorMsg.classList.remove('hidden');
-                return;
-            }
-
-            // Password logic: ID Number + First 5 chars of name
-            const idNumber = employee.id.split('/').pop();
-            const firstFive = employee.name.substring(0, 5);
-            const expectedPass = idNumber + firstFive;
-
-            if (password !== expectedPass) {
-                errorMsg.innerText = "Incorrect Security Password.";
-                errorMsg.classList.remove('hidden');
-                return;
-            }
-
-            this.user = { 
-                name: employee.name, 
-                role: 'employee', 
-                avatar: 'https://cdn-icons-png.flaticon.com/512/147/147144.png',
-                empId: employee.id 
-            };
-        } else if (this.loginRole === 'manager') {
-            if (password !== "assetpavan") {
-                errorMsg.innerText = "Access Forbidden: Incorrect Master Password.";
-                errorMsg.classList.remove('hidden');
-                return;
-            }
-            this.user = { name: 'Asset Administrator', role: 'manager', avatar: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png' };
-        } else if (this.loginRole === 'finance') {
-            if (password !== "financepavan") {
-                errorMsg.innerText = "Access Forbidden: Incorrect Financial Key.";
-                errorMsg.classList.remove('hidden');
-                return;
-            }
-            this.user = { name: 'Finance Controller', role: 'finance', avatar: 'https://cdn-icons-png.flaticon.com/512/9131/9131529.png' };
+        if (!userId || !password) {
+            errorMsg.innerText = "Identity and authentication key are required.";
+            errorMsg.classList.remove('hidden');
+            return;
         }
 
-        localStorage.setItem('amp_user', JSON.stringify(this.user));
-        this.loginRole = null;
-        this.navigateTo('dashboard');
+        // The role selected in the UI ('employee'|'manager'|'finance') must
+        // match the user's role in DB. Anything else (hr, operations,
+        // director, superadmin) logs in via the 'manager' lane — server
+        // still enforces the actual role from the users table.
+        const requestedRole = this.loginRole === 'employee' ? 'employee' : null;
+
+        if (submitBtn) submitBtn.disabled = true;
+        errorMsg.classList.add('hidden');
+
+        try {
+            const res = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId, password, role: requestedRole })
+            });
+            const data = await res.json();
+
+            if (!res.ok || !data.success) {
+                errorMsg.innerText = data.message || 'Authentication failed.';
+                errorMsg.classList.remove('hidden');
+                return;
+            }
+
+            // The 'manager'/'finance' UI lanes are administrative — only
+            // accept users whose actual role grants admin-level access.
+            const adminRoles = new Set(['manager', 'finance', 'hr', 'operations', 'director', 'superadmin']);
+            if (this.loginRole !== 'employee' && !adminRoles.has(data.user.role)) {
+                errorMsg.innerText = 'This account does not have administrative access.';
+                errorMsg.classList.remove('hidden');
+                return;
+            }
+
+            this.user = data.user;
+            localStorage.setItem('amp_user', JSON.stringify(this.user));
+            if (data.token) localStorage.setItem('amp_token', data.token);
+            this.loginRole = null;
+            // Token is now in localStorage — reload db collections with auth.
+            await db.init();
+            this.navigateTo('dashboard');
+        } catch (err) {
+            console.error('Login request failed:', err);
+            errorMsg.innerText = 'Could not reach the authentication server.';
+            errorMsg.classList.remove('hidden');
+        } finally {
+            if (submitBtn) submitBtn.disabled = false;
+        }
     }
 
     logout() {
+        const token = localStorage.getItem('amp_token');
+        if (token) {
+            fetch('/api/logout', {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}` }
+            }).catch(() => {}); // fire-and-forget; logout proceeds regardless
+        }
         this.user = null;
         localStorage.removeItem('amp_user');
+        localStorage.removeItem('amp_token');
         this.navigateTo('login');
     }
 
     navigateTo(page) {
         this.currentPage = page;
         window.history.pushState({}, '', `#${page}`);
-        this.render();
+        this.renderShell();
+        this.renderContent().catch(err => console.error('Navigation render error:', err));
     }
 
     handleRouting() {
-        const hash = window.location.hash.slice(1) || (this.user ? 'dashboard' : 'login');
+        const hash = window.location.hash.slice(1) || (this.user ? 'home' : 'login');
         this.currentPage = hash;
         this.render();
     }
@@ -237,76 +350,178 @@ class App {
         }
     }
 
+    hasPermission(permission) {
+        if (!this.user) return false;
+        if (this.user.role === 'superadmin') return true;
+        try {
+            const perms = JSON.parse(this.user.permissions || '[]');
+            return perms.includes('all') || perms.includes(permission);
+        } catch (e) {
+            return false;
+        }
+    }
+
+    getNotificationsBadge() {
+        if (!this.user) return 0;
+        return db.notifications.filter(n => n.recipientId === this.user.id && !n.isRead).length;
+    }
+
+    getNavItems() {
+        const isSuper = this.hasPermission('all');
+        const canManageTeam = this.hasPermission('manage_team');
+        const nav = [];
+        
+        // 1. CORE DASHBOARD
+        nav.push({ id: 'home', label: 'Home', icon: 'home' });
+
+        // 2. ASSET MANAGEMENT MODULES
+        const canManageAssets = this.hasPermission('manage_assets');
+        const canViewFinance = this.hasPermission('approve_finance');
+
+        if (canManageAssets) {
+            nav.push({ id: 'asset_home', label: 'Asset Ops', icon: 'dashboard' });
+            nav.push({ id: 'registry', label: 'Registry', icon: 'inventory_2' });
+            nav.push({ id: 'transfers', label: 'Transfers', icon: 'swap_horiz' });
+            nav.push({ id: 'maintenance', label: 'Maintenance', icon: 'construction' });
+        } else if (canViewFinance) {
+            nav.push({ id: 'asset_home', label: 'Finance View', icon: 'account_balance' });
+            nav.push({ id: 'assets_ledger', label: 'Fixed Assets', icon: 'receipt_long' });
+            nav.push({ id: 'depreciation', label: 'Depreciation', icon: 'trending_down' });
+            nav.push({ id: 'grants', label: 'Grants', icon: 'payments' });
+        } else {
+            nav.push({ id: 'asset_home', label: 'My Assets', icon: 'inventory' });
+            nav.push({ id: 'request', label: 'Request Asset', icon: 'add_shopping_cart' });
+            nav.push({ id: 'issues', label: 'Report Issue', icon: 'report_problem' });
+        }
+
+        // 3. WORKSPACE & PROCUREMENT
+        nav.push({ id: 'procurement', label: 'Procurement', icon: 'shopping_cart' });
+        nav.push({ id: 'worklog', label: 'Worklog', icon: 'edit_note' });
+        nav.push({ id: 'tasks', label: 'Tasks', icon: 'task_alt' });
+        nav.push({ id: 'leave', label: 'Leave', icon: 'event_busy' });
+        nav.push({ id: 'reimbursements', label: 'Expenses', icon: 'receipt_long' });
+        nav.push({ id: 'attendance', label: 'Attendance', icon: 'schedule' });
+        
+        // 4. ADMIN & HR
+        if (this.hasPermission('manage_payroll')) nav.push({ id: 'payroll', label: 'Payroll', icon: 'payments' });
+
+        // 5. COLLABORATION
+        nav.push({ id: 'documents', label: 'Vault', icon: 'folder_shared' });
+        nav.push({ id: 'announcements', label: 'Board', icon: 'campaign' });
+        nav.push({ id: 'calendar', label: 'Calendar', icon: 'calendar_month' });
+        nav.push({ id: 'performance', label: 'Reviews', icon: 'workspace_premium' });
+        nav.push({ id: 'org_chart', label: 'Org Chart', icon: 'account_tree' });
+        nav.push({ id: 'social_hub', label: 'Social Hub', icon: 'share' });
+        nav.push({ id: 'data_collection', label: 'Data Collect', icon: 'poll' });
+
+        // 6. GOVERNANCE & ANALYTICS (Footer Nav)
+        if (this.hasPermission('view_reports')) nav.push({ id: 'reports', label: 'Reports', icon: 'analytics' });
+        if (canManageTeam || this.hasPermission('manage_users')) {
+            nav.push({ id: 'team', label: 'My Team', icon: 'groups' });
+        }
+        if (isSuper) {
+            nav.push({ id: 'analytics', label: 'Analytics', icon: 'pie_chart' });
+            nav.push({ id: 'audit_log', label: 'Logs', icon: 'history_edu' });
+        }
+        
+        if (this.hasPermission('manage_users')) nav.push({ id: 'users', label: 'Users', icon: 'admin_panel_settings' });
+
+        return nav;
+    }
+
     renderShell() {
-        const navItems = this.getNavItems();
+        const user = this.user;
+        if (!user) return;
+
+        window.exitSimulation = () => {
+            const realUser = sessionStorage.getItem('amp_real_user');
+            if (realUser) {
+                localStorage.setItem('amp_user', realUser);
+                sessionStorage.removeItem('amp_real_user');
+                window.location.reload();
+            }
+        };
+
+        let simulationBanner = '';
+        if (user.isSimulated) {
+            simulationBanner = `
+                <div class="bg-amber-600 text-white px-6 py-2.5 flex items-center justify-between shadow-lg relative z-[100] animate-in slide-in-from-top duration-500">
+                    <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined text-sm animate-pulse">policy</span>
+                        <p class="text-[10px] font-black uppercase tracking-[.25em]">Institutional Audit Mode: Viewing system as ${user.name} (${user.role})</p>
+                    </div>
+                    <button onclick="window.exitSimulation()" class="bg-white/20 hover:bg-white/40 border border-white/30 px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all">Exit Simulation</button>
+                </div>
+            `;
+        }
+
         this.appElement.innerHTML = `
-            <div class="flex h-screen overflow-hidden bg-slate-50">
-                <aside class="w-72 flex flex-col p-6 shrink-0 bg-slate-900 relative z-20 shadow-2xl overflow-y-auto">
-                    <div class="mb-10 px-2">
+            <div class="flex flex-col h-screen overflow-hidden bg-slate-50">
+                ${simulationBanner}
+                <div class="flex flex-1 overflow-hidden">
+                    <aside class="w-72 flex flex-col p-6 shrink-0 bg-slate-900 relative z-20 shadow-2xl overflow-y-auto">
+                        <div class="mb-10 px-2">
                         <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 bg-accent rounded-xl flex items-center justify-center text-white shadow-lg shadow-accent/20">
-                                <span class="material-symbols-outlined font-light">account_balance_wallet</span>
+                            <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg shadow-white/5 p-1.5">
+                                <img src="https://kalike.org/wp-content/uploads/2025/01/Logo-Transparent-1.png" alt="Kalike Logo" class="w-full h-full object-contain" />
                             </div>
                             <div>
-                                <h1 class="text-lg font-black text-white tracking-tight uppercase leading-none">Asset Pro</h1>
-                                <p class="text-[9px] text-slate-500 uppercase tracking-widest font-black mt-1">Enterprise Ledger</p>
+                                <h1 class="text-sm font-black text-white uppercase tracking-tighter">Kalike Workspace</h1>
+                                <p class="text-[8px] text-slate-500 font-bold uppercase tracking-widest leading-none mt-1">Institutional Ops</p>
                             </div>
                         </div>
-                    </div>
-                    
-                    <nav class="flex-1 space-y-1">
-                        ${navItems.map(item => `
-                            <a href="#${item.id}" class="group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${this.currentPage === item.id ? 'bg-accent text-white shadow-lg shadow-accent/20 font-bold' : 'text-slate-400 hover:text-white hover:bg-white/5'}">
-                                <span class="material-symbols-outlined text-[22px] transition-transform group-hover:scale-110">${item.icon}</span>
-                                <span class="text-xs uppercase tracking-widest font-bold">${item.label}</span>
-                                ${this.currentPage === item.id ? '<div class="ml-auto w-1.5 h-1.5 bg-white rounded-full"></div>' : ''}
-                            </a>
-                        `).join('')}
-                    </nav>
+                        </div>
+                        
+                        <nav class="flex-1 space-y-1">
+                            ${this.getNavItems().map(item => `
+                                <a href="#${item.id}" 
+                                   class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${this.currentPage === item.id ? 'bg-accent text-white shadow-lg shadow-accent/20' : 'text-slate-400 hover:bg-white/5 hover:text-white'}">
+                                    <span class="material-symbols-outlined text-[20px] transition-transform group-hover:scale-110">${item.icon}</span>
+                                    <span class="text-[11px] font-black uppercase tracking-widest">${item.label}</span>
+                                    ${item.badge ? `<span class="ml-auto bg-rose-500 text-white text-[9px] px-1.5 py-0.5 rounded-md font-black">${item.badge}</span>` : ''}
+                                </a>
+                            `).join('')}
+                        </nav>
 
-                    <div class="mt-auto px-2">
-                        <div class="p-4 bg-white/5 rounded-2xl border border-white/5 space-y-4">
-                            <div class="flex items-center gap-3">
-                                <div class="relative">
-                                    <img src="${this.user.avatar}" class="w-10 h-10 rounded-full border border-white/10" />
-                                    <div class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-900"></div>
+                        <div class="mt-auto pt-6 border-t border-slate-800">
+                            <div class="p-4 bg-slate-800/50 rounded-2xl border border-slate-700/50 flex items-center gap-3">
+                                <img src="${user.avatar || 'https://ui-avatars.com/api/?name=' + user.name}" class="w-9 h-9 rounded-xl border border-slate-700" />
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-[10px] font-black text-white truncate uppercase tracking-tight">${user.name}</p>
+                                    <p class="text-[8px] text-slate-500 font-bold truncate uppercase tracking-widest">${user.role}</p>
                                 </div>
-                                <div class="min-w-0">
-                                    <p class="text-xs font-black text-white truncate">${this.user.name}</p>
-                                    <p class="text-[9px] text-slate-500 uppercase font-black tracking-widest mt-0.5">${this.user.role}</p>
-                                </div>
+                                <button onclick="app.logout()" class="text-slate-500 hover:text-rose-400 transition-colors">
+                                    <span class="material-symbols-outlined text-sm">logout</span>
+                                </button>
                             </div>
-                            <button onclick="app.logout()" class="w-full py-2.5 bg-white/5 text-slate-400 text-[10px] font-black rounded-xl hover:bg-rose-500/10 hover:text-rose-500 transition-all uppercase tracking-widest flex items-center justify-center gap-2 border border-transparent hover:border-rose-500/20">
-                                <span class="material-symbols-outlined text-[16px]">logout</span>
-                                Terminate Session
-                            </button>
                         </div>
-                    </div>
-                </aside>
+                    </aside>
 
-                <main class="flex-1 flex flex-col overflow-hidden relative">
-                    <header class="h-20 px-10 flex items-center justify-between bg-white/70 backdrop-blur-md border-b border-slate-200/60 sticky top-0 z-10">
-                        <div>
-                             <h2 class="text-sm font-black text-slate-900 uppercase tracking-[.25em]">${this.currentPage.replace('_', ' ')}</h2>
-                        </div>
-                        <div class="flex items-center gap-6">
-                            <div class="hidden sm:flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100">
-                                <div class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
-                                <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Global Status: Online</span>
+                    <main class="flex-1 flex flex-col min-w-0 overflow-hidden">
+                        <header class="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-8 shrink-0 z-10">
+                            <div class="flex items-center gap-4">
+                                <h2 class="text-xs font-black text-slate-900 uppercase tracking-[.2em]">${this.currentPage.replace('_', ' ')}</h2>
                             </div>
-                            <button class="p-2.5 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all relative">
-                                <span class="material-symbols-outlined">settings</span>
-                            </button>
-                            <button class="p-2.5 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all relative">
-                                <span class="material-symbols-outlined">notifications</span>
-                                <span class="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full ring-4 ring-white"></span>
-                            </button>
+                            <div class="flex items-center gap-6">
+                                <div class="hidden md:flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-xl">
+                                    <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                                    <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Network Synced</span>
+                                </div>
+                                <button onclick="app.navigateTo('notifications')" class="w-10 h-10 rounded-xl hover:bg-slate-50 flex items-center justify-center text-slate-400 transition-all relative">
+                                    <span class="material-symbols-outlined">notifications</span>
+                                    ${this.getNotificationsBadge() ? `<span class="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-white"></span>` : ''}
+                                </button>
+                                <button onclick="app.navigateTo('settings')" class="w-10 h-10 rounded-xl hover:bg-slate-50 flex items-center justify-center text-slate-400 transition-all">
+                                    <span class="material-symbols-outlined">settings</span>
+                                </button>
+                            </div>
+                        </header>
+
+                        <div id="content" class="flex-1 overflow-y-auto p-10">
+                            <!-- Content Bound to Viewport via flex-1 overflow-y-auto -->
                         </div>
-                    </header>
-                    <div id="content" class="flex-1 overflow-y-auto p-10">
-                        <!-- Content Bound to Viewport via flex-1 overflow-y-auto -->
-                    </div>
-                </main>
+                    </main>
+                </div>
             </div>
 
             <!-- Global Asset Detail Modal -->
@@ -316,7 +531,75 @@ class App {
                 </div>
             </div>
         `;
-        this.renderContent();
+        this.renderContent().catch(err => {
+            console.error('Failed to render content:', err);
+            const content = document.getElementById('content');
+            if (content) content.innerHTML = '<p class="text-red-600">Failed to load page</p>';
+        });
+    }
+
+    async renderContent() {
+        const content = document.getElementById('content');
+        if (!content) return;
+
+        const role = this.user.role;
+        const page = this.currentPage;
+
+        const sharedRoutes = {
+            'home': renderHomeDashboard,
+            'procurement': renderProcurementPage,
+            'worklog': renderWorklogPage,
+            'tasks': renderTasksPage,
+            'leave': renderLeavePage,
+            'reimbursements': renderReimbursementPage,
+            'attendance': renderAttendancePage,
+            'payroll': 'PayrollPage',
+            'reports': 'ReportsEnginePage',
+            'documents': renderDocumentVaultPage,
+            'announcements': renderAnnouncementsPage,
+            'calendar': renderCalendarPage,
+            'performance': renderPerformanceReviewsPage,
+            'org_chart': renderOrgChartPage,
+            'social_hub': renderSocialHubPage,
+            'data_collection': renderDataCollectionPage,
+            'settings': renderSettingsPage,
+            'notifications': renderNotificationsPage,
+            'profile': renderEmployeeProfilePage,
+            'team': renderTeamManagementPage
+        };
+
+        const assetRoutes = {
+            'employee':   { 'asset_home': renderEmployeeDashboard, 'request': renderRequestPage, 'issues': renderIssueReportPage },
+            'manager':    { 'asset_home': renderManagerDashboard, 'registry': renderAssetRegistry, 'transfers': renderTransferPage, 'maintenance': renderMaintenanceHub, 'users': renderUserManagement, 'audit_log': renderAuditLog },
+            'finance':    { 'asset_home': renderFinanceDashboard, 'assets_ledger': renderAssetsLedger, 'depreciation': renderDepreciationPage, 'grants': renderGrantLedger },
+            'hr':         { 'asset_home': renderManagerDashboard, 'registry': renderAssetRegistry, 'users': renderUserManagement, 'audit_log': renderAuditLog },
+            'operations': { 'asset_home': renderManagerDashboard, 'registry': renderAssetRegistry, 'transfers': renderTransferPage, 'maintenance': renderMaintenanceHub },
+            'director':   { 'asset_home': 'AnalyticsDashboard', 'analytics': 'AnalyticsDashboard', 'registry': renderAssetRegistry, 'transfers': renderTransferPage, 'grants': renderGrantLedger, 'assets_ledger': renderAssetsLedger, 'depreciation': renderDepreciationPage, 'audit_log': renderAuditLog, 'users': renderUserManagement },
+            'superadmin': { 'asset_home': 'AnalyticsDashboard', 'analytics': 'AnalyticsDashboard', 'registry': renderAssetRegistry, 'transfers': renderTransferPage, 'maintenance': renderMaintenanceHub, 'grants': renderGrantLedger, 'assets_ledger': renderAssetsLedger, 'depreciation': renderDepreciationPage, 'audit_log': renderAuditLog, 'users': renderUserManagement },
+            'executive':  { 'asset_home': 'AnalyticsDashboard', 'analytics': 'AnalyticsDashboard' }
+        };
+
+        let renderFn = sharedRoutes[page] || (assetRoutes[role] || {})[page];
+
+        if (renderFn) {
+            if (typeof renderFn === 'string') {
+                renderFn = await loadDynamicPage(renderFn);
+            }
+            content.innerHTML = renderFn(this.user);
+        } else {
+            content.innerHTML = `
+                <div class="h-full flex flex-col items-center justify-center space-y-6 animate-fade-in">
+                    <div class="w-24 h-24 bg-slate-100 rounded-[2.5rem] flex items-center justify-center text-slate-300">
+                        <span class="material-symbols-outlined text-5xl">architecture</span>
+                    </div>
+                    <div class="text-center">
+                        <h3 class="text-xl font-black text-slate-900 uppercase tracking-tight">${page.replace('_', ' ')} Module</h3>
+                        <p class="text-sm text-slate-400 font-bold uppercase tracking-widest mt-2">Implementation in progress for ${role} access</p>
+                    </div>
+                    <button onclick="app.navigateTo('home')" class="px-8 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-accent transition-all shadow-xl">Return to Command Center</button>
+                </div>
+            `;
+        }
     }
 
     showAssetModal(id) {
@@ -822,80 +1105,6 @@ class App {
         this.navigate('registry');
     }
 
-    getNavItems() {
-        const roles = {
-            'employee': [
-                { id: 'dashboard', label: 'My Assets', icon: 'inventory' },
-                { id: 'request', label: 'Request Asset', icon: 'add_shopping_cart' },
-                { id: 'issues', label: 'Report Issue', icon: 'report_problem' }
-            ],
-            'manager': [
-                { id: 'dashboard', label: 'Operations', icon: 'dashboard' },
-                { id: 'registry', label: 'Master Registry', icon: 'inventory_2' },
-                { id: 'transfers', label: 'Transfers', icon: 'swap_horiz' },
-                { id: 'maintenance', label: 'Maintenance Hub', icon: 'construction' },
-                { id: 'analytics', label: 'Analytics Matrix', icon: 'pie_chart' }
-            ],
-            'finance': [
-                { id: 'dashboard', label: 'Financial Overview', icon: 'account_balance' },
-                { id: 'assets_ledger', label: 'Fixed Assets', icon: 'receipt_long' },
-                { id: 'depreciation', label: 'Depreciation', icon: 'trending_down' },
-                { id: 'grants', label: 'Grant Ledger', icon: 'payments' },
-                { id: 'analytics', label: 'Analytics Matrix', icon: 'pie_chart' }
-            ]
-        };
-        return roles[this.user.role];
-    }
-
-    renderContent() {
-        const content = document.getElementById('content');
-        if (!content) return;
-
-        const role = this.user.role;
-        const page = this.currentPage;
-
-        // Route mapping
-        const routes = {
-            'employee': {
-                'dashboard': () => renderEmployeeDashboard(this.user),
-                'request': () => renderRequestPage(this.user),
-                'issues': () => renderIssueReportPage(this.user)
-            },
-            'manager': {
-                'dashboard': () => renderManagerDashboard(),
-                'registry': () => renderAssetRegistry(),
-                'transfers': () => renderTransferPage(),
-                'maintenance': () => renderMaintenanceHub(),
-                'analytics': () => renderAnalyticsDashboard()
-            },
-            'finance': {
-                'dashboard': () => renderFinanceDashboard(),
-                'assets_ledger': () => renderAssetsLedger(),
-                'depreciation': () => renderDepreciationPage(),
-                'grants': () => renderGrantLedger(),
-                'analytics': () => renderAnalyticsDashboard()
-            }
-        };
-
-        const renderFn = routes[role] && routes[role][page];
-        
-        if (renderFn) {
-            content.innerHTML = renderFn();
-        } else {
-            content.innerHTML = this.renderPlaceholder(page);
-        }
-    }
-
-    renderPlaceholder(title) {
-        return `
-            <div class="flex flex-col items-center justify-center h-full text-slate-400">
-                <span class="material-symbols-outlined text-6xl mb-4">construction</span>
-                <h2 class="text-xl font-bold uppercase tracking-widest">${title} Module</h2>
-                <p class="text-sm mt-2">Implementation in progress...</p>
-            </div>
-        `;
-    }
-
     exportCSV(type) {
         const btn = event.currentTarget;
         if (btn) btn.classList.add('animate-export-pulse');
@@ -906,23 +1115,69 @@ class App {
 
             function idSafe(str) { return `"${String(str).replace(/"/g, '""')}"`; }
 
-            if (type === 'assets') {
-                const headers = ["ID", "Name", "Category", "Status", "Location", "Purchase Date", "Amount", "Program", "Custodian", "Funding Source", "Grant Amount"];
+            if (type === 'assets' || type === 'finance_assets') {
+                const headers = [
+                    "Asset Identification Number", 
+                    "Asset class", 
+                    "Description", 
+                    "Location", 
+                    "Procurement Type", 
+                    "Acquisition Date", 
+                    "Supplier Name", 
+                    "Bill No.", 
+                    "Date of Installation", 
+                    "Date put to use", 
+                    "Voucher No.", 
+                    "Quantity", 
+                    "Depreciation Rate", 
+                    "Opening Gross Block", 
+                    "Accumulated Depreciation", 
+                    "Net Block",
+                    "Donor Name"
+                ];
                 csvContent += headers.join(",") + "\n";
                 db.assets.forEach(a => {
-                    csvContent += [a.id, a.name, a.category, a.status, a.location, a.purchaseDate, a.amount, idSafe(a.program), idSafe(a.assignedTo), a.fundingSource || 'N/A', a.fundingAmount || 0].join(",") + "\n";
+                    csvContent += [
+                        idSafe(a.id), 
+                        idSafe(a.category), 
+                        idSafe(a.name), 
+                        idSafe(a.location), 
+                        idSafe(a.procurementType || 'Purchase'), 
+                        idSafe(a.purchaseDate), 
+                        idSafe(a.supplier || 'N/A'), 
+                        idSafe(a.billNumber || 'N/A'), 
+                        idSafe(a.installationDate || 'N/A'), 
+                        idSafe(a.putToUseDate || 'N/A'), 
+                        idSafe(a.voucherNumber || 'N/A'), 
+                        a.quantity || 1,
+                        a.depreciationRate || 0.1,
+                        a.amount || 0,
+                        a.accumulatedDepreciation || 0,
+                        a.netBlock || 0,
+                        idSafe(a.fundingSource || 'Entity Funds')
+                    ].join(",") + "\n";
+                });
+            } else if (type === 'grants') {
+                const headers = [
+                    "Asset ID", "Asset Name", "Category", "Location", "Procurement Type", 
+                    "Purchase Date", "Supplier", "Bill Number", "Installation Date", "Quantity", 
+                    "Voucher Number", "Depreciation Rate", "Gross Block", "Accumulated Depreciation", 
+                    "Current Year Depreciation", "Net Block", "Funding Source", "Custodian"
+                ];
+                csvContent += headers.join(",") + "\n";
+                db.assets.forEach(a => {
+                    csvContent += [
+                        idSafe(a.id), idSafe(a.name), idSafe(a.category), idSafe(a.location), idSafe(a.procurementType), 
+                        idSafe(a.purchaseDate), idSafe(a.supplier), idSafe(a.billNumber), idSafe(a.installationDate), a.quantity || 1, 
+                        idSafe(a.voucherNumber), a.depreciationRate || 0, a.grossBlock || 0, a.accumulatedDepreciation || 0, 
+                        a.currentYearDepreciation || 0, a.netBlock || 0, idSafe(a.fundingSource || 'N/A'), idSafe(a.assignedTo)
+                    ].join(",") + "\n";
                 });
             } else if (type === 'depreciation') {
                 const headers = ["ID", "Name", "Method", "Cost Basis", "Accum. Depreciation", "Net Book Value"];
                 csvContent += headers.join(",") + "\n";
                 db.assets.forEach(a => {
-                    csvContent += [a.id, a.name, "SLM", a.amount, a.depreciation, (a.amount - a.depreciation)].join(",") + "\n";
-                });
-            } else if (type === 'grants') {
-                const headers = ["ID", "Grant Name", "Program", "Opening", "Spent", "Remaining"];
-                csvContent += headers.join(",") + "\n";
-                db.grants.forEach(g => {
-                    csvContent += [g.id, idSafe(g.name), idSafe(g.program), g.openingBalance, g.spent, g.closingBalance].join(",") + "\n";
+                    csvContent += [idSafe(a.id), idSafe(a.name), "SLM", a.amount, a.accumulatedDepreciation, (a.amount - a.accumulatedDepreciation)].join(",") + "\n";
                 });
             } else if (type === 'requests') {
                 const headers = ["ID", "Category", "Reason", "User", "Date", "Status", "Manager Approved", "Finance Approved"];
@@ -942,6 +1197,126 @@ class App {
             
             if (btn) btn.classList.remove('animate-export-pulse');
         }, 800);
+    }
+
+    exportExcel(e) {
+        if (typeof XLSX === 'undefined') {
+            alert("Excel library is still loading. Please try again in a few seconds.");
+            return;
+        }
+
+        const btn = e ? e.currentTarget : null;
+        if (btn) btn.classList.add('animate-export-pulse');
+
+        setTimeout(() => {
+            const workbook = XLSX.utils.book_new();
+            
+            // 1. MASTER SHEET
+            const masterData = db.assets.map(a => ({
+                "Asset Identification Number": a.id,
+                "Asset class": a.category,
+                "Description": a.name,
+                "Location": a.location,
+                "Whether purchased by the entity or received in kind (Purchase/Kind)": a.procurementType || 'Purchase',
+                "Acquisition Date": a.purchaseDate,
+                "Supplier Name": a.supplier || 'N/A',
+                "Bill No.": a.billNumber || 'N/A',
+                "Date of Installation": a.installationDate || 'N/A',
+                "Date put to use": a.putToUseDate || 'N/A',
+                "Voucher No.": a.voucherNumber || 'N/A',
+                "Quantity": a.quantity || 1,
+                "Depreciation Rate*": a.depreciationRate || 0.1,
+                "Gross Block Opening Balance": a.amount || 0,
+                "Acc. Depreciaton Opening Balance": a.accumulatedDepreciation || 0,
+                "Net Block": a.netBlock || 0,
+                "Donor Name": a.fundingSource || 'Entity Funds'
+            }));
+            const masterSheet = XLSX.utils.json_to_sheet(masterData);
+            XLSX.utils.book_append_sheet(workbook, masterSheet, "Master Register");
+
+            const filename = `Institutional_Asset_Register_${new Date().toISOString().split('T')[0]}.xlsx`;
+            XLSX.writeFile(workbook, filename);
+            
+            if (btn) btn.classList.remove('animate-export-pulse');
+        }, 800);
+    }
+
+    backupDatabase() {
+        const snapshot = {
+            _meta: {
+                version: '3.0',
+                exportedAt: new Date().toISOString(),
+                totalAssets: db.assets.length
+            },
+            assets: db.assets,
+            grants: db.grants,
+            maintenanceLogs: db.maintenanceLogs,
+            requests: db.requests,
+            transfers: db.transfers
+        };
+
+        const json = JSON.stringify(snapshot, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `AssetPro_Backup_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    restoreDatabase() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                try {
+                    const snapshot = JSON.parse(evt.target.result);
+                    if (!snapshot.assets || !Array.isArray(snapshot.assets)) {
+                        alert('Invalid backup file.');
+                        return;
+                    }
+                    const confirmed = window.confirm(`Restore backup? This will overwrite all current data.`);
+                    if (!confirmed) return;
+
+                    db.adapter.syncAll({
+                        assets: snapshot.assets,
+                        grants: snapshot.grants || [],
+                        maintenanceLogs: snapshot.maintenanceLogs || [],
+                        requests: snapshot.requests || [],
+                        transfers: snapshot.transfers || []
+                    }).then(() => {
+                        window.location.reload();
+                    }).catch(err => {
+                        alert('Sync failed: ' + err.message);
+                    });
+                } catch (err) {
+                    alert('Failed to restore: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+        };
+        document.body.appendChild(input);
+        input.click();
+        document.body.removeChild(input);
+    }
+
+    handleRevert(logId, actionName) {
+        if (!confirm(`Are you sure you want to revert: "${actionName}"?`)) return;
+        try {
+            const result = db.revertAction(logId);
+            if (result.success) {
+                this.render();
+            } else {
+                alert('Rollback Failed: ' + result.message);
+            }
+        } catch (err) {
+            alert('Critical Error during Revert: ' + err.message);
+        }
     }
 }
 
