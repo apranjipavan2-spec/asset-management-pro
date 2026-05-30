@@ -51,6 +51,20 @@ export function renderUserManagement() {
         window.app.renderContent();
     };
 
+    window.filterUserDirectory = (query) => {
+        const q = (query || '').trim().toLowerCase();
+        const rows = document.querySelectorAll('#user-directory-tbody tr.user-row');
+        let visible = 0;
+        rows.forEach(r => {
+            const hay = r.getAttribute('data-search') || '';
+            const match = q === '' || hay.includes(q);
+            r.style.display = match ? '' : 'none';
+            if (match) visible++;
+        });
+        const meta = document.getElementById('user-count-meta');
+        if (meta) meta.textContent = q ? `Showing ${visible} of ${rows.length}` : `Active Identities: ${rows.length}`;
+    };
+
     window.simulateUserRole = (id) => {
         const u = db.users.find(x => x.id === id);
         if (!u) return;
@@ -128,7 +142,17 @@ export function renderUserManagement() {
                 <div class="card-accent flex flex-col flex-1 min-h-0">
                     <div class="card-header">
                         <h3 class="card-title">Institutional User Directory</h3>
-                        <span class="card-meta">Active Identities: ${users.length}</span>
+                        <span class="card-meta"><span id="user-count-meta">Active Identities: ${users.length}</span></span>
+                    </div>
+
+                    <div class="px-6 pt-4 pb-2">
+                        <div class="relative max-w-md">
+                            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-base">search</span>
+                            <input type="text" id="user-search-input" oninput="window.filterUserDirectory(this.value)" placeholder="Search by name or employee ID..." class="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 pl-10 pr-10 text-xs font-bold outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all placeholder:text-slate-300" />
+                            <button type="button" onclick="document.getElementById('user-search-input').value=''; window.filterUserDirectory('');" class="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-lg text-slate-300 hover:text-slate-600 hover:bg-slate-100 flex items-center justify-center transition-all" title="Clear">
+                                <span class="material-symbols-outlined text-sm">close</span>
+                            </button>
+                        </div>
                     </div>
 
                     <div class="overflow-auto max-h-[760px] scroll-container flex-1">
@@ -143,9 +167,9 @@ export function renderUserManagement() {
                                     <th class="text-right px-6">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody id="user-directory-tbody">
                                 ${users.map(u => `
-                                    <tr class="group">
+                                    <tr class="group user-row" data-search="${((u.name || '') + ' ' + (u.id || '') + ' ' + (u.empId || '')).toLowerCase().replace(/"/g, '&quot;')}">
                                         <td>
                                             <div class="flex items-center gap-3">
                                                 <img src="${u.avatar || 'https://cdn-icons-png.flaticon.com/512/147/147144.png'}" class="w-8 h-8 rounded-full border-2 border-white shadow-sm ring-1 ring-slate-100" />

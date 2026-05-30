@@ -276,12 +276,14 @@ class App {
         this.render();
     }
 
-    navigateTo(page) {
+    navigateTo(page, arg) {
         this.currentPage = page;
+        this.pageArg = arg ?? null;
         // Reset accordion override so the new page's parent group auto-opens
         // and any previously expanded group collapses.
         this.openNavGroup = null;
-        window.history.pushState({}, '', `#${page}`);
+        const hash = arg != null ? `${page}:${encodeURIComponent(arg)}` : page;
+        window.history.pushState({}, '', `#${hash}`);
         this.closeMobileNav();
         this.renderShell();
         this.renderContent().catch(err => console.error('Navigation render error:', err));
@@ -300,9 +302,13 @@ class App {
     }
 
     handleRouting() {
-        const hash = window.location.hash.slice(1) || (this.user ? defaultPageForUser(this.user) : 'login');
-        const pageChanged = hash !== this.currentPage;
-        this.currentPage = hash;
+        const raw = window.location.hash.slice(1) || (this.user ? defaultPageForUser(this.user) : 'login');
+        const sepIdx = raw.indexOf(':');
+        const page = sepIdx === -1 ? raw : raw.slice(0, sepIdx);
+        const encArg = sepIdx === -1 ? null : raw.slice(sepIdx + 1);
+        const pageChanged = page !== this.currentPage;
+        this.currentPage = page;
+        this.pageArg = encArg ? decodeURIComponent(encArg) : null;
         // On real navigation, drop the accordion override so the active page's
         // group opens and the previous one collapses.
         if (pageChanged) this.openNavGroup = null;
@@ -839,7 +845,7 @@ class App {
             const renderFn = typeof def.render === 'string'
                 ? await loadDynamicPage(def.render)
                 : def.render;
-            const html = await renderFn(this.user);
+            const html = await renderFn(this.user, this.pageArg);
             content.innerHTML = html;
         } catch (err) {
             throw err;
