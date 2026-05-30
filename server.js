@@ -1100,6 +1100,11 @@ app.get('/api/social_accounts', (req, res) => handleGet(req, res, 'social_accoun
 app.post('/api/social_accounts', (req, res) => handlePost(req, res, 'social_accounts'));
 app.delete('/api/social_accounts/:id', (req, res) => handleDelete(req, res, 'social_accounts'));
 
+// Bank Accounts master (finance/superadmin/director write; all authed read).
+app.get('/api/bank_accounts', (req, res) => handleGet(req, res, 'bank_accounts'));
+app.post('/api/bank_accounts', (req, res) => handlePost(req, res, 'bank_accounts'));
+app.delete('/api/bank_accounts/:id', (req, res) => handleDelete(req, res, 'bank_accounts'));
+
 // YouTube RSS proxy. Reads the first active social_accounts row with
 // platform='youtube' AND non-empty youtubeChannelId, fetches the public
 // XML feed, parses entries, and returns last 12 videos. Cached 30 min.
