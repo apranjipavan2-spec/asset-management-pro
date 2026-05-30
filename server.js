@@ -1,6 +1,7 @@
 import 'dotenv/config.js';
 import express from 'express';
-import { Database } from 'node-sqlite3-wasm';
+import pkg from 'node-sqlite3-wasm';
+const { Database } = pkg;
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
