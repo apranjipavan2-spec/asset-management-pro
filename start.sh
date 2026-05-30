@@ -24,6 +24,14 @@ if [ ! -f "db.sqlite" ]; then
     npm run db:init
 else
     echo "▶ Database found — skipping init."
+    # Daily snapshot (one per day, keep last 30)
+    mkdir -p backups
+    SNAP="backups/db-$(date +%F).sqlite"
+    if [ ! -f "$SNAP" ]; then
+        cp db.sqlite "$SNAP"
+        echo "▶ Backup created: $SNAP"
+    fi
+    ls -1t backups/db-*.sqlite 2>/dev/null | tail -n +31 | xargs -r rm -f
 fi
 
 # Build frontend if dist doesn't exist
