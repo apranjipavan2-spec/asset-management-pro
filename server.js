@@ -1,6 +1,20 @@
 import 'dotenv/config.js';
 import express from 'express';
-import { DatabaseSync as Database } from 'node:sqlite';
+import { DatabaseSync as _DatabaseSync } from 'node:sqlite';
+
+// node:sqlite throws on unknown named params; better-sqlite3 silently ignored them.
+// This wrapper filters object params to only known placeholders.
+function _wrapStmt(stmt, sql) {
+    const names = new Set([...sql.matchAll(/[@:$]([a-zA-Z_]\w*)/g)].map(m => m[1]));
+    const f = p => {
+        if (!p || typeof p !== 'object' || Array.isArray(p)) return p;
+        const o = {}; for (const k of names) if (k in p) o[k] = p[k]; return o;
+    };
+    return { run: p => stmt.run(f(p)), get: p => stmt.get(f(p)), all: p => stmt.all(f(p)) };
+}
+class Database extends _DatabaseSync {
+    prepare(sql) { return _wrapStmt(super.prepare(sql), sql); }
+}
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
