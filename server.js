@@ -75,11 +75,13 @@ db.exec(schema);
 const safeAddColumn = (table, column, type, defaultVal) => {
     try {
         db.prepare(`SELECT ${column} FROM ${table} LIMIT 1`).get();
-    } catch (e) {
-        const def = defaultVal !== undefined ? ` DEFAULT ${typeof defaultVal === 'string' ? `'${defaultVal}'` : defaultVal}` : '';
-        console.log(`Migration: Adding ${column} to ${table}...`);
+        return;
+    } catch (e) { /* column missing, fall through to add */ }
+    const def = defaultVal !== undefined ? ` DEFAULT ${typeof defaultVal === 'string' ? `'${defaultVal}'` : defaultVal}` : '';
+    try {
         db.prepare(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}${def}`).run();
-    }
+        console.log(`Migration: Added ${column} to ${table}.`);
+    } catch (e2) { /* already exists or non-fatal — ignore */ }
 };
 
 // Users table migrations
