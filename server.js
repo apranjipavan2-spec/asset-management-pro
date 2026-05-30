@@ -10,7 +10,8 @@ function _wrapStmt(stmt, sql) {
         if (!p || typeof p !== 'object' || Array.isArray(p)) return p;
         const o = {}; for (const k of names) if (k in p) o[k] = p[k]; return o;
     };
-    return { run: p => stmt.run(f(p)), get: p => stmt.get(f(p)), all: p => stmt.all(f(p)) };
+    const call = (m, a) => a.length === 0 ? stmt[m]() : stmt[m](f(a[0]));
+    return { run: (...a) => call('run', a), get: (...a) => call('get', a), all: (...a) => call('all', a) };
 }
 class Database extends _DatabaseSync {
     prepare(sql) { return _wrapStmt(super.prepare(sql), sql); }
