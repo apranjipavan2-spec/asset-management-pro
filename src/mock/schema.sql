@@ -543,3 +543,19 @@ CREATE TABLE IF NOT EXISTS social_accounts (
     updatedAt TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_social_accounts_platform ON social_accounts(platform);
+
+-- Bank accounts master (sourced from external xlsx). One row per employee/account.
+-- Same employee can appear multiple times if they have multiple bank accounts.
+CREATE TABLE IF NOT EXISTS bank_accounts (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    bankName TEXT,
+    accountNumber TEXT NOT NULL,
+    ifsc TEXT,
+    sourceFile TEXT,
+    sourceSheet TEXT,
+    reviewNotes TEXT,
+    createdAt TEXT,
+    updatedAt TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_bank_accounts_name ON bank_accounts(name);

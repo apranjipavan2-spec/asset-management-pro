@@ -19,7 +19,8 @@
     "db:seed-far": "node scripts/seed_asset_far.cjs",
     "db:migrate": "node scripts/db_migrate.cjs",
     "db:push-to-phone": "node scripts/push_db_to_phone.cjs",
-    "db:pull-from-phone": "node scripts/pull_db_from_phone.cjs"
+    "db:pull-from-phone": "node scripts/pull_db_from_phone.cjs",
+    "db:import-bank": "node scripts/import_bank_master.cjs"
   },
   "devDependencies": {
     "@colbymchenry/codegraph": "^0.9.4",

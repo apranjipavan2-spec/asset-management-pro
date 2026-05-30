@@ -40,7 +40,7 @@ const ALLOWED_TABLES = new Set([
     'procurement', 'attendance', 'employee_hierarchy', 'notifications',
     'documents', 'announcements', 'announcement_reads', 'calendar_events',
     'performance_reviews', 'communication_logs', 'signatures', 'roles',
-    'asset_far', 'social_accounts'
+    'asset_far', 'social_accounts', 'bank_accounts'
 ]);
 
 // Column names allowed in dynamic INSERTs. Built lazily per-table from the
@@ -189,6 +189,7 @@ const WRITE_ROLES = {
     announcements:      new Set(['superadmin', 'hr', 'director', 'manager', 'admin']),
     performance_reviews:new Set(['superadmin', 'hr', 'director', 'manager']),
     social_accounts:    new Set(['superadmin']),
+    bank_accounts:      new Set(['superadmin', 'finance', 'director']),
     audit_logs:         new Set(['superadmin', 'director']) // mostly written by server itself
 };
 

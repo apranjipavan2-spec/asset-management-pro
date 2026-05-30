@@ -82,6 +82,7 @@ const PAGE_REGISTRY = {
 
     reimbursements:  { group: 'finance',   label: 'Expenses',        icon: 'receipt_long',          perm: null,                                                     render: 'ReimbursementPage' },
     payroll:         { group: 'finance',   label: 'Payroll',         icon: 'payments',              perm: 'manage_payroll',                                         render: 'PayrollPage' },
+    payment_export:  { group: 'finance',   label: 'Bank Payment',    icon: 'account_balance',       perm: 'approve_finance',                                        render: 'PaymentExportPage' },
 
     org_chart:       { group: 'people',    label: 'Org Chart',       icon: 'account_tree',          perm: null,                                                     render: 'OrgChartPage' },
     performance:     { group: 'people',    label: 'Reviews',         icon: 'workspace_premium',     perm: null,                                                     render: 'PerformanceReviewsPage' },
