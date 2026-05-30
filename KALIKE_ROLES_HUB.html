@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Kalike Organizational Roles Hub</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+:root{
+    --bg:#07111f;
+    --card:#101c2f;
+    --primary:#4f8cff;
+    --secondary:#7c4dff;
+    --text:#f5f7fb;
+    --muted:#a8b3c7;
+    --line:#294566;
+    --glass:rgba(255,255,255,0.08);
+}
+
+body{
+    font-family:'Inter',sans-serif;
+    background:
+        radial-gradient(circle at top left,#12345d 0%,transparent 30%),
+        radial-gradient(circle at top right,#421d6b 0%,transparent 30%),
+        linear-gradient(180deg,#06101d 0%,#091524 100%);
+    color:var(--text);
+    min-height:100vh;
+    overflow-x:hidden;
+}
+
+.hero{
+    position:relative;
+    padding:40px 20px 15px;
+    text-align:center;
+}
+
+.hero::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:linear-gradient(180deg,rgba(255,255,255,0.03),transparent);
+    pointer-events:none;
+}
+
+.badge{
+    display:inline-flex;
+    align-items:center;
+    gap:10px;
+    padding:10px 18px;
+    border-radius:999px;
+    background:rgba(255,255,255,0.08);
+    border:1px solid rgba(255,255,255,0.08);
+    margin-bottom:24px;
+    backdrop-filter:blur(12px);
+    color:#d8e4ff;
+    font-size:0.9rem;
+    font-weight:600;
+}
+
+.hero h1{
+    font-size:clamp(2.4rem,6vw,4.8rem);
+    line-height:1.05;
+    font-weight:800;
+    letter-spacing:-2px;
+    max-width:950px;
+    margin:auto;
+}
+
+.hero p{
+    margin:24px auto 0;
+    max-width:850px;
+    color:var(--muted);
+    line-height:1.8;
+    font-size:1.05rem;
+}
+
+.stats{
+    margin-top:36px;
+    display:flex;
+    justify-content:center;
+    gap:18px;
+    flex-wrap:wrap;
+}
+
+.stat{
+    min-width:180px;
+    padding:18px;
+    background:var(--glass);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:20px;
+    backdrop-filter:blur(18px);
+}
+
+.stat h3{
+    font-size:1.7rem;
+    margin-bottom:6px;
+}
+
+.stat span{
+    color:var(--muted);
+    font-size:0.92rem;
+}
+
+.container{
+    max-width:1500px;
+    margin:auto;
+    padding:10px 20px 20px;
+}
+
+.section-title{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin:40px 0 25px;
+    gap:20px;
+    flex-wrap:wrap;
+}
+
+.section-title h2{
+    font-size:2rem;
+    letter-spacing:-1px;
+}
+
+.section-title p{
+    color:var(--muted);
+    max-width:650px;
+    line-height:1.7;
+}
+
+.org-wrapper{
+    position:relative;
+    overflow:auto;
+    padding:40px 0 80px;
+}
+
+.org-chart{
+    min-width:1100px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:90px;
+}
+
+.level{
+    display:flex;
+    justify-content:center;
+    width:100%;
+    position:relative;
+}
+
+.level-three{
+    gap:120px;
+}
+
+.level-three::before{
+    content:"";
+    position:absolute;
+    top:-44px;
+    left:23%;
+    right:23%;
+    height:2px;
+    background:linear-gradient(90deg,transparent,#4f8cff,transparent);
+}
+
+.connector-vertical{
+    position:absolute;
+    width:2px;
+    background:linear-gradient(180deg,#4f8cff,rgba(79,140,255,0));
+    left:50%;
+    transform:translateX(-50%);
+}
+
+.connector-top{
+    top:-44px;
+    height:44px;
+}
+
+.connector-bottom{
+    bottom:-44px;
+    height:44px;
+}
+
+.role-card{
+    width:600px;
+    padding:16px 18px;
+    border-radius:20px;
+    background:rgba(13,24,41,0.9);
+    border:1px solid rgba(255,255,255,0.08);
+    position:relative;
+    overflow:hidden;
+    transition:all 0.35s ease;
+    cursor:pointer;
+    box-shadow:0 20px 60px rgba(0,0,0,0.35);
+    display:flex;
+    align-items:center;
+    gap:16px;
+}
+
+.role-card::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:linear-gradient(135deg,rgba(255,255,255,0.15),transparent 50%);
+    opacity:0;
+    transition:0.3s ease;
+}
+
+.role-card:hover{
+    transform:translateY(-8px) scale(1.01);
+    border-color:rgba(255,255,255,0.18);
+}
+
+.role-card:hover::before{
+    opacity:1;
+}
+
+.role-top{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    flex-shrink:0;
+}
+
+.role-icon{
+    width:50px;
+    height:50px;
+    border-radius:14px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:1.8rem;
+    background:rgba(255,255,255,0.1);
+    backdrop-filter:blur(10px);
+    flex-shrink:0;
+}
+
+.role-tag{
+    font-size:0.7rem;
+    padding:4px 8px;
+    border-radius:6px;
+    background:rgba(255,255,255,0.08);
+    color:#d9e5ff;
+    font-weight:700;
+    white-space:nowrap;
+}
+
+.role-info{
+    flex:1;
+    min-width:0;
+}
+
+.role-card h3{
+    font-size:1.1rem;
+    margin-bottom:2px;
+    line-height:1.2;
+}
+
+.role-card p{
+    color:var(--muted);
+    line-height:1.4;
+    font-size:0.85rem;
+    margin:0;
+    display:none;
+}
+
+.role-footer{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-shrink:0;
+}
+
+.access{
+    font-size:0.75rem;
+    color:#b7d1ff;
+    white-space:nowrap;
+}
+
+.arrow{
+    width:36px;
+    height:36px;
+    border-radius:10px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(255,255,255,0.08);
+    font-size:1rem;
+    flex-shrink:0;
+}
+
+.superadmin{border-top:4px solid #ff4d6d;}
+.director{border-top:4px solid #ffd166;}
+.operations{border-top:4px solid #ff7b54;}
+.finance{border-top:4px solid #00c897;}
+.hr{border-top:4px solid #ff5fa2;}
+.manager{border-top:4px solid #5b8cff;}
+.employee{border-top:4px solid #9b5cff;}
+
+.legend{
+    margin-top:40px;
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+    gap:18px;
+}
+
+.legend-card{
+    background:rgba(255,255,255,0.05);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:22px;
+    padding:22px;
+}
+
+.legend-card h4{
+    margin-bottom:12px;
+    font-size:1.05rem;
+}
+
+.legend-card ul{
+    padding-left:18px;
+    color:var(--muted);
+    line-height:1.8;
+}
+
+.modal{
+    position:fixed;
+    inset:0;
+    background:rgba(2,8,20,0.75);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    opacity:0;
+    pointer-events:none;
+    transition:0.3s ease;
+    z-index:999;
+    backdrop-filter:blur(10px);
+}
+
+.modal.show{
+    opacity:1;
+    pointer-events:auto;
+}
+
+.modal-content{
+    width:min(760px,100%);
+    background:#0f1b2d;
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:28px;
+    overflow:hidden;
+    transform:translateY(20px);
+    transition:0.35s ease;
+}
+
+.modal.show .modal-content{
+    transform:translateY(0);
+}
+
+.modal-header{
+    padding:30px;
+    border-bottom:1px solid rgba(255,255,255,0.08);
+    display:flex;
+    justify-content:space-between;
+    gap:20px;
+}
+
+.modal-title{
+    display:flex;
+    gap:18px;
+    align-items:center;
+}
+
+.modal-title h3{
+    font-size:1.6rem;
+    margin-bottom:8px;
+}
+
+.modal-title p{
+    color:var(--muted);
+    line-height:1.6;
+}
+
+.close{
+    width:46px;
+    height:46px;
+    border:none;
+    border-radius:14px;
+    background:rgba(255,255,255,0.08);
+    color:white;
+    font-size:1.2rem;
+    cursor:pointer;
+}
+
+.modal-body{
+    padding:30px;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:24px;
+}
+
+.info-box{
+    background:rgba(255,255,255,0.04);
+    border:1px solid rgba(255,255,255,0.06);
+    border-radius:20px;
+    padding:22px;
+}
+
+.info-box h4{
+    margin-bottom:16px;
+    font-size:1rem;
+}
+
+.info-box ul{
+    list-style:none;
+}
+
+.info-box li{
+    color:var(--muted);
+    margin-bottom:12px;
+    line-height:1.6;
+    position:relative;
+    padding-left:20px;
+}
+
+.info-box li::before{
+    content:"•";
+    position:absolute;
+    left:0;
+    color:#7db0ff;
+}
+
+footer{
+    margin-top:70px;
+    padding:30px 20px 60px;
+    text-align:center;
+    color:#8ea0bb;
+    line-height:1.8;
+}
+
+@media(max-width:900px){
+    .modal-body{
+        grid-template-columns:1fr;
+    }
+
+    .level-three{
+        gap:40px;
+    }
+
+    .role-card{
+        width:540px;
+    }
+}
+
+@media(max-width:768px){
+    .hero{
+        padding-top:50px;
+    }
+
+    .role-card{
+        width:480px;
+    }
+
+    .org-chart{
+        gap:70px;
+    }
+
+    .level-three{
+        gap:22px;
+    }
+
+    .section-title{
+        flex-direction:column;
+        align-items:flex-start;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<section class="hero">
+    <div class="badge">✨ Kalike Organization Roles</div>
+</section>
+
+<div class="container">
+
+    <div class="org-wrapper">
+        <div class="org-chart">
+
+            <div class="level">
+                <div class="connector-vertical connector-bottom"></div>
+
+                <div class="role-card superadmin" onclick="openModal('superadmin')">
+                    <div class="role-top">
+                        <div class="role-icon">🔐</div>
+                        <div class="role-tag">LEVEL 1</div>
+                    </div>
+
+                    <div class="role-info">
+                        <h3>Super Administrator</h3>
+                        <p>Enterprise-level governance, platform security, and system ownership.</p>
+                    </div>
+
+                    <div class="role-footer">
+                        <span class="access">Full System Access</span>
+                        <div class="arrow">→</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="level">
+                <div class="connector-vertical connector-top"></div>
+                <div class="connector-vertical connector-bottom"></div>
+
+                <div class="role-card director" onclick="openModal('director')">
+                    <div class="role-top">
+                        <div class="role-icon">👑</div>
+                        <div class="role-tag">LEVEL 2</div>
+                    </div>
+
+                    <div class="role-info">
+                        <h3>Executive Director</h3>
+                        <p>Strategic oversight, compliance leadership, and policy governance.</p>
+                    </div>
+
+                    <div class="role-footer">
+                        <span class="access">Strategic Access</span>
+                        <div class="arrow">→</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="level level-three">
+
+                <div class="role-card operations" onclick="openModal('operations')">
+                    <div class="role-top">
+                        <div class="role-icon">⚙️</div>
+                        <div class="role-tag">OPS</div>
+                    </div>
+
+                    <div class="role-info">
+                        <h3>Operations Manager</h3>
+                        <p>Asset workflows, procurement execution, and operational efficiency.</p>
+                    </div>
+
+                    <div class="role-footer">
+                        <span class="access">Operational Access</span>
+                        <div class="arrow">→</div>
+                    </div>
+                </div>
+
+                <div class="role-card finance" onclick="openModal('finance')">
+                    <div class="role-top">
+                        <div class="role-icon">💰</div>
+                        <div class="role-tag">FIN</div>
+                    </div>
+
+                    <div class="role-info">
+                        <h3>Finance Controller</h3>
+                        <p>Budget controls, financial compliance, valuation, and reporting.</p>
+                    </div>
+
+                    <div class="role-footer">
+                        <span class="access">Financial Access</span>
+                        <div class="arrow">→</div>
+                    </div>
+                </div>
+
+                <div class="role-card hr" onclick="openModal('hr')">
+                    <div class="role-top">
+                        <div class="role-icon">👥</div>
+                        <div class="role-tag">HR</div>
+                    </div>
+
+                    <div class="role-info">
+                        <h3>HR Manager</h3>
+                        <p>People operations, hierarchy governance, and workforce management.</p>
+                    </div>
+
+                    <div class="role-footer">
+                        <span class="access">HR Access</span>
+                        <div class="arrow">→</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="level">
+                <div class="connector-vertical connector-top"></div>
+                <div class="connector-vertical connector-bottom"></div>
+
+                <div class="role-card manager" onclick="openModal('manager')">
+                    <div class="role-top">
+                        <div class="role-icon">📊</div>
+                        <div class="role-tag">LEVEL 4</div>
+                    </div>
+
+                    <div class="role-info">
+                        <h3>Program Officer</h3>
+                        <p>Team execution management and asset allocation supervision.</p>
+                    </div>
+
+                    <div class="role-footer">
+                        <span class="access">Team Access</span>
+                        <div class="arrow">→</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="level">
+                <div class="connector-vertical connector-top"></div>
+
+                <div class="role-card employee" onclick="openModal('employee')">
+                    <div class="role-top">
+                        <div class="role-icon">👤</div>
+                        <div class="role-tag">LEVEL 5</div>
+                    </div>
+
+                    <div class="role-info">
+                        <h3>General Staff</h3>
+                        <p>Daily operational participation and personal asset accountability.</p>
+                    </div>
+
+                    <div class="role-footer">
+                        <span class="access">Basic Access</span>
+                        <div class="arrow">→</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+
+</div>
+
+<footer>
+    Kalike Asset Management System • Interactive Organizational Hierarchy • Modern Governance Interface
+</footer>
+
+<div class="modal" id="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div class="modal-title">
+                <div class="role-icon" id="modalIcon">🔐</div>
+
+                <div>
+                    <h3 id="modalTitle">Role</h3>
+                    <p id="modalDesc">Description</p>
+                </div>
+            </div>
+
+            <button class="close" onclick="closeModal()">✕</button>
+        </div>
+
+        <div class="modal-body">
+
+            <div class="info-box">
+                <h4>Key Responsibilities</h4>
+                <ul id="responsibilities"></ul>
+            </div>
+
+            <div class="info-box">
+                <h4>Access & Governance</h4>
+                <ul id="governance"></ul>
+            </div>
+
+        </div>
+
+        <div style="padding: 20px 30px; border-top: 1px solid rgba(255,255,255,0.08); text-align: center;">
+            <button id="viewGuideBtn" onclick="navigateToGuide()" style="
+                background: linear-gradient(135deg, #4f8cff 0%, #667eea 100%);
+                color: white;
+                border: none;
+                padding: 12px 32px;
+                border-radius: 20px;
+                font-weight: 600;
+                cursor: pointer;
+                font-size: 0.95rem;
+                transition: all 0.3s ease;
+            " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                View Full Guide →
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+
+const roleData = {
+    superadmin:{
+        icon:"🔐",
+        title:"Super Administrator",
+        desc:"Complete system governance, platform security, and infrastructure administration.",
+        responsibilities:[
+            "User provisioning and role governance",
+            "Security monitoring and audit management",
+            "Database integrity and system backups",
+            "Permission configuration and compliance control",
+            "Platform maintenance and enterprise administration"
+        ],
+        governance:[
+            "Full enterprise-level access",
+            "Cross-functional operational visibility",
+            "Centralized governance authority",
+            "Security escalation ownership",
+            "System-wide monitoring capability"
+        ]
+    },
+
+    director:{
+        icon:"👑",
+        title:"Executive Director",
+        desc:"Strategic oversight, leadership governance, and organizational direction.",
+        responsibilities:[
+            "Strategic planning and execution",
+            "Policy approval and compliance oversight",
+            "Stakeholder and board reporting",
+            "Organizational budget supervision",
+            "Performance governance and review"
+        ],
+        governance:[
+            "Executive-level access",
+            "Policy approval authority",
+            "Cross-department operational visibility",
+            "Leadership analytics access",
+            "Strategic workflow governance"
+        ]
+    },
+
+    operations:{
+        icon:"⚙️",
+        title:"Operations Manager",
+        desc:"Operational execution, procurement workflows, and asset lifecycle control.",
+        responsibilities:[
+            "Asset procurement coordination",
+            "Inventory and allocation management",
+            "Operational request approvals",
+            "Maintenance tracking and escalation",
+            "Vendor coordination and workflow execution"
+        ],
+        governance:[
+            "Operations-level dashboard access",
+            "Procurement workflow visibility",
+            "Asset allocation authority",
+            "Operational reporting access",
+            "Workflow escalation capability"
+        ]
+    },
+
+    finance:{
+        icon:"💰",
+        title:"Finance Controller",
+        desc:"Financial governance, valuation control, and reporting oversight.",
+        responsibilities:[
+            "Asset valuation and depreciation",
+            "Budget and ledger management",
+            "Grant utilization monitoring",
+            "Financial reporting and compliance",
+            "Audit documentation oversight"
+        ],
+        governance:[
+            "Financial records access",
+            "Budget governance authority",
+            "Compliance reporting control",
+            "Financial analytics visibility",
+            "Audit readiness management"
+        ]
+    },
+
+    hr:{
+        icon:"👥",
+        title:"HR Manager",
+        desc:"Human capital operations, workforce governance, and employee administration.",
+        responsibilities:[
+            "Employee onboarding and account management",
+            "Payroll and leave administration",
+            "Hierarchy configuration management",
+            "Performance review coordination",
+            "Workforce governance and records"
+        ],
+        governance:[
+            "HR dashboard visibility",
+            "Employee lifecycle control",
+            "Payroll management access",
+            "Workforce analytics visibility",
+            "Organizational hierarchy access"
+        ]
+    },
+
+    manager:{
+        icon:"📊",
+        title:"Program Officer",
+        desc:"Team execution management and departmental coordination.",
+        responsibilities:[
+            "Team-level asset allocation",
+            "Request approval and supervision",
+            "Department workflow monitoring",
+            "Task coordination and execution",
+            "Operational reporting support"
+        ],
+        governance:[
+            "Departmental visibility access",
+            "Team coordination permissions",
+            "Workflow approval capabilities",
+            "Asset request supervision",
+            "Operational execution monitoring"
+        ]
+    },
+
+    employee:{
+        icon:"👤",
+        title:"General Staff",
+        desc:"Operational participation and assigned asset accountability.",
+        responsibilities:[
+            "Asset usage and accountability",
+            "Issue reporting and escalation",
+            "Transfer and support requests",
+            "Task execution and compliance",
+            "Daily operational participation"
+        ],
+        governance:[
+            "Personal asset visibility",
+            "Basic request permissions",
+            "Operational participation access",
+            "Support ticket interaction",
+            "Assigned workflow visibility"
+        ]
+    }
+};
+
+const modal = document.getElementById("modal");
+let currentRole = null;
+
+function openModal(role){
+    const data = roleData[role];
+    currentRole = role;
+
+    document.getElementById("modalIcon").innerHTML = data.icon;
+    document.getElementById("modalTitle").innerHTML = data.title;
+    document.getElementById("modalDesc").innerHTML = data.desc;
+
+    document.getElementById("responsibilities").innerHTML =
+        data.responsibilities.map(item => `<li>${item}</li>`).join("");
+
+    document.getElementById("governance").innerHTML =
+        data.governance.map(item => `<li>${item}</li>`).join("");
+
+    modal.classList.add("show");
+}
+
+function navigateToGuide(){
+    if(currentRole){
+        window.location.href = `KALIKE_ROLE_GUIDE.html#${currentRole}`;
+    }
+}
+
+function closeModal(){
+    modal.classList.remove("show");
+}
+
+window.addEventListener("click",(e)=>{
+    if(e.target === modal){
+        closeModal();
+    }
+});
+
+window.addEventListener("keydown",(e)=>{
+    if(e.key === "Escape"){
+        closeModal();
+    }
+});
+
+</script>
+
+</body>
+</html>

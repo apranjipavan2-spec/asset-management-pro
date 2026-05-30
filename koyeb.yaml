@@ -1,0 +1,22 @@
+name: kalike-asset
+services:
+  - name: web
+    type: web
+    git:
+      branch: main
+    build:
+      buildpack: nodejs
+      build_command: npm run build:prod
+    run:
+      command: npm start
+    ports:
+      - port: 3000
+        protocol: http
+    env:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        value: "REPLACE_WITH_A_LONG_RANDOM_STRING"
+    health_checks:
+      - path: /api/health
+        port: 3000

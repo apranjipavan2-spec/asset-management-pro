@@ -8,17 +8,21 @@
     "server": "node server.js",
     "dev:full": "concurrently \"npm run server\" \"npm run dev\"",
     "build": "vite build",
+    "build:prod": "vite build && node scripts/initialize_sqlite.js",
+    "start": "NODE_ENV=production node server.js",
     "preview": "vite preview",
     "db:init": "node scripts/initialize_sqlite.js",
     "db:seed": "node scripts/seed_db.js",
     "db:import-excel": "node scripts/import_assets_excel.cjs",
     "db:hash-passwords": "node scripts/hash_existing_passwords.js",
-    "db:restore-employee-passwords": "node scripts/restore_employee_passwords.js"
+    "db:restore-employee-passwords": "node scripts/restore_employee_passwords.js",
+    "db:seed-far": "node scripts/seed_asset_far.cjs"
   },
   "devDependencies": {
     "@colbymchenry/codegraph": "^0.9.4",
     "@tailwindcss/vite": "^4.0.0",
     "autoprefixer": "^10.4.27",
+    "exceljs": "^4.4.0",
     "postcss": "^8.5.8",
     "tailwindcss": "^4.2.2",
     "vite": "^8.0.1",

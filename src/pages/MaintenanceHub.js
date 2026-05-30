@@ -1,24 +1,28 @@
 import { db } from '../mock/db.js';
 
 export function renderMaintenanceHub() {
-    let needsSave = false;
-    db.assets.forEach(asset => {
-        if (asset.status === 'Maintenance') {
-            const hasActiveTicket = db.maintenanceLogs.some(l => l.assetId === asset.id && l.status !== 'Resolved');
-            if (!hasActiveTicket) {
-                db.maintenanceLogs.push({
-                    id: 'M-' + Math.floor(Math.random() * 100000),
-                    assetId: asset.id,
-                    description: `Automated Request: Routine maintenance required for ${asset.name}.`,
-                    reporter: 'System Audit',
-                    date: new Date().toISOString(),
-                    status: 'Pending'
-                });
-                needsSave = true;
+    // Auto-generate tickets only once per page visit (prevent duplication on re-renders)
+    if (!window._maintAutoTicketDone) {
+        let needsSave = false;
+        db.assets.forEach(asset => {
+            if (asset.status === 'Maintenance') {
+                const hasActiveTicket = db.maintenanceLogs.some(l => l.assetId === asset.id && l.status !== 'Resolved');
+                if (!hasActiveTicket) {
+                    db.maintenanceLogs.push({
+                        id: 'M-' + Math.floor(Math.random() * 100000),
+                        assetId: asset.id,
+                        description: `Automated Request: Routine maintenance required for ${asset.name}.`,
+                        reporter: 'System Audit',
+                        date: new Date().toISOString(),
+                        status: 'Pending'
+                    });
+                    needsSave = true;
+                }
             }
-        }
-    });
-    if (needsSave) db.syncToCloud();
+        });
+        if (needsSave) db.syncToCloud();
+        window._maintAutoTicketDone = true;
+    }
 
     const logs = db.maintenanceLogs;
     const pending = logs.filter(l => l.status === 'Pending');
@@ -26,13 +30,13 @@ export function renderMaintenanceHub() {
     const resolved = logs.filter(l => l.status === 'Resolved');
 
     return `
-        <div class="animate-in fade-in slide-in-from-bottom-2 duration-200 h-[calc(100vh-128px)] flex flex-col min-h-0 gap-6">
+        <div class="animate-in fade-in slide-in-from-bottom-2 duration-200 h-[calc(100vh-128px)] flex flex-col min-h-0 gap-4">
             <header class="shrink-0">
-                <h2 class="text-3xl text-slate-900 font-black tracking-tight uppercase">Maintenance Control Hub</h2>
-                <p class="text-slate-500 text-sm mt-1 font-bold tracking-widest uppercase">Operational Readiness & Repair Tracking</p>
+                <h2 class="page-title">Maintenance Control Hub</h2>
+                <p class="page-subtitle">Operational Readiness & Repair Tracking</p>
             </header>
 
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col flex-1 min-h-0">
+            <div class="card-accent flex flex-col flex-1 min-h-0">
                 
                 <!-- Tab Headers -->
                 <div class="flex p-2 bg-slate-50 border-b border-slate-100 shrink-0 gap-2">
@@ -54,7 +58,7 @@ export function renderMaintenanceHub() {
                 </div>
 
                 <!-- Tab Contents -->
-                <div class="flex-1 overflow-y-auto p-6 bg-slate-50 relative min-h-0">
+                <div class="flex-1 overflow-auto max-h-[760px] scroll-container p-4 bg-slate-50 relative min-h-0">
                     
                     <div id="tab-pending" class="maint-tab-content space-y-3">
                         ${pending.length === 0 ? renderEmptyState('No pending tasks') : pending.map(log => renderRow(log)).join('')}
@@ -112,24 +116,23 @@ function renderRow(log) {
     }
     
     return `
-        <div onclick="window.openMaintModal('${log.id}')" class="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-white rounded-xl shadow-sm border border-slate-100 hover:border-slate-300 hover:shadow-md transition-all cursor-pointer group ${statusClass}">
-             <div class="flex items-center gap-4">
-                 <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold ${iconClass} shrink-0 transition-transform group-hover:scale-110">
+        <div onclick="window.openMaintModal('${log.id}')" class="flex flex-col sm:flex-row items-start sm:items-center justify-between p-2.5 bg-white rounded-xl shadow-sm border border-slate-100 hover:border-slate-300 hover:shadow-md transition-all cursor-pointer group ${statusClass}">
+             <div class="flex items-center gap-3">
+                 <div class="compact-icon font-bold ${iconClass} shrink-0 transition-transform group-hover:scale-110">
                       <span class="material-symbols-outlined text-sm">${log.status === 'Resolved' ? 'done_all' : (log.status === 'In Progress' ? 'build' : 'flag')}</span>
                  </div>
                  <div>
-                     <p class="font-bold text-sm text-slate-900 group-hover:text-accent transition-colors">${asset ? asset.name : 'Unknown Asset'}</p>
-                     <div class="flex gap-2 mt-1">
-                         <span class="text-[9px] uppercase font-black tracking-widest text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">TKT #${log.id}</span>
-                         <span class="text-[9px] uppercase font-bold tracking-widest text-slate-400 border border-slate-200 px-1.5 py-0.5 rounded">${new Date(log.date).toLocaleDateString()}</span>
-                         ${log.status === 'Resolved' ? `<span class="text-[9px] uppercase font-black tracking-widest text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">Archived ReCord</span>` : ''}
+                     <p class="font-bold text-xs text-slate-900 group-hover:text-accent transition-colors multiline-name max-w-[300px]">${asset ? asset.name : 'Unknown Asset'}</p>
+                     <div class="flex gap-2 mt-0.5">
+                         <span class="text-[8px] uppercase font-black tracking-widest text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">TKT #${log.id}</span>
+                         <span class="text-[8px] uppercase font-bold tracking-widest text-slate-400 border border-slate-200 px-1.5 py-0.5 rounded">${new Date(log.date).toLocaleDateString()}</span>
                      </div>
                  </div>
              </div>
              
-             <div class="mt-4 sm:mt-0 sm:text-right flex items-center sm:block gap-2">
-                  <p class="text-[9px] font-black tracking-widest text-slate-400 uppercase">Reporter</p>
-                  <p class="text-xs font-bold text-slate-900 mt-0.5">${log.reporter}</p>
+             <div class="mt-2 sm:mt-0 sm:text-right flex items-center sm:block gap-2">
+                  <p class="text-[8px] font-black tracking-widest text-slate-400 uppercase">Reporter</p>
+                  <p class="text-[10px] font-bold text-slate-900">${log.reporter}</p>
              </div>
         </div>
     `;
@@ -168,17 +171,17 @@ window.openMaintModal = (logId) => {
     const currentCustodian = asset ? asset.assignedTo : (assetTransfers.length > 0 ? assetTransfers[0].toAssignee : 'Unassigned');
 
     const contentStr = `
-        <div class="px-8 py-6 border-b border-slate-100 bg-slate-50 flex justify-between items-center relative shrink-0">
+        <div class="card-header shrink-0">
             <div>
-                 <h3 class="text-xl font-black text-slate-900 uppercase tracking-tight">Service Ticket Details</h3>
-                 <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Reference: #${log.id}</p>
+                 <h3 class="page-title text-base">Service Ticket Details</h3>
+                 <p class="page-subtitle">Reference: #${log.id}</p>
             </div>
             <button onclick="window.closeMaintModal()" class="w-8 h-8 flex items-center justify-center rounded-full text-slate-400 hover:bg-rose-100 hover:text-rose-500 transition-colors">
                 <span class="material-symbols-outlined">close</span>
             </button>
         </div>
         
-        <div class="p-8 space-y-8 overflow-y-auto max-h-[70vh]">
+        <div class="p-6 space-y-6 overflow-y-auto max-h-[70vh]">
             <!-- Core Context -->
             <div class="flex justify-between items-start">
                <div>
@@ -256,17 +259,17 @@ window.openMaintModal = (logId) => {
             </div>
         </div>
 
-        <div class="px-8 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
-             <button onclick="window.closeMaintModal()" class="px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-500 hover:bg-slate-100 transition-colors uppercase tracking-widest">Close</button>
-             
+        <div class="card-header border-t border-slate-100 border-b-0 flex justify-end gap-3">
+             <button onclick="window.closeMaintModal()" class="btn-ghost">Close</button>
+
              ${isPending ? `
-                <button onclick="window.updateMaintStatus('${log.id}', 'In Progress')" class="px-5 py-2.5 rounded-xl bg-blue-600 text-white shadow-sm hover:bg-blue-700 transition-colors text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                <button onclick="window.updateMaintStatus('${log.id}', 'In Progress')" class="btn-primary bg-blue-600 hover:bg-blue-700">
                    <span class="material-symbols-outlined text-sm">precision_manufacturing</span> Initiate Repairs
                 </button>
              ` : ''}
-             
+
              ${isProgress ? `
-                <button onclick="window.updateMaintStatus('${log.id}', 'Resolved')" class="px-5 py-2.5 rounded-xl bg-emerald-500 text-white shadow-sm hover:bg-emerald-600 transition-colors text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                <button onclick="window.updateMaintStatus('${log.id}', 'Resolved')" class="btn-primary">
                    <span class="material-symbols-outlined text-sm">verified</span> Mark Completed
                 </button>
              ` : ''}

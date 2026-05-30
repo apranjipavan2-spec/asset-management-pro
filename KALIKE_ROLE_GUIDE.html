@@ -1,0 +1,1888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalike Asset Management - Complete Role Guides</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 10px;
+            margin: 0;
+        }
+        .container {
+            width: 100%;
+            max-width: none;
+            margin: 0;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 20px 30px;
+            text-align: center;
+            flex-shrink: 0;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .back-btn {
+            position: absolute;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.6);
+        }
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 5px;
+        }
+        .header p {
+            font-size: 0.95em;
+            opacity: 0.9;
+        }
+        .tabs {
+            display: flex;
+            background: #f5f5f5;
+            border-bottom: 2px solid #ddd;
+            overflow-x: auto;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 5px;
+            padding: 0 10px;
+            flex-shrink: 0;
+        }
+        .tab-btn {
+            padding: 12px 18px;
+            border: none;
+            background: #f5f5f5;
+            color: #666;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .tab-btn:hover {
+            background: #eee;
+        }
+        .tab-btn.active {
+            border-bottom-width: 3px;
+        }
+        /* Role-specific colors */
+        .tab-btn.superadmin { color: #c41e3a; }
+        .tab-btn.superadmin.active { border-bottom-color: #c41e3a; color: #c41e3a; background: #fff5f5; }
+
+        .tab-btn.director { color: #d4af37; }
+        .tab-btn.director.active { border-bottom-color: #d4af37; color: #d4af37; background: #fffef5; }
+
+        .tab-btn.operations { color: #ff6b35; }
+        .tab-btn.operations.active { border-bottom-color: #ff6b35; color: #ff6b35; background: #fff5f0; }
+
+        .tab-btn.hr { color: #f5576c; }
+        .tab-btn.hr.active { border-bottom-color: #f5576c; color: #f5576c; background: #fff3f6; }
+
+        .tab-btn.finance { color: #11998e; }
+        .tab-btn.finance.active { border-bottom-color: #11998e; color: #11998e; background: #f0fdf4; }
+
+        .tab-btn.manager { color: #667eea; }
+        .tab-btn.manager.active { border-bottom-color: #667eea; color: #667eea; background: #f8f9ff; }
+
+        .tab-btn.employee { color: #764ba2; }
+        .tab-btn.employee.active { border-bottom-color: #764ba2; color: #764ba2; background: #f9f6ff; }
+
+        .content {
+            padding: 0;
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        .role-section {
+            display: none;
+            padding: 30px;
+        }
+        .role-section.active {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+            animation: fadeIn 0.3s ease;
+        }
+        @media (max-width: 1400px) {
+            .role-section.active {
+                grid-template-columns: 1fr;
+            }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        section {
+            margin-bottom: 40px;
+        }
+        section h2 {
+            border-bottom: 3px solid #ddd;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+        section h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-size: 1.3em;
+        }
+        .superadmin section h2 { color: #c41e3a; border-bottom-color: #c41e3a; }
+        .superadmin section h3 { color: #a01730; }
+
+        .director section h2 { color: #d4af37; border-bottom-color: #d4af37; }
+        .director section h3 { color: #b8941f; }
+
+        .operations section h2 { color: #ff6b35; border-bottom-color: #ff6b35; }
+        .operations section h3 { color: #cc5428; }
+
+        .hr section h2 { color: #f5576c; border-bottom-color: #f5576c; }
+        .hr section h3 { color: #f093fb; }
+
+        .finance section h2 { color: #11998e; border-bottom-color: #11998e; }
+        .finance section h3 { color: #38ef7d; }
+
+        .manager section h2 { color: #667eea; border-bottom-color: #667eea; }
+        .manager section h3 { color: #764ba2; }
+
+        .employee section h2 { color: #667eea; border-bottom-color: #667eea; }
+        .employee section h3 { color: #764ba2; }
+
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        li {
+            margin-bottom: 8px;
+        }
+        .feature-box {
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 6px;
+            border-left: 4px solid;
+        }
+        .superadmin .feature-box { background: #fff5f5; border-left-color: #c41e3a; }
+        .superadmin .feature-box strong { color: #c41e3a; }
+
+        .director .feature-box { background: #fffef5; border-left-color: #d4af37; }
+        .director .feature-box strong { color: #d4af37; }
+
+        .operations .feature-box { background: #fff5f0; border-left-color: #ff6b35; }
+        .operations .feature-box strong { color: #ff6b35; }
+
+        .hr .feature-box { background: #fff3f6; border-left-color: #f5576c; }
+        .hr .feature-box strong { color: #f5576c; }
+
+        .finance .feature-box { background: #f0fdf4; border-left-color: #11998e; }
+        .finance .feature-box strong { color: #11998e; }
+
+        .manager .feature-box { background: #f8f9ff; border-left-color: #667eea; }
+        .manager .feature-box strong { color: #667eea; }
+
+        .employee .feature-box { background: #f9f6ff; border-left-color: #764ba2; }
+        .employee .feature-box strong { color: #764ba2; }
+
+        .workflow {
+            background: #fff8f0;
+            border-left: 4px solid #ff9800;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 6px;
+        }
+        .workflow strong {
+            color: #ff9800;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        table th {
+            color: white;
+            padding: 12px;
+            text-align: left;
+        }
+        .superadmin table th { background: #c41e3a; }
+        .director table th { background: #d4af37; color: #333; }
+        .operations table th { background: #ff6b35; }
+        .hr table th { background: #f5576c; }
+        .finance table th { background: #11998e; }
+        .manager table th { background: #667eea; }
+        .employee table th { background: #667eea; }
+
+        table td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+        table tr:hover {
+            background: #f5f5f5;
+        }
+        .tip {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        footer {
+            background: #f5f5f5;
+            padding: 15px;
+            text-align: center;
+            color: #666;
+            border-top: 1px solid #ddd;
+            font-size: 0.85em;
+            flex-shrink: 0;
+        }
+        .role-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.2);
+            font-size: 0.85em;
+            margin-top: 10px;
+        }
+        .collapsible-section {
+            margin-bottom: 25px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .collapsible-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 20px;
+            background: #f9f9f9;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.3s ease;
+        }
+        .collapsible-header:hover {
+            background: #f0f0f0;
+        }
+        .collapsible-header h3 {
+            margin: 0;
+            font-size: 1.1em;
+        }
+        .collapsible-toggle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            font-size: 1.2em;
+            transition: transform 0.3s ease;
+            flex-shrink: 0;
+            margin-left: 15px;
+        }
+        .collapsible-toggle.open {
+            transform: rotate(180deg);
+        }
+        .collapsible-content {
+            max-height: 10000px;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+            background: white;
+        }
+        .collapsible-content.open {
+            max-height: 10000px;
+        }
+        .collapsible-body {
+            padding: 20px;
+        }
+        .brief-info {
+            padding: 15px 20px;
+            background: white;
+            border-bottom: 1px solid #eee;
+        }
+        .superadmin .collapsible-header { background: #fff5f5; border-bottom: 2px solid #c41e3a; }
+        .superadmin .collapsible-toggle { color: #c41e3a; }
+        .superadmin .collapsible-header h3 { color: #c41e3a; }
+
+        .director .collapsible-header { background: #fffef5; border-bottom: 2px solid #d4af37; }
+        .director .collapsible-toggle { color: #d4af37; }
+        .director .collapsible-header h3 { color: #d4af37; }
+
+        .operations .collapsible-header { background: #fff5f0; border-bottom: 2px solid #ff6b35; }
+        .operations .collapsible-toggle { color: #ff6b35; }
+        .operations .collapsible-header h3 { color: #ff6b35; }
+
+        .hr .collapsible-header { background: #fff3f6; border-bottom: 2px solid #f5576c; }
+        .hr .collapsible-toggle { color: #f5576c; }
+        .hr .collapsible-header h3 { color: #f5576c; }
+
+        .finance .collapsible-header { background: #f0fdf4; border-bottom: 2px solid #11998e; }
+        .finance .collapsible-toggle { color: #11998e; }
+        .finance .collapsible-header h3 { color: #11998e; }
+
+        .manager .collapsible-header { background: #f8f9ff; border-bottom: 2px solid #667eea; }
+        .manager .collapsible-toggle { color: #667eea; }
+        .manager .collapsible-header h3 { color: #667eea; }
+
+        .employee .collapsible-header { background: #f9f6ff; border-bottom: 2px solid #764ba2; }
+        .employee .collapsible-toggle { color: #764ba2; }
+        .employee .collapsible-header h3 { color: #764ba2; }
+
+        /* Two-Column Layout Styles */
+        .left-column {
+            grid-column: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .right-column {
+            grid-column: 2;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .role-header {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid #ddd;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .role-header h2 {
+            margin: 0 0 10px 0;
+            font-size: 1.5em;
+            border: none;
+            padding-bottom: 0;
+        }
+        .role-header p {
+            margin: 0;
+            font-size: 0.95em;
+            line-height: 1.5;
+        }
+        .key-info-box {
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+        .superadmin .role-header { border-color: #c41e3a; background: #fff5f5; }
+        .superadmin .role-header h2 { color: #c41e3a; }
+        .superadmin .key-info-box { background: #ffc0c0; color: #5a0a15; }
+
+        .director .role-header { border-color: #d4af37; background: #fffef5; }
+        .director .role-header h2 { color: #d4af37; }
+        .director .key-info-box { background: #f0e68c; color: #6b6200; }
+
+        .operations .role-header { border-color: #ff6b35; background: #fff5f0; }
+        .operations .role-header h2 { color: #ff6b35; }
+        .operations .key-info-box { background: #ffc9a3; color: #663300; }
+
+        .hr .role-header { border-color: #f5576c; background: #fff3f6; }
+        .hr .role-header h2 { color: #f5576c; }
+        .hr .key-info-box { background: #ffb3c1; color: #660033; }
+
+        .finance .role-header { border-color: #11998e; background: #f0fdf4; }
+        .finance .role-header h2 { color: #11998e; }
+        .finance .key-info-box { background: #b3f0e3; color: #00665a; }
+
+        .manager .role-header { border-color: #667eea; background: #f8f9ff; }
+        .manager .role-header h2 { color: #667eea; }
+        .manager .key-info-box { background: #c8d3ff; color: #2d3566; }
+
+        .employee .role-header { border-color: #764ba2; background: #f9f6ff; }
+        .employee .role-header h2 { color: #764ba2; }
+        .employee .key-info-box { background: #d9c8ff; color: #3d2551; }
+
+        .dashboard-box {
+            padding: 15px;
+            border-radius: 6px;
+            background: #f9f9f9;
+            border-left: 4px solid #ddd;
+            font-size: 0.9em;
+        }
+        .dashboard-box ul {
+            margin: 10px 0 0 20px;
+            padding: 0;
+        }
+        .dashboard-box strong {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 1.05em;
+        }
+        .superadmin .dashboard-box { border-left-color: #c41e3a; }
+        .director .dashboard-box { border-left-color: #d4af37; }
+        .operations .dashboard-box { border-left-color: #ff6b35; }
+        .hr .dashboard-box { border-left-color: #f5576c; }
+        .finance .dashboard-box { border-left-color: #11998e; }
+        .manager .dashboard-box { border-left-color: #667eea; }
+        .employee .dashboard-box { border-left-color: #764ba2; }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="back-btn" onclick="window.location.href='KALIKE_ROLES_HUB.html'">← Back to Role Hub</button>
+            <div>
+                <h1>📚 Kalike Asset Management</h1>
+                <p>Complete Role-Based User Guides (All 7 Roles)</p>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn superadmin active" onclick="switchRole('superadmin')">🔐 Super Admin</button>
+            <button class="tab-btn director" onclick="switchRole('director')">👑 Director</button>
+            <button class="tab-btn operations" onclick="switchRole('operations')">⚙️ Operations</button>
+            <button class="tab-btn hr" onclick="switchRole('hr')">👥 HR Manager</button>
+            <button class="tab-btn finance" onclick="switchRole('finance')">💰 Finance</button>
+            <button class="tab-btn manager" onclick="switchRole('manager')">📊 Program Coord</button>
+            <button class="tab-btn employee" onclick="switchRole('employee')">👤 Employee</button>
+        </div>
+
+        <div class="content">
+            <!-- SUPER ADMINISTRATOR -->
+            <div id="superadmin" class="role-section superadmin active">
+                <div class="left-column">
+                    <div class="role-header">
+                        <h2>🔐 Super Administrator</h2>
+                        <p>Complete control over all system functions. Reserved for IT administrators and system maintainers.</p>
+                        <div class="key-info-box">
+                            <strong>Access Level:</strong> Full System Access
+                        </div>
+                    </div>
+
+                    <div class="dashboard-box">
+                        <strong>📊 Key Responsibilities:</strong>
+                        <ul>
+                            <li>User account & role management</li>
+                            <li>System configuration</li>
+                            <li>Database maintenance</li>
+                            <li>Security & audit logs</li>
+                            <li>API management</li>
+                        </ul>
+                    </div>
+
+                    <div class="dashboard-box">
+                        <strong>✅ Write Access to:</strong>
+                        <ul>
+                            <li>Users (creation, editing, roles)</li>
+                            <li>Roles (permissions)</li>
+                            <li>Payroll (all records)</li>
+                            <li>Leave Balances</li>
+                            <li>Employee Hierarchy</li>
+                            <li>Grants & Audit Logs</li>
+                            <li>All other tables</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="right-column">
+                    <div class="collapsible-section">
+                        <div class="collapsible-header">
+                            <h3>Core Responsibilities</h3>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content open">
+                            <div class="collapsible-body">
+                                <ul>
+                                    <li>User account creation, modification, deletion</li>
+                                    <li>Role and permission management</li>
+                                    <li>System configuration and settings</li>
+                                    <li>Database maintenance and backups</li>
+                                    <li>Audit log monitoring and retention</li>
+                                    <li>Security updates and patches</li>
+                                    <li>Access control and authentication</li>
+                                    <li>API and endpoint management</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="collapsible-section">
+                        <div class="collapsible-header">
+                            <h3>Security Best Practices</h3>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content open">
+                            <div class="collapsible-body">
+                                <p><strong style="color: #f44336;">Important Security Requirements:</strong></p>
+                                <ul style="margin-top: 10px;">
+                                    <li>Use strong, unique passwords</li>
+                                    <li>Enable two-factor authentication if available</li>
+                                    <li>Regularly audit user access and permissions</li>
+                                    <li>Monitor audit logs for suspicious activity</li>
+                                    <li>Don't share admin credentials</li>
+                                    <li>Document all configuration changes</li>
+                                    <li>Perform regular backups</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="collapsible-section">
+                        <div class="collapsible-header">
+                            <h3>Key Admin Tasks & Workflows</h3>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content open">
+                            <div class="collapsible-body">
+                                <h4>👥 User Onboarding</h4>
+                                <ol>
+                                    <li>Create new user account in Users table</li>
+                                    <li>Assign appropriate role based on job function</li>
+                                    <li>Set initial password (communicate securely)</li>
+                                    <li>Configure employee hierarchy (reportsTo)</li>
+                                    <li>Verify audit log entry for creation</li>
+                                </ol>
+
+                                <h4 style="margin-top: 15px;">💾 Backup & Recovery</h4>
+                                <ol>
+                                    <li>Regular database backups (daily recommended)</li>
+                                    <li>Test restore procedures</li>
+                                    <li>Document disaster recovery procedures</li>
+                                    <li>Maintain version control of scripts</li>
+                                </ol>
+
+                                <h4 style="margin-top: 15px;">🔍 Security Audit</h4>
+                                <ol>
+                                    <li>Review audit logs regularly</li>
+                                    <li>Check for unauthorized access attempts</li>
+                                    <li>Verify role assignments are correct</li>
+                                    <li>Monitor API usage patterns</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="collapsible-section">
+                        <div class="collapsible-header">
+                            <h3>System Maintenance</h3>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content open">
+                            <div class="collapsible-body">
+                                <ul>
+                                    <li>Database optimization and indexing</li>
+                                    <li>Audit log pruning (old records)</li>
+                                    <li>Password hash updates for security</li>
+                                    <li>API rate limiting and throttling</li>
+                                    <li>SSL/TLS certificate management</li>
+                                    <li>System logging and monitoring</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- EXECUTIVE DIRECTOR -->
+            <div id="director" class="role-section director">
+                <div class="left-column">
+                    <div class="role-header">
+                        <h2>👑 Executive Director</h2>
+                        <p>Complete access to all organizational data and strategic management. Senior leadership authority over all departments.</p>
+                        <div class="key-info-box">
+                            <strong>Access Level:</strong> Full Organizational Access
+                        </div>
+                    </div>
+
+                    <div class="dashboard-box">
+                        <strong>📊 Executive Dashboard Shows:</strong>
+                        <ul>
+                            <li>Organization-wide asset portfolio value</li>
+                            <li>Departmental asset distribution</li>
+                            <li>Financial overview and budgets</li>
+                            <li>Staff headcount & org structure</li>
+                            <li>Key performance indicators</li>
+                            <li>Audit trail & compliance status</li>
+                            <li>System-wide activity</li>
+                        </ul>
+                    </div>
+
+                    <div class="dashboard-box">
+                        <strong>✅ Can Access:</strong>
+                        <ul>
+                            <li>All user & staff records</li>
+                            <li>Complete financial data</li>
+                            <li>All audit logs</li>
+                            <li>Asset registry & valuations</li>
+                            <li>Grants & payroll data</li>
+                            <li>User management & roles</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="right-column">
+                    <div class="collapsible-section">
+                        <div class="collapsible-header">
+                            <h3>Strategic Responsibilities</h3>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content open">
+                            <div class="collapsible-body">
+                                <ul>
+                                    <li>Organizational policy decisions</li>
+                                    <li>Approval of major asset acquisitions</li>
+                                    <li>Budget allocation across departments</li>
+                                    <li>Staff role assignments and promotions</li>
+                                    <li>Financial and compliance oversight</li>
+                                    <li>Strategic planning and reporting</li>
+                                    <li>Board-level reporting and decisions</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="collapsible-section">
+                        <div class="collapsible-header">
+                            <h3>Critical Reports You Can Generate</h3>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content open">
+                            <div class="collapsible-body">
+                                <ul>
+                                    <li>📋 Annual financial statements</li>
+                                    <li>📋 Asset portfolio overview</li>
+                                    <li>📋 Staff hierarchy and utilization</li>
+                                    <li>📋 Budget vs. actuals</li>
+                                    <li>📋 Compliance and audit reports</li>
+                                    <li>📋 Departmental performance summaries</li>
+                                    <li>📋 Risk and exposure analysis</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="collapsible-section">
+                        <div class="collapsible-header">
+                            <h3>Key Decision Points</h3>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content open">
+                            <div class="collapsible-body">
+                                <h4>Major Asset Acquisition</h4>
+                                <ol>
+                                    <li>Review acquisition request from department</li>
+                                    <li>Check budget availability</li>
+                                    <li>Assess strategic alignment</li>
+                                    <li>Approve or reject with feedback</li>
+                                    <li>Monitor implementation</li>
+                                </ol>
+
+                                <h4 style="margin-top: 15px;">Budget Planning</h4>
+                                <ol>
+                                    <li>Review departmental budget requests</li>
+                                    <li>Allocate funds based on priorities</li>
+                                    <li>Set asset depreciation policies</li>
+                                    <li>Monitor spending throughout year</li>
+                                    <li>Adjust allocations as needed</li>
+                                </ol>
+
+                                <h4 style="margin-top: 15px;">Staff Restructuring</h4>
+                                <ol>
+                                    <li>Review organizational structure</li>
+                                    <li>Assign roles and responsibilities</li>
+                                    <li>Configure reporting relationships</li>
+                                    <li>Update in system</li>
+                                    <li>Communicate changes to affected parties</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="collapsible-section">
+                        <div class="collapsible-header">
+                            <h3>Governance & Compliance</h3>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content open">
+                            <div class="collapsible-body">
+                                <ul>
+                                    <li>Ensure regulatory compliance</li>
+                                    <li>Review audit findings and remediation</li>
+                                    <li>Authorize policy changes</li>
+                                    <li>Sign off on financial statements</li>
+                                    <li>Approve external audits</li>
+                                    <li>Oversee risk management</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-box" style="margin-top: auto;">
+                        <strong>Getting Help:</strong>
+                        <ul>
+                            <li>📊 Finance team for financial questions</li>
+                            <li>👥 HR team for staffing decisions</li>
+                            <li>⚙️ Operations team for asset management</li>
+                            <li>🔒 Audit/compliance team for regulatory questions</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- OPERATIONS MANAGER -->
+            <div id="operations" class="role-section operations">
+                <div class="left-column">
+                    <div class="role-header">
+                        <h2>⚙️ Operations Manager</h2>
+                        <p>Oversee asset management, procurement, and approval workflows. Manage day-to-day asset operations.</p>
+                        <div class="key-info-box">
+                            <strong>Access Level:</strong> Asset & Request Management
+                        </div>
+                    </div>
+
+                    <div class="dashboard-box">
+                        <strong>📊 Operations Dashboard Shows:</strong>
+                        <ul>
+                            <li>Asset inventory status & health</li>
+                            <li>Pending approval requests</li>
+                            <li>Procurement pipeline</li>
+                            <li>Asset allocation & utilization</li>
+                            <li>Maintenance schedules</li>
+                            <li>Depreciation tracking</li>
+                            <li>Key operational metrics</li>
+                        </ul>
+                    </div>
+
+                    <div class="dashboard-box">
+                        <strong>✅ Your Core Functions:</strong>
+                        <ul>
+                            <li>Asset Registry Management</li>
+                            <li>Request Approval & Procurement</li>
+                            <li>Asset Allocation</li>
+                            <li>Transfers & Movements</li>
+                            <li>Maintenance Oversight</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="right-column">
+
+                    <div class="collapsible-section">
+                        <div class="collapsible-header">
+                            <h3>1️⃣ Asset Registry Management</h3>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content open">
+                            <div class="collapsible-body">
+                                <div class="workflow">
+                                    <strong>Complete Asset Inventory Control:</strong>
+                                    <ul>
+                                        <li>View complete asset inventory</li>
+                                        <li>Add, edit, and update asset details</li>
+                                        <li>Track asset location and custodian</li>
+                                        <li>Monitor asset condition and health</li>
+                                        <li>Mark assets for retirement/disposal</li>
+                                        <li>Generate inventory reports</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="collapsible-section">
+                        <div class="collapsible-header">
+                            <h3>2️⃣ Request Approval & Procurement</h3>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content open">
+                            <div class="collapsible-body">
+                                <div class="workflow">
+                                    <strong>Process Employee Asset Requests:</strong>
+                                    <ul>
+                                        <li>Review pending requests from all employees</li>
+                                        <li>Assess justification and business need</li>
+                                        <li>Approve for procurement</li>
+                                        <li>Reject with constructive feedback</li>
+                                        <li>Track request status</li>
+                                        <li>Monitor procurement fulfillment</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="collapsible-section">
+                        <div class="collapsible-header">
+                            <h3>3️⃣ Asset Allocation</h3>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content open">
+                            <div class="collapsible-body">
+                                <ul>
+                                    <li>Allocate approved assets to employees</li>
+                                    <li>Bulk assign to multiple users</li>
+                                    <li>Generate allocation reports</li>
+                                    <li>Track asset chain of custody</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="collapsible-section">
+                        <div class="collapsible-header">
+                            <h3>4️⃣ Transfers & Movements</h3>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content open">
+                            <div class="collapsible-body">
+                                <ul>
+                                    <li>Approve inter-department asset transfers</li>
+                                    <li>Track asset movements</li>
+                                    <li>Update asset location records</li>
+                                    <li>Maintain audit trail</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="collapsible-section">
+                        <div class="collapsible-header">
+                            <h3>5️⃣ Maintenance Oversight</h3>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content open">
+                            <div class="collapsible-body">
+                                <ul>
+                                    <li>Monitor maintenance requests</li>
+                                    <li>Schedule maintenance activities</li>
+                                    <li>Track repair and service history</li>
+                                    <li>Monitor asset health metrics</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="collapsible-section">
+                        <div class="collapsible-header">
+                            <h3>Key Workflows</h3>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content open">
+                            <div class="collapsible-body">
+                                <table>
+                                    <tr>
+                                        <th>Workflow</th>
+                                        <th>Your Role</th>
+                                        <th>Expected Timeline</th>
+                                    </tr>
+                                    <tr>
+                                        <td>Request Approval</td>
+                                        <td>Review & approve/reject</td>
+                                        <td>1-2 business days</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Asset Procurement</td>
+                                        <td>Initiate & monitor</td>
+                                        <td>Varies by supplier</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Asset Allocation</td>
+                                        <td>Assign to recipient</td>
+                                        <td>Upon receipt</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Asset Transfer</td>
+                                        <td>Approve & process</td>
+                                        <td>Same day</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Maintenance Request</td>
+                                        <td>Schedule & track</td>
+                                        <td>Depends on urgency</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="collapsible-section">
+                        <div class="collapsible-header">
+                            <h3>Reports & Analytics</h3>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content open">
+                            <div class="collapsible-body">
+                                <ul>
+                                    <li>📊 Asset utilization by department</li>
+                                    <li>📊 Request approval rates and trends</li>
+                                    <li>📊 Procurement cycle times</li>
+                                    <li>📊 Asset condition assessment</li>
+                                    <li>📊 Maintenance cost tracking</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="collapsible-section">
+                        <div class="collapsible-header">
+                            <h3>Best Practices</h3>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content open">
+                            <div class="collapsible-body">
+                                <ul>
+                                    <li>✅ Process requests within 24 hours</li>
+                                    <li>✅ Maintain accurate inventory records</li>
+                                    <li>✅ Validate all asset data</li>
+                                    <li>✅ Monitor supplier performance</li>
+                                    <li>✅ Coordinate with departments</li>
+                                    <li>✅ Document all decisions</li>
+                                    <li>✅ Ensure timely asset allocation</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-box" style="margin-top: auto;">
+                        <strong>Getting Help:</strong>
+                        <ul>
+                            <li>💼 Finance team for cost data</li>
+                            <li>🔧 Maintenance team for technical support</li>
+                            <li>📧 Procurement team for supplier issues</li>
+                            <li>❓ IT Support for system technical issues</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HR MANAGER -->
+            <div id="hr" class="role-section hr">
+                <div class="left-column">
+                    <div class="role-header">
+                        <h2>👥 HR Manager</h2>
+                        <p>HR Managers handle employee records, user management, payroll administration, and leave management. You oversee people-related processes and organizational data.</p>
+                        <div class="key-info-box">
+                            <strong>Access Level:</strong> Full HR & People Data
+                        </div>
+                    </div>
+
+                    <div class="dashboard-box">
+                        <strong>📊 HR Dashboard Shows:</strong>
+                        <ul>
+                            <li>Employee directory and records</li>
+                            <li>Organizational hierarchy</li>
+                            <li>Leave balances and requests</li>
+                            <li>Payroll summary and schedules</li>
+                            <li>User accounts and permissions</li>
+                            <li>Performance reviews and assessments</li>
+                            <li>Attendance and worklog data</li>
+                        </ul>
+                    </div>
+
+                    <div class="dashboard-box">
+                        <strong>✅ Write Access to:</strong>
+                        <ul>
+                            <li>Users (creation, editing)</li>
+                            <li>Payroll records</li>
+                            <li>Leave Balances</li>
+                            <li>Employee Hierarchy</li>
+                            <li>Performance Reviews</li>
+                            <li>Announcements</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="right-column">
+                    <div class="collapsible-section">
+                        <div class="collapsible-header">
+                            <h3>1️⃣ User Management</h3>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content open">
+                        <div class="collapsible-body">
+                            <div class="workflow">
+                                <strong>Create and Manage User Accounts:</strong>
+                                <ul>
+                                    <li>Create new user accounts</li>
+                                    <li>Edit user profile information</li>
+                                    <li>Assign roles and permissions</li>
+                                    <li>Update contact and location data</li>
+                                    <li>Manage user passwords and access</li>
+                                    <li>Deactivate or archive users</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                    <div class="collapsible-section">
+                        <div class="collapsible-header">
+                            <h3>2️⃣ Payroll Management</h3>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content open">
+                        <div class="collapsible-body">
+                            <ul>
+                                <li>Manage employee payroll records</li>
+                                <li>Process salary and compensation</li>
+                                <li>Track benefits and deductions</li>
+                                <li>Generate payroll reports</li>
+                                <li>Manage tax withholdings</li>
+                                <li>Ensure compliance with labor laws</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                    <div class="collapsible-section">
+                        <div class="collapsible-header">
+                            <h3>3️⃣ Leave Management</h3>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content open">
+                        <div class="collapsible-body">
+                            <ul>
+                                <li>Set up leave policies and balances</li>
+                                <li>Review leave requests</li>
+                                <li>Approve or deny time off</li>
+                                <li>Track leave usage and balances</li>
+                                <li>Generate leave reports</li>
+                                <li>Handle leave adjustments</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                    <div class="collapsible-section">
+                        <div class="collapsible-header">
+                            <h3>4️⃣ Employee Hierarchy</h3>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content open">
+                        <div class="collapsible-body">
+                            <ul>
+                                <li>Define reporting relationships</li>
+                                <li>Organize team structure</li>
+                                <li>Assign managers to employees</li>
+                                <li>Manage organizational changes</li>
+                                <li>Track reporting chains</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                    <div class="collapsible-section">
+                        <div class="collapsible-header">
+                            <h3>5️⃣ Performance Management</h3>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content open">
+                        <div class="collapsible-body">
+                            <ul>
+                                <li>Manage performance reviews</li>
+                                <li>Track employee assessments</li>
+                                <li>Coordinate review schedules</li>
+                                <li>Document feedback and ratings</li>
+                                <li>Archive review history</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                    <div class="collapsible-section">
+                        <div class="collapsible-header">
+                            <h3>Key HR Processes</h3>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content open">
+                        <div class="collapsible-body">
+                            <h4>Employee Onboarding</h4>
+                            <ol>
+                                <li>Create user account</li>
+                                <li>Set up employee record</li>
+                                <li>Configure payroll details</li>
+                                <li>Establish reporting relationship</li>
+                                <li>Set initial leave balance</li>
+                                <li>Provide system orientation</li>
+                            </ol>
+
+                            <h4 style="margin-top: 15px;">Payroll Cycle</h4>
+                            <ol>
+                                <li>Collect attendance and timesheet data</li>
+                                <li>Verify payroll calculations</li>
+                                <li>Process payroll</li>
+                                <li>Generate pay stubs</li>
+                                <li>Reconcile payroll accounts</li>
+                                <li>Archive payroll records</li>
+                            </ol>
+
+                            <h4 style="margin-top: 15px;">Leave Management</h4>
+                            <ol>
+                                <li>Set annual leave policies</li>
+                                <li>Initialize leave balances</li>
+                                <li>Process leave requests</li>
+                                <li>Update leave records</li>
+                                <li>Report on leave usage</li>
+                            </ol>
+
+                            <h4 style="margin-top: 15px;">Performance Reviews</h4>
+                            <ol>
+                                <li>Schedule review cycles</li>
+                                <li>Coordinate with managers</li>
+                                <li>Collect review feedback</li>
+                                <li>Store performance data</li>
+                                <li>Report on performance trends</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+
+                    <div class="collapsible-section">
+                        <div class="collapsible-header">
+                            <h3>Compliance & Documentation</h3>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content open">
+                        <div class="collapsible-body">
+                            <ul>
+                                <li>📋 Employment agreements and contracts</li>
+                                <li>📋 Confidentiality and IP agreements</li>
+                                <li>📋 Tax and regulatory compliance</li>
+                                <li>📋 Benefits administration documentation</li>
+                                <li>📋 Training and development records</li>
+                                <li>📋 Discipline and performance documentation</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                    <div class="collapsible-section">
+                        <div class="collapsible-header">
+                            <h3>Reports You Can Generate</h3>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content open">
+                            <div class="collapsible-body">
+                                <ul>
+                                    <li>📊 Employee directory and contact list</li>
+                                    <li>📊 Organizational hierarchy diagram</li>
+                                    <li>📊 Payroll summary and tax reporting</li>
+                                    <li>📊 Leave usage and balances</li>
+                                    <li>📊 Headcount and staffing analysis</li>
+                                    <li>📊 Performance summary</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-box" style="margin-top: auto;">
+                        <strong>Getting Help:</strong>
+                        <ul>
+                            <li>⚖️ Legal team for employment law questions</li>
+                            <li>💼 Finance team for payroll integration</li>
+                            <li>🔒 Security team for access control</li>
+                            <li>❓ IT Support for system access issues</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FINANCE CONTROLLER -->
+            <div id="finance" class="role-section finance">
+                <div class="left-column">
+                    <div class="role-header">
+                        <h2>💰 Finance Controller</h2>
+                        <p>Finance Controllers manage asset valuations, depreciation calculations, financial reporting, and ledger entries. Your focus is on the financial aspects of asset management—tracking cost, depreciation, and building financial reports.</p>
+                        <div class="key-info-box">
+                            <strong>Access Level:</strong> Full Financial Data
+                        </div>
+                    </div>
+
+                    <div class="dashboard-box">
+                        <strong>💹 Finance Dashboard Shows:</strong>
+                        <ul>
+                            <li>Total asset value (acquisition + current)</li>
+                            <li>Depreciation trends and schedules</li>
+                            <li>Grant allocations and tracking</li>
+                            <li>Asset ledger (all transactions)</li>
+                            <li>Depreciation reports</li>
+                            <li>Financial KPIs and metrics</li>
+                        </ul>
+                    </div>
+
+                    <div class="dashboard-box">
+                        <strong>✅ Write Access to:</strong>
+                        <ul>
+                            <li>Payroll records</li>
+                            <li>Grants management</li>
+                            <li>Asset valuations</li>
+                            <li>Depreciation policies</li>
+                            <li>Financial reports</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="right-column">
+                    <div class="collapsible-section">
+                        <div class="collapsible-header">
+                            <h3>1️⃣ Asset Ledger Management</h3>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content open">
+                        <div class="collapsible-body">
+                            <div class="workflow">
+                                <strong>Complete Asset Valuation & Ledger:</strong>
+                                <ul>
+                                    <li>View all assets with financial data</li>
+                                    <li>Track acquisition cost and date</li>
+                                    <li>Monitor current valuation</li>
+                                    <li>View asset depreciation schedule</li>
+                                    <li>Generate ledger reports for accounting</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                    <div class="collapsible-section">
+                        <div class="collapsible-header">
+                            <h3>2️⃣ Depreciation Management</h3>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content open">
+                        <div class="collapsible-body">
+                            <div class="workflow">
+                                <strong>Depreciation Calculations & Tracking:</strong>
+                                <ul>
+                                    <li>Automatic depreciation calculations (straight-line, declining balance, etc.)</li>
+                                    <li>Configure depreciation policies by asset category</li>
+                                    <li>View depreciation schedule for each asset</li>
+                                    <li>Generate depreciation reports for financial statements</li>
+                                    <li>Track accumulated depreciation</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                    <div class="collapsible-section">
+                        <div class="collapsible-header">
+                            <h3>3️⃣ Grant Management</h3>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content open">
+                        <div class="collapsible-body">
+                            <p>Track assets funded through grants:</p>
+                            <ul style="margin-top: 10px;">
+                                <li>Record grant allocations and amounts</li>
+                                <li>Link assets to specific grants</li>
+                                <li>Track grant usage and compliance</li>
+                                <li>Generate grant reports for audits</li>
+                                <li>Monitor grant-funded asset depreciation separately</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                    <div class="collapsible-section">
+                        <div class="collapsible-header">
+                            <h3>4️⃣ Financial Reports</h3>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content open">
+                        <div class="collapsible-body">
+                            <p><strong>Generate Reports:</strong></p>
+                            <ul style="margin-top: 10px;">
+                                <li>📋 Asset register (full inventory with values)</li>
+                                <li>📋 Depreciation schedules by category</li>
+                                <li>📋 Fixed asset report (for balance sheet)</li>
+                                <li>📋 Grant compliance report</li>
+                                <li>📋 Asset disposal/write-off report</li>
+                                <li>📋 Year-over-year valuation trends</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                    <div class="collapsible-section">
+                        <div class="collapsible-header">
+                            <h3>Key Financial Metrics</h3>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content open">
+                            <div class="collapsible-body">
+                                <table>
+                                    <tr>
+                                        <th>Metric</th>
+                                        <th>Meaning</th>
+                                        <th>Used For</th>
+                                    </tr>
+                                    <tr>
+                                        <td>Acquisition Cost</td>
+                                        <td>Price paid when asset was purchased</td>
+                                        <td>Balance sheet valuation</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Accumulated Depreciation</td>
+                                        <td>Total depreciation since purchase</td>
+                                        <td>Calculate net book value</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Net Book Value</td>
+                                        <td>Acquisition Cost - Accumulated Depreciation</td>
+                                        <td>Financial reporting</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Depreciation Expense</td>
+                                        <td>Expense recognized this period</td>
+                                        <td>Income statement</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="collapsible-section">
+                        <div class="collapsible-header">
+                            <h3>Best Practices</h3>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content open">
+                            <div class="collapsible-body">
+                                <ul>
+                                    <li>✅ Review asset values monthly</li>
+                                    <li>✅ Keep depreciation policies consistent</li>
+                                    <li>✅ Document all policy changes</li>
+                                    <li>✅ Reconcile to GL regularly</li>
+                                    <li>✅ Maintain audit trail completeness</li>
+                                    <li>✅ Review grant compliance quarterly</li>
+                                    <li>✅ Validate acquisition cost data</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-box" style="margin-top: auto;">
+                        <strong>Getting Help:</strong>
+                        <ul>
+                            <li>📊 Reports module for custom financial reports</li>
+                            <li>📧 Internal auditors for policy questions</li>
+                            <li>💼 Procurement team for acquisition data</li>
+                            <li>❓ System administrator for technical issues</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PROGRAM COORDINATOR (MANAGER) -->
+            <div id="manager" class="role-section manager">
+                <div class="left-column">
+                    <div class="role-header">
+                        <h2>📊 Program Officer</h2>
+                        <p>Program Officers manage their team's asset allocation and requests. You oversee team-specific asset needs, approve requests from your direct reports, and manage team asset inventory.</p>
+                        <div class="key-info-box">
+                            <strong>Access Level:</strong> Team Data & Asset Management
+                        </div>
+                    </div>
+
+                    <div class="dashboard-box">
+                        <strong>📊 Dashboard Shows:</strong>
+                        <ul>
+                            <li>Team asset allocation summary</li>
+                            <li>Pending asset requests from your team</li>
+                            <li>Asset transfers and movements</li>
+                            <li>Team member tasks and worklogs</li>
+                            <li>Team performance reviews</li>
+                            <li>Team leave balances</li>
+                        </ul>
+                    </div>
+
+                    <div class="dashboard-box">
+                        <strong>✅ Your Core Functions:</strong>
+                        <ul>
+                            <li>Approve Team Asset Requests</li>
+                            <li>Allocate Assets to Team</li>
+                            <li>Manage Team Data</li>
+                            <li>Track Asset Transfers</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="right-column">
+                    <div class="collapsible-section">
+                        <div class="collapsible-header">
+                            <h3>1️⃣ Approve Team Asset Requests</h3>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content open">
+                        <div class="collapsible-body">
+                            <div class="workflow">
+                                <strong>Review and Approve/Reject Requests:</strong>
+                                <ol>
+                                    <li>View all pending requests from your team members</li>
+                                    <li>Review justification and business need</li>
+                                    <li>Approve to authorize procurement</li>
+                                    <li>Reject with constructive feedback if needed</li>
+                                    <li>Track approval history</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                    <div class="collapsible-section">
+                        <div class="collapsible-header">
+                            <h3>2️⃣ Allocate Assets to Team</h3>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content open">
+                        <div class="collapsible-body">
+                            <ul>
+                                <li>Manually allocate assets to team members</li>
+                                <li>Bulk assign to multiple team members</li>
+                                <li>Generate team allocation reports</li>
+                                <li>Track who has what assets</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                    <div class="collapsible-section">
+                        <div class="collapsible-header">
+                            <h3>3️⃣ Manage Team Data</h3>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content open">
+                        <div class="collapsible-body">
+                            <p>You automatically see all data for your direct reports:</p>
+                            <ul style="margin-top: 10px;">
+                                <li>📋 See all team member tasks and worklogs</li>
+                                <li>📊 View team performance reviews</li>
+                                <li>📅 Access team leave balances</li>
+                                <li>🎯 Monitor team productivity</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                    <div class="collapsible-section">
+                        <div class="collapsible-header">
+                            <h3>4️⃣ Track Asset Transfers</h3>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content open">
+                        <div class="collapsible-body">
+                            <ul>
+                                <li>Approve inter-team asset transfers</li>
+                                <li>Manage asset movement tracking</li>
+                                <li>Track transfer history</li>
+                                <li>Ensure proper chain of custody</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                    <div class="collapsible-section">
+                        <div class="collapsible-header">
+                            <h3>Request Approval Workflow</h3>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content open">
+                            <div class="collapsible-body">
+                                <table>
+                                    <tr>
+                                        <th>Stage</th>
+                                        <th>Your Action</th>
+                                        <th>Outcome</th>
+                                    </tr>
+                                    <tr>
+                                        <td>Team Member Submits</td>
+                                        <td>Review request</td>
+                                        <td>Request appears in your queue</td>
+                                    </tr>
+                                    <tr>
+                                        <td>You Approve</td>
+                                        <td>Click "Approve"</td>
+                                        <td>Sent to Operations/Procurement</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Procurement Fulfills</td>
+                                        <td>Monitor progress</td>
+                                        <td>Asset acquired</td>
+                                    </tr>
+                                    <tr>
+                                        <td>You Allocate</td>
+                                        <td>Assign to team member</td>
+                                        <td>Member receives asset</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="collapsible-section">
+                        <div class="collapsible-header">
+                            <h3>Best Practices</h3>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content open">
+                        <div class="collapsible-body">
+                            <ul>
+                                <li>✅ Approve requests promptly (within 24 hours)</li>
+                                <li>✅ Provide feedback on rejected requests</li>
+                                <li>✅ Regularly review your team's assets</li>
+                                <li>✅ Monitor asset condition</li>
+                                <li>✅ Ensure proper asset tracking</li>
+                                <li>✅ Document all decisions</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                    <div class="dashboard-box" style="margin-top: auto;">
+                        <strong>Getting Help:</strong>
+                        <ul>
+                            <li>⚙️ Operations team for asset management questions</li>
+                            <li>📧 Finance team for depreciation/valuation questions</li>
+                            <li>🔧 Maintenance team for asset repair issues</li>
+                            <li>❓ IT Support for system issues</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- EMPLOYEE -->
+            <div id="employee" class="role-section employee">
+                <div class="left-column">
+                    <div class="role-header">
+                        <h2>👤 General Staff (Employee)</h2>
+                        <p>Manage your work assets and track equipment issued to you. Request what you need, maintain what you have, and report issues when they arise.</p>
+                        <div class="key-info-box">
+                            <strong>Access Level:</strong> Personal Assets & Requests
+                        </div>
+                    </div>
+
+                    <div class="dashboard-box">
+                        <strong>📌 Key Responsibilities:</strong>
+                        <ol style="margin: 0; padding-left: 20px;">
+                            <li>Request assets for work</li>
+                            <li>Track personal allocation</li>
+                            <li>Report issues & damage</li>
+                            <li>Request transfers</li>
+                            <li>Maintain responsibility</li>
+                        </ol>
+                    </div>
+
+                    <div class="dashboard-box">
+                        <strong>4 Core Tasks:</strong>
+                        <ul>
+                            <li>🛒 Request Assets</li>
+                            <li>📦 Track Your Assets</li>
+                            <li>⚠️ Report Issues</li>
+                            <li>🔄 Request Transfers</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="right-column">
+                    <div class="collapsible-section">
+                        <div class="collapsible-header">
+                            <h3>🛒 Request Assets</h3>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content open">
+                            <div class="collapsible-body">
+                                <p><strong>Need equipment?</strong> Submit a request to your manager for approval.</p>
+                                <p style="margin-top: 10px;"><strong>Steps:</strong></p>
+                                <ol>
+                                    <li>Navigate to Request section</li>
+                                    <li>Select asset category</li>
+                                    <li>Pick the specific asset</li>
+                                    <li>Add justification (why you need it)</li>
+                                    <li>Submit for manager review</li>
+                                </ol>
+                                <p style="margin-top: 10px; color: #666; font-size: 0.9em;"><strong>Tip:</strong> Be clear and specific in your justification to speed up approvals.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="collapsible-section">
+                        <div class="collapsible-header">
+                            <h3>📦 Manage Your Assets</h3>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content open">
+                            <div class="collapsible-body">
+                                <p>View all equipment assigned to you with complete details.</p>
+                                <p style="margin-top: 10px;"><strong>What You'll See:</strong></p>
+                                <ul>
+                                    <li>Asset name and category</li>
+                                    <li>Serial number and condition</li>
+                                    <li>Current location and assignment date</li>
+                                    <li>Maintenance history</li>
+                                    <li>Transfer/return options</li>
+                                </ul>
+                                <p style="margin-top: 10px; color: #666; font-size: 0.9em;"><strong>Important:</strong> Keep track of your assets and report any issues immediately.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="collapsible-section">
+                        <div class="collapsible-header">
+                            <h3>⚠️ Report Issues</h3>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content open">
+                            <div class="collapsible-body">
+                                <p>Found damage, malfunction, or loss? Report it immediately to the maintenance team for repair or investigation.</p>
+                                <p style="margin-top: 10px;"><strong>How to Report:</strong></p>
+                                <ol>
+                                    <li>Go to Issues/Maintenance section</li>
+                                    <li>Select the affected asset</li>
+                                    <li>Describe the problem clearly</li>
+                                    <li>Attach photos if possible</li>
+                                    <li>Submit issue ticket</li>
+                                </ol>
+                                <p style="margin-top: 10px; color: #666; font-size: 0.9em;"><strong>Note:</strong> Early reporting helps with repairs and prevents further damage.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="collapsible-section">
+                        <div class="collapsible-header">
+                            <h3>🔄 Request Asset Transfers</h3>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content open">
+                            <div class="collapsible-body">
+                                <p><strong>Need to move an asset to a different location or project?</strong> You can now submit transfer requests directly through the system.</p>
+                                <p style="margin-top: 10px;"><strong>When to Request a Transfer:</strong></p>
+                                <ul>
+                                    <li>Asset needs to move to a different department</li>
+                                    <li>Project completion requires asset relocation</li>
+                                    <li>Equipment is being reassigned to another team member</li>
+                                    <li>Temporary asset loan to colleague (with approval)</li>
+                                </ul>
+                                <p style="margin-top: 10px;"><strong>How to Request a Transfer:</strong></p>
+                                <ol>
+                                    <li>Go to <strong>Request New Asset</strong> section</li>
+                                    <li>Click the <strong>"Transfer Asset"</strong> tab</li>
+                                    <li>Select the asset you want to transfer from your active assets</li>
+                                    <li>Provide the reason for the transfer</li>
+                                    <li>Click <strong>"Request Transfer"</strong> to submit</li>
+                                </ol>
+                                <p style="margin-top: 15px;"><strong>What Happens Next:</strong></p>
+                                <ul>
+                                    <li>Your transfer request is sent to your manager</li>
+                                    <li>Manager reviews and approves/rejects the transfer</li>
+                                    <li>You receive notification of the decision</li>
+                                    <li>Once approved, the transfer is processed immediately</li>
+                                </ul>
+                                <p style="margin-top: 10px; color: #666; font-size: 0.9em;"><strong>Important:</strong> Never transfer assets without approval from your manager.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                    <div class="collapsible-section">
+                        <div class="collapsible-header">
+                            <h3>Request Workflow & Statuses</h3>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content open">
+                        <div class="collapsible-body">
+                            <p><strong>Understand what each request status means:</strong></p>
+                            <table style="margin-top: 15px;">
+                                <tr>
+                                    <th>Status</th>
+                                    <th>Meaning</th>
+                                    <th>Next Step</th>
+                                </tr>
+                                <tr>
+                                    <td>✏️ Draft</td>
+                                    <td>Still being edited by you</td>
+                                    <td>Complete & submit when ready</td>
+                                </tr>
+                                <tr>
+                                    <td>⏳ Pending</td>
+                                    <td>Waiting for manager approval</td>
+                                    <td>Wait for review</td>
+                                </tr>
+                                <tr>
+                                    <td>✅ Approved</td>
+                                    <td>Approved — asset being acquired</td>
+                                    <td>Wait for allocation</td>
+                                </tr>
+                                <tr>
+                                    <td>❌ Rejected</td>
+                                    <td>Not approved by manager</td>
+                                    <td>Ask manager for feedback; revise & resubmit</td>
+                                </tr>
+                                <tr>
+                                    <td>📦 Allocated</td>
+                                    <td>Ready to collect or in your inventory</td>
+                                    <td>Collect or begin using</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="collapsible-section">
+                        <div class="collapsible-header">
+                            <h3>Your Responsibilities</h3>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content open">
+                            <div class="collapsible-body">
+                                <ul>
+                            <li><strong>Request Appropriately:</strong> Request only what you genuinely need for your work</li>
+                            <li><strong>Maintain Assets:</strong> Keep assigned assets in good working condition</li>
+                            <li><strong>Report Issues:</strong> Report damage, loss, or malfunction immediately</li>
+                            <li><strong>Return When Asked:</strong> Return assets promptly when requested by management</li>
+                            <li><strong>No Unauthorized Transfers:</strong> Don't share or transfer assets without approval</li>
+                            <li><strong>Inventory Checks:</strong> Participate in periodic inventory verifications</li>
+                            <li><strong>Use Appropriately:</strong> Use assets only for work-related purposes</li>
+                        </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="collapsible-section">
+                        <div class="collapsible-header">
+                            <h3>Quick Answers (FAQ)</h3>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content open">
+                        <div class="collapsible-body">
+                            <h4>How long does approval take?</h4>
+                            <p>Usually 1-2 business days. Be clear and specific with your justification to speed it up.</p>
+
+                            <h4 style="margin-top: 15px;">My request was rejected, what now?</h4>
+                            <p>Contact your manager to understand why. They can provide feedback for revision. Once you address the concerns, you can resubmit the request.</p>
+
+                            <h4 style="margin-top: 15px;">I damaged an asset, what should I do?</h4>
+                            <p>Report it in the Issues section right away with a photo if possible. This helps with assessment and repair planning. Don't hide the damage.</p>
+
+                            <h4 style="margin-top: 15px;">Can I transfer an asset to a colleague?</h4>
+                            <p>Yes! You can now submit a transfer request directly through the "Transfer Asset" tab in the Request section. Your manager will review and approve the transfer. Direct transfers without authorization are not permitted.</p>
+
+                            <h4 style="margin-top: 15px;">Need help with a request or issue?</h4>
+                            <p>Contact your manager for request-related questions or the asset/maintenance team for technical issues.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>Kalike Asset Management System v2.2.0 | Complete Role Guides (All 7 Roles)</p>
+            <p><strong>Roles Covered:</strong> Super Administrator • Executive Director • Operations Manager • HR Manager • Finance Controller • Program Officer • General Staff</p>
+            <p>Last Updated: 2026-05-25 | Select your role tab above to view comprehensive guidance.</p>
+        </footer>
+    </div>
+
+    <script>
+        function switchRole(role) {
+            // Hide all sections
+            document.querySelectorAll('.role-section').forEach(section => {
+                section.classList.remove('active');
+            });
+
+            // Remove active class from all buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show selected section
+            document.getElementById(role).classList.add('active');
+
+            // Add active class to clicked button - find the button with matching class
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                if (btn.classList.contains(role)) {
+                    btn.classList.add('active');
+                }
+            });
+
+            // Scroll to top
+            window.scrollTo(0, 0);
+        }
+
+        // Auto-select role from sessionStorage (set by KALIKE_ROLES_HUB.html)
+        window.addEventListener('load', function() {
+            const selectedRole = sessionStorage.getItem('selectedRole');
+            if (selectedRole && document.getElementById(selectedRole)) {
+                switchRole(selectedRole);
+                sessionStorage.removeItem('selectedRole');
+            }
+        });
+
+        // Also support hash-based navigation
+        window.addEventListener('hashchange', function() {
+            const roleFromHash = window.location.hash.substring(1);
+            if (roleFromHash && document.getElementById(roleFromHash)) {
+                switchRole(roleFromHash);
+            }
+        });
+
+        // Check for hash on page load
+        window.addEventListener('load', function() {
+            const roleFromHash = window.location.hash.substring(1);
+            if (roleFromHash && document.getElementById(roleFromHash)) {
+                switchRole(roleFromHash);
+            }
+            initializeCollapsibles();
+        });
+
+        // Collapsible functionality
+        function toggleCollapsible(header) {
+            const content = header.nextElementSibling;
+            const toggle = header.querySelector('.collapsible-toggle');
+
+            content.classList.toggle('open');
+            toggle.classList.toggle('open');
+        }
+
+        function initializeCollapsibles() {
+            document.querySelectorAll('.collapsible-header').forEach(header => {
+                header.removeEventListener('click', handleCollapsibleClick);
+                header.addEventListener('click', handleCollapsibleClick);
+            });
+        }
+
+        function handleCollapsibleClick(e) {
+            toggleCollapsible(this);
+        }
+
+        // Re-initialize collapsibles when role switches
+        const originalSwitchRole = switchRole;
+        switchRole = function(role) {
+            originalSwitchRole(role);
+            setTimeout(() => {
+                initializeCollapsibles();
+            }, 10);
+        };
+    </script>
+</body>
+</html>

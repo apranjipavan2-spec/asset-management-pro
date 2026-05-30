@@ -1,5 +1,14 @@
 import { db } from '../mock/db.js';
 
+window.filterManagerAssets = function(query) {
+    const q = query.toLowerCase();
+    const rows = document.querySelectorAll('#manager-asset-tbody tr');
+    rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        row.style.display = text.includes(q) ? '' : 'none';
+    });
+};
+
 export function renderManagerDashboard() {
     const stats = db.getStats();
     
@@ -9,79 +18,101 @@ export function renderManagerDashboard() {
 
     return `
         <div class="animate-in fade-in slide-in-from-bottom-2 duration-200 h-[calc(100vh-128px)] flex flex-col min-h-0">
+            <header class="flex items-center justify-between mb-4">
+                <div>
+                    <h2 class="page-title">Executive Fleet Intelligence</h2>
+                    <p class="page-subtitle">Real-time Asset Monitoring & Deployment</p>
+                </div>
+                ${window.app.canExportAssets() ? `
+                <div class="flex items-center bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                    <button onclick="app.exportCSV('assets')" class="px-3 py-2 text-slate-600 text-[10px] font-bold hover:bg-slate-50 border-r border-slate-100 transition-all uppercase tracking-widest flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-[14px]">csv</span> CSV
+                    </button>
+                    <button onclick="app.exportExcel(event)" class="px-3 py-2 text-emerald-600 text-[10px] font-bold hover:bg-emerald-50 transition-all uppercase tracking-widest flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-[14px]">table_chart</span> Excel
+                    </button>
+                </div>` : ''}
+            </header>
+
             <!-- Content Split (Enforces strict vertical gutters and exact screen height) -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-1 min-h-0">
                 
                 <!-- Left Column (2/3 width) -->
-                <div class="lg:col-span-2 flex flex-col gap-6 min-h-0">
+                <div class="lg:col-span-2 flex flex-col gap-4 min-h-0">
 
                     <!-- Top 3 KPIs -->
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <!-- Fleet Volume -->
-                        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 relative overflow-hidden flex flex-col justify-between h-24">
-                            <div class="absolute left-0 top-0 bottom-0 w-1 bg-accent shadow-[0_0_10px_rgba(6,81,237,0.5)]"></div>
-                            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Total Fleet Volume</span>
+                        <div class="stat-tile flex flex-col justify-between h-24">
+                            <div class="stat-strip bg-accent"></div>
+                            <span class="stat-label ml-1">Total Fleet Volume</span>
                             <div class="flex justify-between items-end ml-1">
-                                <h3 class="text-3xl font-black text-slate-900 leading-none tracking-tighter">${stats.totalAssets.toLocaleString()}</h3>
+                                <h3 class="stat-value">${stats.totalAssets.toLocaleString()}</h3>
                                 <p class="text-[9px] text-emerald-700 font-black flex items-center gap-0.5 bg-emerald-50 border border-emerald-100 px-2 py-1 rounded-full uppercase tracking-widest">
-                                    <span class="material-symbols-outlined text-[10px]">trending_up</span> +2.4%
+                                    <span class="material-symbols-outlined text-[10px]">trending_up</span> ${stats.activeAssets} Active
                                 </p>
                             </div>
                         </div>
                         <!-- Utilization -->
-                        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 relative overflow-hidden flex flex-col justify-between h-24">
-                            <div class="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>
-                            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Active Nodes</span>
+                        <div class="stat-tile flex flex-col justify-between h-24">
+                            <div class="stat-strip bg-emerald-500"></div>
+                            <span class="stat-label ml-1">Active Nodes</span>
                             <div class="flex justify-between items-end ml-1">
-                                <h3 class="text-3xl font-black text-slate-900 leading-none tracking-tighter">${stats.activeAssets}</h3>
+                                <h3 class="stat-value">${stats.activeAssets}</h3>
                                 <span class="text-[9px] font-black text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-1 rounded-full uppercase tracking-widest">${(stats.activeAssets / stats.totalAssets * 100).toFixed(1)}% Usage</span>
                             </div>
                         </div>
                         <!-- Pending -->
-                        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 relative overflow-hidden flex flex-col justify-between h-24">
-                            <div class="absolute left-0 top-0 bottom-0 w-1 bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]"></div>
-                            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Maintenance Queue</span>
+                        <div class="stat-tile flex flex-col justify-between h-24">
+                            <div class="stat-strip bg-amber-500"></div>
+                            <span class="stat-label ml-1">Maintenance Queue</span>
                             <div class="flex justify-between items-end ml-1">
-                                <h3 class="text-3xl font-black text-slate-900 leading-none tracking-tighter">${stats.maintenanceAssets}</h3>
+                                <h3 class="stat-value">${stats.maintenanceAssets}</h3>
                                 <span class="text-[9px] text-amber-700 font-black bg-amber-50 border border-amber-100 px-2 py-1 rounded-full uppercase tracking-widest">Awaiting</span>
                             </div>
                         </div>
                     </div>
 
                     <!-- The Active Asset Registry Table -->
-                    <section class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col flex-1 min-h-0">
-                        <div class="px-8 py-6 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white z-20">
-                            <h3 class="text-sm font-extrabold text-slate-900 uppercase tracking-tight">Active Asset Registry</h3>
-                            <button onclick="app.exportCSV('assets')" class="px-3 py-1.5 bg-slate-50 text-[10px] font-bold text-slate-600 rounded-lg hover:bg-slate-100 transition-all border border-slate-200">Export CSV</button>
+                    <section class="card-accent flex flex-col flex-1 min-h-0">
+                        <div class="card-header gap-4 flex-wrap">
+                            <h3 class="card-title">Active Asset Registry</h3>
+                            <div class="flex items-center gap-3 flex-1 justify-end">
+                                <div class="relative max-w-xs w-full">
+                                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[16px]">search</span>
+                                    <input type="text" oninput="window.filterManagerAssets(this.value)" placeholder="Search identity, class, geo, custodian..." class="w-full pl-9 pr-4 py-2 text-xs border border-slate-200 rounded-lg focus:border-accent outline-none transition-all shadow-sm" />
+                                </div>
+                                ${window.app.canExportAssets() ? `<button onclick="app.exportCSV('assets')" class="px-3 py-2 bg-slate-50 text-[10px] font-bold text-slate-600 rounded-lg hover:bg-slate-100 transition-all border border-slate-200 shrink-0 uppercase tracking-widest flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px]">csv</span> Export</button>` : ''}
+                            </div>
                         </div>
-                        <div class="overflow-y-auto flex-1 bg-white min-h-0">
-                            <table class="w-full text-left relative">
-                                <thead class="bg-slate-50/80 backdrop-blur top-0 sticky z-10">
+                        <div class="overflow-auto max-h-[760px] scroll-container flex-1 bg-white min-h-0">
+                            <table class="dense-table relative">
+                                <thead class="sticky-header">
                                     <tr>
-                                        <th class="px-6 py-3 text-[9px] font-black uppercase tracking-widest text-slate-400">Asset Identity</th>
-                                        <th class="px-6 py-3 text-[9px] font-black uppercase tracking-widest text-slate-400">Class</th>
-                                        <th class="px-6 py-3 text-[9px] font-black uppercase tracking-widest text-slate-400">Geography</th>
-                                        <th class="px-6 py-3 text-[9px] font-black uppercase tracking-widest text-slate-400">Custodian</th>
-                                        <th class="px-6 py-3 text-[9px] font-black uppercase tracking-widest text-slate-400">State</th>
+                                        <th>Asset Identity</th>
+                                        <th>Class</th>
+                                        <th>Geography</th>
+                                        <th>Custodian</th>
+                                        <th>State</th>
                                     </tr>
                                 </thead>
-                                <tbody class="divide-y divide-slate-100">
+                                <tbody id="manager-asset-tbody" class="divide-y divide-slate-100">
                                     ${db.assets.map(asset => `
-                                        <tr onclick="window.openAssetDetailModal('${asset.id}')" class="hover:bg-slate-50/50 transition-all group cursor-pointer">
-                                            <td class="px-6 py-3">
+                                        <tr onclick="window.openAssetDetailModal('${asset.id}')" class="group ${asset.status === 'Disposed' ? 'opacity-50 grayscale' : ''}">
+                                            <td>
                                                 <div class="flex items-center gap-3">
-                                                    <div class="w-8 h-8 rounded bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-accent group-hover:text-white transition-all">
+                                                    <div class="compact-icon bg-slate-100 text-slate-400 group-hover:bg-accent group-hover:text-white">
                                                         <span class="material-symbols-outlined text-[14px]">inventory_2</span>
                                                     </div>
-                                                    <div>
-                                                        <p class="text-xs font-bold text-slate-900 group-hover:text-accent">${asset.name}</p>
+                                                    <div class="max-w-[140px]">
+                                                        <p class="text-[11px] font-black text-slate-900 group-hover:text-accent multiline-name">${asset.name}</p>
                                                         <p class="text-[9px] text-slate-400 font-bold uppercase">#${asset.id}</p>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td class="px-6 py-3 text-[11px] font-bold text-slate-600">${asset.category}</td>
-                                            <td class="px-6 py-3 text-[11px] font-bold text-slate-600">${asset.location}</td>
-                                            <td class="px-6 py-3">
+                                            <td class="text-[10px] font-bold text-slate-600">${asset.category}</td>
+                                            <td class="text-[10px] font-bold text-slate-600">${asset.location}</td>
+                                            <td>
                                                 <div class="flex items-center gap-2">
                                                     <div class="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[8px] font-black uppercase tracking-tighter shrink-0">${asset.assignedTo ? asset.assignedTo.charAt(0) : '?'}</div>
                                                     <div>
@@ -90,8 +121,8 @@ export function renderManagerDashboard() {
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td class="px-6 py-3">
-                                                <span class="px-2 py-0.5 ${asset.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-rose-50 text-rose-700 border-rose-100'} text-[9px] font-bold rounded uppercase border">
+                                            <td>
+                                                <span class="px-2 py-0.5 ${asset.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : asset.status === 'Disposed' ? 'bg-slate-100 text-slate-500 border-slate-200' : 'bg-rose-50 text-rose-700 border-rose-100'} text-[9px] font-bold rounded-full uppercase border">
                                                     ${asset.status}
                                                 </span>
                                             </td>
@@ -104,23 +135,23 @@ export function renderManagerDashboard() {
                 </div>
 
                 <!-- Right Column (1/3 width) -->
-                <div class="flex flex-col gap-6 min-h-0">
+                <div class="flex flex-col gap-4 min-h-0">
 
                     <!-- Health KPI Anchor -->
-                    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 relative overflow-hidden flex flex-col justify-between h-24">
-                        <div class="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]"></div>
-                        <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Fleet Health Index</span>
+                    <div class="stat-tile flex flex-col justify-between h-24">
+                        <div class="stat-strip bg-indigo-500"></div>
+                        <span class="stat-label ml-1">Fleet Health Index</span>
                         <div class="flex justify-between items-end ml-1">
-                            <h3 class="text-3xl font-black text-indigo-600 leading-none tracking-tighter">98.2%</h3>
-                            <span class="text-[9px] text-indigo-700 font-black bg-indigo-50 border border-indigo-100 px-2 py-1 rounded-full uppercase tracking-widest">Optimal Status</span>
+                            <h3 class="stat-value text-indigo-600">${stats.totalAssets > 0 ? ((stats.activeAssets / stats.totalAssets) * 100).toFixed(1) : 0}%</h3>
+                            <span class="text-[9px] text-indigo-700 font-black bg-indigo-50 border border-indigo-100 px-2 py-1 rounded-full uppercase tracking-widest">${stats.activeAssets === stats.totalAssets ? 'Optimal' : stats.maintenanceAssets > 0 ? 'Needs Attention' : 'Good'}</span>
                         </div>
                     </div>
 
                     <!-- Requisition Queue -->
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col flex-1 min-h-0">
-                        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 shrink-0 z-20">
-                            <h3 class="text-[11px] font-extrabold text-slate-900 uppercase tracking-widest flex items-center gap-2">
-                                <span class="material-symbols-outlined text-sm text-slate-400">inbox</span> 
+                    <div class="card-accent flex flex-col flex-1 min-h-0">
+                        <div class="card-header shrink-0">
+                            <h3 class="card-title flex items-center gap-2">
+                                <span class="material-symbols-outlined text-sm text-slate-400">inbox</span>
                                 Authorizations
                             </h3>
                             <div class="flex items-center gap-2">
@@ -128,7 +159,7 @@ export function renderManagerDashboard() {
                                 ${pendingCount > 0 ? `<span class="bg-amber-500 text-white text-[9px] px-2 py-0.5 rounded-full font-black shadow-inner">${pendingCount} Pending</span>` : ''}
                             </div>
                         </div>
-                        <div class="divide-y divide-slate-100 overflow-y-auto flex-1 bg-white min-h-0">
+                        <div class="divide-y divide-slate-100 overflow-auto max-h-[760px] scroll-container flex-1 bg-white min-h-0">
                             ${allRequests.length > 0 ? allRequests.map(req => {
                                 let statusClass = 'bg-amber-50 text-amber-700 border-amber-200';
                                 let statusLabel = 'Pending Review';
@@ -145,15 +176,15 @@ export function renderManagerDashboard() {
                                 }
                                 
                                 return `
-                                    <div onclick="window.openApprovalModal('${req.id}')" class="p-4 hover:bg-slate-50/70 transition-colors cursor-pointer group border-l-4 border-transparent hover:border-indigo-400">
+                                    <div onclick="window.openApprovalModal('${req.id}')" class="p-3 hover:bg-slate-50/70 transition-colors cursor-pointer group border-l-4 border-transparent hover:border-indigo-400">
                                         <div class="flex justify-between items-start">
-                                            <div>
-                                                <p class="text-[11px] font-bold text-slate-900 group-hover:text-indigo-700 transition-colors leading-none">${req.user}</p>
-                                                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">${req.category}</p>
+                                            <div class="max-w-[120px]">
+                                                <p class="text-[10px] font-black text-slate-900 group-hover:text-indigo-700 transition-colors leading-tight truncate">${req.user}</p>
+                                                <p class="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 truncate">${req.category}</p>
                                             </div>
                                             <div class="flex flex-col items-end">
-                                                 <span class="text-[9px] font-bold text-slate-400 mb-1">${new Date(req.date).toLocaleDateString()}</span>
-                                                 <span class="px-1.5 py-0.5 border rounded uppercase tracking-widest font-black text-[8px] ${statusClass}">${statusLabel}</span>
+                                                 <span class="text-[8px] font-bold text-slate-400 mb-1">${new Date(req.date).toLocaleDateString()}</span>
+                                                 <span class="px-1.5 py-0.5 border rounded-full uppercase tracking-widest font-black text-[7px] ${statusClass}">${statusLabel}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -222,7 +253,7 @@ window.openAssetDetailModal = (assetId) => {
             </div>
             <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
                  <p class="text-[9px] uppercase tracking-widest font-black text-slate-400">Value Marker</p>
-                 <p class="text-xs font-bold text-emerald-600 mt-1">$${parseFloat(asset.amount).toLocaleString()}</p>
+                 <p class="text-xs font-bold text-emerald-600 mt-1">₹${parseFloat(asset.amount).toLocaleString()}</p>
             </div>
             <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
                  <p class="text-[9px] uppercase tracking-widest font-black text-slate-400">Health Index</p>
@@ -333,7 +364,7 @@ window.exportAssetPDF = (assetId) => {
 
             <div>
                 <p class="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-6 border-b border-slate-100 pb-2">Historical Chain of Custody (Ledger Record)</p>
-                <table class="w-full text-left text-sm border-collapse mt-4">
+                <table class="w-full text-left text-sm border-collapse mt-4 sortable-table">
                     <thead>
                         <tr class="bg-slate-100 border-y border-slate-300">
                             <th class="py-3 px-4 font-black uppercase tracking-widest text-[10px] text-slate-500">Date Logged</th>
@@ -380,17 +411,17 @@ window.openApprovalModal = (reqId) => {
     if(!req) return;
 
     const contentStr = `
-        <div class="px-6 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center relative">
+        <div class="card-header">
             <div>
-                 <h3 class="text-sm font-black text-slate-900 uppercase tracking-tight flex items-center gap-2"><span class="material-symbols-outlined text-indigo-500">gavel</span> Authorization Review</h3>
-                 <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Requisition Identity: #${req.id}</p>
+                 <h3 class="card-title flex items-center gap-2"><span class="material-symbols-outlined text-indigo-500">gavel</span> Authorization Review</h3>
+                 <p class="card-meta">Requisition Identity: #${req.id}</p>
             </div>
             <button onclick="window.closeApprovalModal()" class="w-8 h-8 flex items-center justify-center rounded-full text-slate-400 hover:bg-rose-100 hover:text-rose-500 transition-colors">
                 <span class="material-symbols-outlined text-sm">close</span>
             </button>
         </div>
-        
-        <div class="p-8 space-y-6">
+
+        <div class="p-6 space-y-4">
             <div class="flex items-center gap-4 border border-slate-100 p-4 rounded-xl shadow-sm bg-white">
                 <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center">
                      <span class="material-symbols-outlined">person</span>
@@ -428,16 +459,20 @@ window.openApprovalModal = (reqId) => {
             `}
         </div>
 
-        <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
-             ${req.status === 'Approved' || req.status.startsWith('Rejected') ? `
-                 <button onclick="window.closeApprovalModal()" class="px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-500 hover:bg-slate-100 transition-colors uppercase tracking-widest">Close Record</button>
+        <div class="card-header border-t border-slate-100 border-b-0 flex justify-end gap-3">
+             ${req.status === 'Approved' ? `
+                 <button onclick="window.closeApprovalModal()" class="btn-ghost">Dismiss</button>
+                 <button onclick="window.closeApprovalModal(); app.showProcureAssetModal('${req.id}')" class="btn-primary bg-emerald-600 hover:bg-emerald-700">
+                     <span class="material-symbols-outlined text-sm">shopping_cart</span> Procure Asset
+                 </button>
+             ` : req.status.startsWith('Rejected') ? `
+                 <button onclick="window.closeApprovalModal()" class="btn-ghost">Close Record</button>
              ` : `
-                 <button onclick="window.rejectReqManager('${req.id}')" class="px-5 py-2.5 rounded-xl bg-white border border-rose-200 text-rose-500 hover:bg-rose-50 hover:border-rose-300 transition-colors top-action text-xs font-black uppercase tracking-widest shadow-sm">
+                 <button onclick="window.rejectReqManager('${req.id}')" class="btn-warn">
                      Deny Request
                  </button>
-                 
                  ${!req.managerApproved ? `
-                     <button onclick="window.approveReqManager('${req.id}')" class="px-5 py-2.5 rounded-xl bg-indigo-600 text-white shadow-sm shadow-indigo-600/20 hover:bg-indigo-700 transition-colors top-action text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                     <button onclick="window.approveReqManager('${req.id}')" class="btn-primary bg-indigo-600 hover:bg-indigo-700">
                          <span class="material-symbols-outlined text-sm">check_circle</span> Authorize Requisition
                      </button>
                  ` : ''}
@@ -465,13 +500,23 @@ window.closeApprovalModal = () => {
 };
 
 window.approveReqManager = (id) => {
-    db.approveRequestManager(id);
+    const req = db.requests.find(r => r.id === id);
+    if (req && req.type === 'transfer') {
+        db.approveTransferRequest(id);
+    } else {
+        db.approveRequestManager(id);
+    }
     window.closeApprovalModal();
     setTimeout(() => window.app.render(), 300); // Wait for modal animation to visually disappear before destroying DOM
 };
 
 window.rejectReqManager = (id) => {
-    db.rejectRequestManager(id);
+    const req = db.requests.find(r => r.id === id);
+    if (req && req.type === 'transfer') {
+        db.rejectTransferRequest(id);
+    } else {
+        db.rejectRequestManager(id);
+    }
     window.closeApprovalModal();
     setTimeout(() => window.app.render(), 300);
 };

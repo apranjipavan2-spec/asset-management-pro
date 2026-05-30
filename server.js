@@ -8,6 +8,7 @@ import fs from 'fs';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
+import ExcelJS from 'exceljs';
 
 const DEV_JWT_SECRET = 'kalike-enterprise-secret-key-2026';
 const JWT_SECRET = process.env.JWT_SECRET || DEV_JWT_SECRET;
@@ -23,7 +24,8 @@ const ALLOWED_TABLES = new Set([
     'worklogs', 'tasks', 'leaves', 'leave_balances', 'reimbursements', 'payroll',
     'procurement', 'attendance', 'employee_hierarchy', 'notifications',
     'documents', 'announcements', 'announcement_reads', 'calendar_events',
-    'performance_reviews', 'communication_logs', 'signatures', 'roles'
+    'performance_reviews', 'communication_logs', 'signatures', 'roles',
+    'asset_far', 'social_accounts'
 ]);
 
 // Column names allowed in dynamic INSERTs. Built lazily per-table from the
@@ -83,8 +85,66 @@ safeAddColumn('users', 'basicSalary', 'REAL', 0);
 safeAddColumn('audit_logs', 'snapshot', 'TEXT');
 safeAddColumn('audit_logs', 'level', 'TEXT', 'INFO');
 
+// Procurement workflow extras (location for routing, reportsTo for team scope, deliveryDate for ETA)
+safeAddColumn('procurement', 'location', 'TEXT');
+safeAddColumn('procurement', 'reportsTo', 'TEXT');
+
 // Users last login
 safeAddColumn('users', 'lastLogin', 'TEXT');
+
+// Assets operational register fields (sourced from merged Excel; finance fields live in asset_far)
+safeAddColumn('assets', 'parentAssetId', 'TEXT');
+safeAddColumn('assets', 'standardizedId', 'TEXT');
+safeAddColumn('assets', 'assetIdentificationNumber', 'TEXT');
+safeAddColumn('assets', 'parentMatchType', 'TEXT');
+safeAddColumn('assets', 'assignmentCode', 'TEXT');
+safeAddColumn('assets', 'modelName', 'TEXT');
+safeAddColumn('assets', 'district', 'TEXT');
+safeAddColumn('assets', 'locationDetail', 'TEXT');
+safeAddColumn('assets', 'notes', 'TEXT');
+try { db.prepare('CREATE INDEX IF NOT EXISTS idx_assets_parentAssetId ON assets(parentAssetId)').run(); } catch {}
+
+// FAR — register columns added from Dep. Asset Register 25-26 source workbooks
+const FAR_EXTRA_COLS = [
+    ['description',      'TEXT'],
+    ['location',         'TEXT'],
+    ['purchaseOrKind',   'TEXT'],
+    ['supplierName',     'TEXT'],
+    ['billNo',           'TEXT'],
+    ['installationDate', 'TEXT'],
+    ['datePutToUse',     'TEXT'],
+    ['quantity',         'REAL', 1],
+    ['voucherNo',        'TEXT'],
+    ['usefulLifeYears',  'TEXT'],
+];
+for (const [c, t, d] of FAR_EXTRA_COLS) {
+    safeAddColumn('asset_far', c, t, d);
+    safeAddColumn('asset_far_archive', c, t, d);
+}
+
+// Seed default social_accounts rows (idempotent — only inserts if id missing).
+// Superadmin can edit/disable/add more rows via Settings → Social Accounts.
+const seedSocialAccount = db.prepare(`
+    INSERT OR IGNORE INTO social_accounts
+        (id, platform, displayName, handle, url, youtubeChannelId, isActive, displayOrder, createdAt, updatedAt)
+    VALUES (@id, @platform, @displayName, @handle, @url, @youtubeChannelId, @isActive, @displayOrder, @createdAt, @updatedAt)
+`);
+const nowIso = new Date().toISOString();
+const defaultSocialAccounts = [
+    { id: 'social_youtube_main',   platform: 'youtube',   displayName: 'Kalike Foundation', handle: '@KalikeFdn',
+      url: 'https://www.youtube.com/@KalikeFdn',          youtubeChannelId: '', isActive: 1, displayOrder: 1 },
+    { id: 'social_instagram_main', platform: 'instagram', displayName: 'Kalike Foundation', handle: '@kalikefdn',
+      url: 'https://www.instagram.com/kalikefdn/',        youtubeChannelId: null, isActive: 1, displayOrder: 2 },
+    { id: 'social_linkedin_main',  platform: 'linkedin',  displayName: 'Kalike',            handle: 'company/kalike',
+      url: 'https://www.linkedin.com/company/kalike/',    youtubeChannelId: null, isActive: 1, displayOrder: 3 },
+    { id: 'social_x_main',         platform: 'x',         displayName: 'Kalike Foundation', handle: '@KalikeFdn',
+      url: 'https://twitter.com/KalikeFdn',               youtubeChannelId: null, isActive: 1, displayOrder: 4 },
+    { id: 'social_facebook_main',  platform: 'facebook',  displayName: 'Kalike Foundation', handle: 'KalikeFdn',
+      url: 'https://www.facebook.com/KalikeFdn',          youtubeChannelId: null, isActive: 1, displayOrder: 5 }
+];
+for (const row of defaultSocialAccounts) {
+    seedSocialAccount.run({ ...row, createdAt: nowIso, updatedAt: nowIso });
+}
 
 // ── Generic CRUD Helpers ────────────────────────────────────
 const assertTable = (table, res) => {
@@ -106,8 +166,12 @@ const WRITE_ROLES = {
     leave_balances:     new Set(['superadmin', 'hr', 'director']),
     employee_hierarchy: new Set(['superadmin', 'hr', 'director']),
     grants:             new Set(['superadmin', 'finance', 'director']),
-    announcements:      new Set(['superadmin', 'hr', 'director', 'manager']),
+    // Finance + superadmin only. Director gets view access via the page perm
+    // (approve_finance), but never writes to the register or triggers rollover.
+    asset_far:          new Set(['superadmin', 'finance']),
+    announcements:      new Set(['superadmin', 'hr', 'director', 'manager', 'admin']),
     performance_reviews:new Set(['superadmin', 'hr', 'director', 'manager']),
+    social_accounts:    new Set(['superadmin']),
     audit_logs:         new Set(['superadmin', 'director']) // mostly written by server itself
 };
 
@@ -322,6 +386,8 @@ const requireAuth = (req, res, next) => {
 };
 app.use(requireAuth);
 
+app.get('/api/health', (_req, res) => res.json({ ok: true }));
+
 // ── AUTHENTICATION ENDPOINT ─────────────────────────────────
 app.post('/api/login', async (req, res) => {
     const clientIp = req.ip || req.headers['x-forwarded-for'] || 'unknown';
@@ -447,6 +513,455 @@ app.get('/api/assets', (req, res) => handleGet(req, res, 'assets'));
 app.post('/api/assets', (req, res) => handlePost(req, res, 'assets'));
 app.delete('/api/assets/:id', (req, res) => handleDelete(req, res, 'assets'));
 
+// ── Fixed Asset Register (per-FY) ────────────────────────────
+// Compute the six derived columns from the locked finance inputs. Mirrors the
+// FY-aware K formula in Asset Finance.with_calc.xlsx:
+//   I = F + G − H
+//   K (current FY dep) — if acq FY < audit FY: rate × prior-year net block;
+//                        else: rate × additions, halved for Oct–Mar acquisitions
+//   L = J + K, N = L − M, P = I − N, S = R − (H − M)
+const farFyOf = (isoDate) => {
+    if (!isoDate) return null;
+    const d = new Date(isoDate);
+    if (isNaN(d.getTime())) return null;
+    const m = d.getUTCMonth() + 1;
+    return m >= 4 ? d.getUTCFullYear() : d.getUTCFullYear() - 1;
+};
+const farMonth = (isoDate) => {
+    if (!isoDate) return null;
+    const d = new Date(isoDate);
+    return isNaN(d.getTime()) ? null : d.getUTCMonth() + 1;
+};
+const computeFarRow = (r) => {
+    const F = Number(r.grossBlockOpening) || 0;
+    const G = Number(r.additions) || 0;
+    const H = Number(r.disposalsGross) || 0;
+    const J = Number(r.accDepOpening) || 0;
+    const M = Number(r.disposalsAccDep) || 0;
+    const O = Number(r.netBlockPrevFY) || 0;
+    const R = Number(r.proceedsOnDisposal) || 0;
+    const C = Number(r.depRate) || 0;
+    const acqFY = farFyOf(r.refinedAcqDate);
+    const auditFY = Number(r.fy);
+
+    const I = F + G - H;
+    let K = 0;
+    if (acqFY != null && acqFY < auditFY) {
+        K = C * O;
+    } else if (acqFY != null) {
+        const month = farMonth(r.refinedAcqDate);
+        const fullYear = month >= 4 && month <= 9;
+        K = (fullYear ? C : C / 2) * G;
+    }
+    const L = J + K;
+    const N = L - M;
+    const P = I - N;
+    const S = R - (H - M);
+    return { ...r, I, K, L, N, P, S };
+};
+
+// GET /api/far?fy=2025 — list rows for a FY, computed cols included.
+// All authenticated users can read; UI gating restricts visibility.
+app.get('/api/far', (req, res) => {
+    try {
+        const fy = req.query.fy ? parseInt(req.query.fy, 10) : null;
+        const stmt = fy
+            ? db.prepare('SELECT * FROM asset_far WHERE fy = ? ORDER BY assetId')
+            : db.prepare('SELECT * FROM asset_far ORDER BY fy DESC, assetId');
+        const rows = fy ? stmt.all(fy) : stmt.all();
+        res.json(rows.map(computeFarRow));
+    } catch (err) {
+        console.error('GET /api/far:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// GET /api/far/years — distinct FYs present in the register, descending.
+// Used by the page's FY selector. Returns [{ fy, rowCount, locked }].
+app.get('/api/far/years', (req, res) => {
+    try {
+        const rows = db.prepare(
+            `SELECT fy, COUNT(*) AS rowCount, MIN(locked) AS allLocked
+             FROM asset_far GROUP BY fy ORDER BY fy DESC`
+        ).all();
+        res.json(rows.map(r => ({ fy: r.fy, rowCount: r.rowCount, locked: r.allLocked === 1 })));
+    } catch (err) {
+        console.error('GET /api/far/years:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// POST /api/far — upsert a single FAR row. Body must include assetId + fy.
+// Computed columns in the body are dropped; server recomputes on read.
+app.post('/api/far', (req, res) => {
+    if (!assertWritePermission('asset_far', req, res)) return;
+    try {
+        const data = req.body || {};
+        if (!data.assetId || data.fy == null) {
+            return res.status(400).json({ error: 'assetId and fy are required' });
+        }
+        const row = db.prepare('SELECT id, locked FROM asset_far WHERE assetId = ? AND fy = ?').get(data.assetId, data.fy);
+        if (row && row.locked === 1) {
+            return res.status(403).json({ error: 'This FY is closed and read-only' });
+        }
+        const id = data.id || row?.id || `far_${data.fy}_${data.assetId.replace(/[^A-Za-z0-9]/g, '_').slice(0, 60)}_${Date.now().toString(36)}`;
+        const now = new Date().toISOString();
+        const payload = {
+            id, assetId: data.assetId, fy: Number(data.fy),
+            assetClass: data.assetClass ?? null,
+            description: data.description ?? null,
+            location: data.location ?? null,
+            purchaseOrKind: data.purchaseOrKind ?? null,
+            acqDate: data.acqDate ?? null,
+            supplierName: data.supplierName ?? null,
+            billNo: data.billNo ?? null,
+            installationDate: data.installationDate ?? null,
+            datePutToUse: data.datePutToUse ?? null,
+            quantity: data.quantity != null ? Number(data.quantity) || 0 : 1,
+            voucherNo: data.voucherNo ?? null,
+            depRate: data.depRate != null ? Number(data.depRate) : 0,
+            usefulLifeYears: data.usefulLifeYears ?? null,
+            refinedAcqDate: data.refinedAcqDate ?? data.acqDate ?? null,
+            grossBlockOpening: Number(data.grossBlockOpening) || 0,
+            additions: Number(data.additions) || 0,
+            disposalsGross: Number(data.disposalsGross) || 0,
+            accDepOpening: Number(data.accDepOpening) || 0,
+            disposalsAccDep: Number(data.disposalsAccDep) || 0,
+            netBlockPrevFY: Number(data.netBlockPrevFY) || 0,
+            disposalDate: data.disposalDate ?? null,
+            proceedsOnDisposal: Number(data.proceedsOnDisposal) || 0,
+            donor: data.donor ?? null,
+            status: data.status ?? null,
+            locked: data.locked ? 1 : 0,
+            createdAt: row ? undefined : now,
+            updatedAt: now
+        };
+        const cols = Object.entries(payload).filter(([, v]) => v !== undefined);
+        db.prepare(
+            `INSERT OR REPLACE INTO asset_far (${cols.map(([k]) => quoteIdent(k)).join(', ')}) VALUES (${cols.map(() => '?').join(', ')})`
+        ).run(...cols.map(([, v]) => v));
+        res.json({ success: true, id, computed: computeFarRow(payload) });
+    } catch (err) {
+        console.error('POST /api/far:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// POST /api/far/rollover — close fromFY and open toFY (= fromFY+1).
+// Each open row in fromFY: lock it, then insert a fresh toFY row with
+// F ← prior I, J ← prior N, O ← prior P, additions/disposals/etc reset to 0.
+// finance + director + superadmin permitted (per WRITE_ROLES.asset_far).
+app.post('/api/far/rollover', (req, res) => {
+    if (!assertWritePermission('asset_far', req, res)) return;
+    try {
+        const fromFY = parseInt(req.body?.fromFY, 10);
+        if (!Number.isFinite(fromFY)) {
+            return res.status(400).json({ error: 'fromFY (integer) is required' });
+        }
+        const toFY = fromFY + 1;
+        const existing = db.prepare('SELECT COUNT(*) AS n FROM asset_far WHERE fy = ?').get(toFY);
+        if (existing.n > 0) {
+            return res.status(409).json({ error: `FY ${toFY}-${(toFY + 1) % 100} already exists with ${existing.n} rows` });
+        }
+        const rows = db.prepare('SELECT * FROM asset_far WHERE fy = ?').all(fromFY);
+        if (rows.length === 0) {
+            return res.status(404).json({ error: `No rows found for FY ${fromFY}-${(fromFY + 1) % 100}` });
+        }
+
+        const now = new Date().toISOString();
+        const insertNext = db.prepare(`INSERT INTO asset_far (
+            id, assetId, fy, assetClass,
+            description, location, purchaseOrKind,
+            acqDate, supplierName, billNo, installationDate, datePutToUse,
+            quantity, voucherNo, depRate, usefulLifeYears,
+            refinedAcqDate,
+            grossBlockOpening, additions, disposalsGross,
+            accDepOpening, disposalsAccDep, netBlockPrevFY,
+            disposalDate, proceedsOnDisposal, donor, status, locked, createdAt, updatedAt
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
+        const lockOld = db.prepare('UPDATE asset_far SET locked = 1, updatedAt = ? WHERE id = ?');
+
+        const tx = db.transaction(() => {
+            for (const old of rows) {
+                const computed = computeFarRow(old);
+                // Drop fully-disposed assets from the new FY (closing net block 0 and status Disposed)
+                if ((old.status || '').toLowerCase() === 'disposed' && computed.P <= 0.01) {
+                    lockOld.run(now, old.id);
+                    continue;
+                }
+                insertNext.run(
+                    `far_${toFY}_${old.assetId.replace(/[^A-Za-z0-9]/g, '_').slice(0, 60)}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
+                    old.assetId, toFY, old.assetClass,
+                    old.description, old.location, old.purchaseOrKind,
+                    old.acqDate, old.supplierName, old.billNo, old.installationDate, old.datePutToUse,
+                    old.quantity, old.voucherNo, old.depRate, old.usefulLifeYears,
+                    old.refinedAcqDate,
+                    computed.I,            // new F = prior closing gross
+                    0, 0,                  // additions, disposalsGross reset
+                    computed.N,            // new J = prior closing acc dep
+                    0,                     // disposalsAccDep reset
+                    computed.P,            // new O = prior net block
+                    null, 0,               // disposalDate, proceedsOnDisposal reset
+                    old.donor, old.status,
+                    0, now, now
+                );
+                lockOld.run(now, old.id);
+            }
+        });
+        tx();
+
+        logAuditEvent(
+            'FAR_ROLLOVER',
+            req.user.id, req.user.id,
+            `Closed FY ${fromFY}-${(fromFY + 1) % 100} and opened FY ${toFY}-${(toFY + 1) % 100} (${rows.length} rows processed)`,
+            'INFO'
+        );
+        res.json({ success: true, fromFY, toFY, rowCount: rows.length });
+    } catch (err) {
+        console.error('POST /api/far/rollover:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// POST /api/far/:id/archive — soft-delete with password confirmation.
+// The row is copied into asset_far_archive (with archivedBy/archivedAt/reason)
+// and only then removed from asset_far. The caller must supply their current
+// password so an unattended session can't be used to wipe rows.
+app.post('/api/far/:id/archive', async (req, res) => {
+    if (!assertWritePermission('asset_far', req, res)) return;
+    const clientIp = req.ip || req.headers['x-forwarded-for'] || 'unknown';
+    try {
+        const { password, reason } = req.body || {};
+        if (!password || typeof password !== 'string') {
+            return res.status(400).json({ error: 'Password is required to archive a row.' });
+        }
+        const user = db.prepare('SELECT id, password FROM users WHERE id = ?').get(req.user.id);
+        if (!user || !user.password) {
+            logAuditEvent('FAR_ARCHIVE_DENIED', req.user.id, req.user.id, `Password verify failed (no user record) from ${clientIp}`, 'WARN');
+            return res.status(401).json({ error: 'Password verification failed.' });
+        }
+        const ok = await bcrypt.compare(password, user.password);
+        if (!ok) {
+            logAuditEvent('FAR_ARCHIVE_DENIED', req.user.id, req.user.id, `Bad password while archiving FAR ${req.params.id} from ${clientIp}`, 'WARN');
+            return res.status(401).json({ error: 'Incorrect password.' });
+        }
+
+        const row = db.prepare('SELECT * FROM asset_far WHERE id = ?').get(req.params.id);
+        if (!row) return res.status(404).json({ error: 'Row not found.' });
+        if (row.locked === 1) return res.status(403).json({ error: 'Row is locked (FY closed) and cannot be archived.' });
+
+        const now = new Date().toISOString();
+        const archiveId = `arch_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+        const insertArchive = db.prepare(`INSERT INTO asset_far_archive (
+            archiveId, originalId, assetId, fy, assetClass,
+            description, location, purchaseOrKind,
+            acqDate, supplierName, billNo, installationDate, datePutToUse,
+            quantity, voucherNo, depRate, usefulLifeYears,
+            refinedAcqDate,
+            grossBlockOpening, additions, disposalsGross,
+            accDepOpening, disposalsAccDep, netBlockPrevFY,
+            disposalDate, proceedsOnDisposal, donor, status,
+            locked, createdAt, updatedAt, archivedBy, archivedAt, archiveReason
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
+        const tx = db.transaction(() => {
+            insertArchive.run(
+                archiveId, row.id, row.assetId, row.fy, row.assetClass,
+                row.description, row.location, row.purchaseOrKind,
+                row.acqDate, row.supplierName, row.billNo, row.installationDate, row.datePutToUse,
+                row.quantity, row.voucherNo, row.depRate, row.usefulLifeYears,
+                row.refinedAcqDate,
+                row.grossBlockOpening, row.additions, row.disposalsGross,
+                row.accDepOpening, row.disposalsAccDep, row.netBlockPrevFY,
+                row.disposalDate, row.proceedsOnDisposal, row.donor, row.status,
+                row.locked, row.createdAt, row.updatedAt,
+                req.user.id, now, (reason || '').toString().slice(0, 500)
+            );
+            db.prepare('DELETE FROM asset_far WHERE id = ?').run(req.params.id);
+        });
+        tx();
+
+        logAuditEvent(
+            'FAR_ARCHIVED', req.user.id, req.user.id,
+            `Archived ${row.assetId} (FY ${row.fy}-${(row.fy + 1) % 100}) reason="${(reason || '').toString().slice(0, 200)}" from ${clientIp}`,
+            'INFO'
+        );
+        res.json({ success: true, archiveId });
+    } catch (err) {
+        console.error('POST /api/far/:id/archive:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// GET /api/far/archive — list archived rows (most recent first).
+// Same write-roles gate (finance + superadmin) reused for visibility.
+app.get('/api/far/archive', (req, res) => {
+    if (!assertWritePermission('asset_far', req, res)) return;
+    try {
+        const fy = req.query.fy ? parseInt(req.query.fy, 10) : null;
+        const stmt = fy
+            ? db.prepare('SELECT * FROM asset_far_archive WHERE fy = ? ORDER BY archivedAt DESC')
+            : db.prepare('SELECT * FROM asset_far_archive ORDER BY archivedAt DESC LIMIT 500');
+        res.json(fy ? stmt.all(fy) : stmt.all());
+    } catch (err) {
+        console.error('GET /api/far/archive:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// DELETE /api/far/:id — legacy hard-delete kept for the rollover path only.
+// UI no longer calls this; new archive endpoint above is the supported flow.
+app.delete('/api/far/:id', (req, res) => {
+    if (!assertWritePermission('asset_far', req, res)) return;
+    try {
+        const row = db.prepare('SELECT locked FROM asset_far WHERE id = ?').get(req.params.id);
+        if (!row) return res.status(404).json({ error: 'Not found' });
+        if (row.locked === 1) return res.status(403).json({ error: 'Row is locked (FY closed)' });
+        db.prepare('DELETE FROM asset_far WHERE id = ?').run(req.params.id);
+        res.json({ success: true });
+    } catch (err) {
+        console.error('DELETE /api/far:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// GET /api/far/export?fy=2025 — XLSX matching the source register layout.
+// Column K carries the live FY-aware formula so it auto-rolls when reopened.
+app.get('/api/far/export', async (req, res) => {
+    try {
+        const fy = parseInt(req.query.fy, 10);
+        if (!Number.isFinite(fy)) {
+            return res.status(400).json({ error: 'fy (integer) is required' });
+        }
+        const rows = db.prepare('SELECT * FROM asset_far WHERE fy = ? ORDER BY assetId').all(fy);
+
+        const wb = new ExcelJS.Workbook();
+        wb.creator = 'Kalike Asset App';
+        wb.created = new Date();
+        const ws = wb.addWorksheet(`FAR FY ${fy}-${String((fy + 1) % 100).padStart(2, '0')}`);
+
+        // 30-column header layout, A..AD — matches the source registers.
+        // Letters: 1=A Asset ID … 13=M Dep Rate (used by K-formula) …
+        //          15=O Gross Opening, 16=P Additions, 17=Q Disposals,
+        //          18=R Closing A (formula), 19=S Acc Dep Opening, 20=T Dep Cost (formula),
+        //          21=U Acc Dep Total (formula), 22=V Disposals Acc Dep,
+        //          23=W Closing B (formula), 24=X Net Block Prev FY,
+        //          25=Y Net Block This FY (formula), 26=Z Disposal Date,
+        //          27=AA Proceeds, 28=AB Profit/Loss (formula), 29=AC Donor, 30=AD Status
+        const headers = [
+            'Asset Identification Number',
+            'Asset class',
+            'Description',
+            'Location',
+            'Whether purchased / received in kind',
+            'Acquisition Date',
+            'Supplier Name',
+            'Bill No.',
+            'Date of Installation',
+            'Date put to use',
+            'Quantity',
+            'Voucher No.',
+            'Depreciation Rate',
+            'Useful life (years)',
+            'Gross Block Opening Balance',
+            'Additions',
+            'Disposals',
+            'Closing Balance    A',
+            'Acc. Depreciation Opening Balance',
+            'Depreciation - Cost (FY)',
+            'Depreciation - Total',
+            'Disposals',
+            'Closing Balance    B',
+            'Net Block (A-B) Prev FY',
+            'Net Block (A-B) This FY',
+            'Disposal Date',
+            'Proceeds on Disposal',
+            'Profit / (Loss) on Disposal',
+            'Donor Name',
+            'Status'
+        ];
+        ws.addRow(headers);
+
+        const CURR_FY = `IF(MONTH(TODAY())>=4,YEAR(TODAY())-1,YEAR(TODAY())-2)`;
+        // K (depreciation for the year) lives in column T (col 20). Uses F=col 6 acq date,
+        // M=col 13 dep rate, P=col 16 additions, X=col 24 net block prev FY.
+        const kFormula = (r) =>
+            `IF(IF(MONTH(F${r})>=4,YEAR(F${r}),YEAR(F${r})-1)<${CURR_FY},M${r}*X${r},` +
+            `IF(AND(MONTH(F${r})>=4,MONTH(F${r})<=9),M${r}*P${r},(M${r}/2)*P${r}))`;
+
+        rows.map(r => computeFarRow(r)).forEach((r, idx) => {
+            const rowNum = idx + 2;
+            ws.addRow([
+                r.assetId,
+                r.assetClass || '',
+                r.description || '',
+                r.location || '',
+                r.purchaseOrKind || '',
+                r.acqDate || '',
+                r.supplierName || '',
+                r.billNo || '',
+                r.installationDate || '',
+                r.datePutToUse || '',
+                Number(r.quantity) || 0,
+                r.voucherNo || '',
+                Number(r.depRate) || 0,
+                r.usefulLifeYears || '',
+                Number(r.grossBlockOpening) || 0,
+                Number(r.additions) || 0,
+                Number(r.disposalsGross) || 0,
+                { formula: `O${rowNum}+P${rowNum}-Q${rowNum}`, result: r.I },
+                Number(r.accDepOpening) || 0,
+                { formula: kFormula(rowNum), result: r.K },
+                { formula: `S${rowNum}+T${rowNum}`, result: r.L },
+                Number(r.disposalsAccDep) || 0,
+                { formula: `U${rowNum}-V${rowNum}`, result: r.N },
+                Number(r.netBlockPrevFY) || 0,
+                { formula: `R${rowNum}-W${rowNum}`, result: r.P },
+                r.disposalDate || '',
+                Number(r.proceedsOnDisposal) || 0,
+                { formula: `AA${rowNum}-(Q${rowNum}-V${rowNum})`, result: r.S },
+                r.donor || '',
+                r.status || ''
+            ]);
+        });
+
+        // Header style
+        const head = ws.getRow(1);
+        head.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        head.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } };
+        head.alignment = { horizontal: 'center', wrapText: true };
+        head.height = 36;
+
+        const moneyCols = ['O','P','Q','R','S','T','U','V','W','X','Y','AA','AB'];
+        moneyCols.forEach(c => { ws.getColumn(c).numFmt = '#,##0.00'; });
+        ws.getColumn('M').numFmt = '0.00%';
+        ws.getColumn('K').numFmt = '0';
+        ws.getColumn('A').width = 32;
+        ws.getColumn('B').width = 22;
+        ws.getColumn('C').width = 28;
+        ws.getColumn('D').width = 16;
+        ws.getColumn('E').width = 14;
+        ['F','I','J','Z'].forEach(c => { ws.getColumn(c).width = 12; });
+        ws.getColumn('G').width = 22;
+        ws.getColumn('H').width = 14;
+        ws.getColumn('K').width = 10;
+        ws.getColumn('L').width = 14;
+        ws.getColumn('M').width = 10;
+        ws.getColumn('N').width = 14;
+        moneyCols.forEach(c => { ws.getColumn(c).width = 16; });
+        ws.getColumn('AC').width = 18;
+        ws.getColumn('AD').width = 14;
+        ws.views = [{ state: 'frozen', xSplit: 1, ySplit: 1 }];
+
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="Asset_FAR_FY${fy}-${String((fy + 1) % 100).padStart(2, '0')}.xlsx"`);
+        const buf = await wb.xlsx.writeBuffer();
+        res.end(Buffer.from(buf));
+    } catch (err) {
+        console.error('GET /api/far/export:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.get('/api/grants', (req, res) => handleGet(req, res, 'grants'));
 app.post('/api/grants', (req, res) => handlePost(req, res, 'grants'));
 
@@ -562,6 +1077,72 @@ app.get('/api/roles', (req, res) => handleGet(req, res, 'roles'));
 app.post('/api/roles', (req, res) => handlePost(req, res, 'roles'));
 app.delete('/api/roles/:id', (req, res) => handleDelete(req, res, 'roles'));
 
+// Social Accounts (superadmin-writable per WRITE_ROLES; everyone reads).
+app.get('/api/social_accounts', (req, res) => handleGet(req, res, 'social_accounts'));
+app.post('/api/social_accounts', (req, res) => handlePost(req, res, 'social_accounts'));
+app.delete('/api/social_accounts/:id', (req, res) => handleDelete(req, res, 'social_accounts'));
+
+// YouTube RSS proxy. Reads the first active social_accounts row with
+// platform='youtube' AND non-empty youtubeChannelId, fetches the public
+// XML feed, parses entries, and returns last 12 videos. Cached 30 min.
+const _ytCache = { data: null, fetchedAt: 0, channelId: null };
+const _YT_CACHE_TTL_MS = 30 * 60 * 1000;
+function parseYoutubeRss(xml) {
+    const blocks = xml.split('<entry>').slice(1).map(s => s.split('</entry>')[0]);
+    const grab = (block, tag) => {
+        const m = block.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`));
+        return m ? m[1].trim() : '';
+    };
+    const grabAttr = (block, tag, attr) => {
+        const m = block.match(new RegExp(`<${tag}[^>]*\\b${attr}=["']([^"']+)["']`));
+        return m ? m[1] : '';
+    };
+    return blocks.map(b => {
+        const videoId = grab(b, 'yt:videoId');
+        return {
+            videoId,
+            title: grab(b, 'title'),
+            publishedAt: grab(b, 'published'),
+            thumbnail: grabAttr(b, 'media:thumbnail', 'url')
+                || (videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : ''),
+            url: videoId ? `https://www.youtube.com/watch?v=${videoId}` : ''
+        };
+    }).filter(v => v.videoId).slice(0, 12);
+}
+
+app.get('/api/social/youtube', async (req, res) => {
+    try {
+        const row = db.prepare(
+            `SELECT youtubeChannelId FROM social_accounts
+             WHERE platform = 'youtube' AND isActive = 1
+               AND youtubeChannelId IS NOT NULL AND youtubeChannelId != ''
+             ORDER BY displayOrder ASC LIMIT 1`
+        ).get();
+        if (!row || !row.youtubeChannelId) {
+            return res.json({ videos: [], reason: 'no_channel_configured' });
+        }
+        const channelId = row.youtubeChannelId;
+        if (_ytCache.data && _ytCache.channelId === channelId
+            && (Date.now() - _ytCache.fetchedAt) < _YT_CACHE_TTL_MS) {
+            return res.json(_ytCache.data);
+        }
+        const rssUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${encodeURIComponent(channelId)}`;
+        const resp = await fetch(rssUrl);
+        if (!resp.ok) {
+            return res.status(502).json({ videos: [], error: `YouTube feed unreachable (${resp.status})` });
+        }
+        const xml = await resp.text();
+        const payload = { videos: parseYoutubeRss(xml), channelId };
+        _ytCache.data = payload;
+        _ytCache.fetchedAt = Date.now();
+        _ytCache.channelId = channelId;
+        res.json(payload);
+    } catch (err) {
+        console.error('GET /api/social/youtube:', err);
+        res.status(500).json({ videos: [], error: 'YouTube feed error' });
+    }
+});
+
 // Mark all notifications read for a user
 app.put('/api/notifications/read-all/:userId', (req, res) => {
     try {
@@ -646,6 +1227,15 @@ app.post('/api/sync', (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+
+// Serve Vite production build in production (Koyeb / any single-server deploy)
+if (process.env.NODE_ENV === 'production') {
+    const distPath = path.join(__dirname, 'dist');
+    if (fs.existsSync(distPath)) {
+        app.use(express.static(distPath));
+        app.get('*', (_req, res) => res.sendFile(path.join(distPath, 'index.html')));
+    }
+}
 
 const PORT = parseInt(process.env.PORT, 10) || 3000;
 app.listen(PORT, () => {

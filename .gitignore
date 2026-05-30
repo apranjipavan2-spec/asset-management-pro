@@ -22,3 +22,33 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# SQLite database files (local dev data)
+db.sqlite
+db.sqlite-shm
+db.sqlite-wal
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
+# Credentials / seed data (NEVER commit)
+login_credentials_master.csv
+employee_data_setup.csv
+
+# Data exports / spreadsheets
+*.xlsx
+*.xls
+
+# Generated / scratch directories
+scratch/
+graphify-out/
+.agent/
+
+# Backup HTML snapshots
+KALIKE_HISTORY.html
+
+# Env files
+.env
+.env.*
+!.env.example
+.gstack/

@@ -5,11 +5,16 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Asset Management Pro | Institutional Grade</title>
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
   </head>
   <body class="bg-slate-50 text-slate-900 antialiased overflow-hidden">
     <div id="app" class="h-screen flex flex-col"></div>
+    <!-- Export-only libraries: deferred so they don't block HTML parsing.
+         Each use site already guards with `typeof XLSX === 'undefined'` and a
+         friendly "still loading" fallback, so race-on-first-click is handled. -->
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
