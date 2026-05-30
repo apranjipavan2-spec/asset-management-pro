@@ -35,7 +35,6 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
-    "node-sqlite3-wasm": "^0.8.57",
     "zod": "^4.4.3"
   }
 }

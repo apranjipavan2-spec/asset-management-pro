@@ -1,5 +1,4 @@
-import pkg from 'node-sqlite3-wasm';
-const { Database } = pkg;
+import { DatabaseSync as Database } from 'node:sqlite';
 import fs from 'fs';
 import bcrypt from 'bcryptjs';
 
