@@ -13,6 +13,7 @@ cd "$(dirname "$0")/.."
 # Kill any existing instances
 pkill -f "node server.js" 2>/dev/null || true
 pkill -f "cloudflared" 2>/dev/null || true
+pkill -f "phone_watchdog.sh" 2>/dev/null || true
 sleep 1
 
 # Keep Termux alive so Android doesn't suspend us
@@ -69,6 +70,13 @@ else
 fi
 echo "=============================================="
 echo
+echo "Starting watchdog (auto-restart + auto-pull every 60s)..."
+chmod +x scripts/phone_watchdog.sh 2>/dev/null
+nohup ./scripts/phone_watchdog.sh > /dev/null 2>&1 &
+WATCHDOG_PID=$!
+echo "Watchdog PID: $WATCHDOG_PID"
+echo
 echo "Server log:    tail -f server.log"
 echo "Tunnel log:    tail -f cloudflared.log"
-echo "Stop all:      pkill -f 'node server.js'; pkill -f cloudflared"
+echo "Watchdog log:  tail -f watchdog.log"
+echo "Stop all:      pkill -f 'node server.js'; pkill -f cloudflared; pkill -f phone_watchdog.sh"
