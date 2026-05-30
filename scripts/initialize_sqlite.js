@@ -137,12 +137,9 @@ const insertGrant = db.prepare(`
     )
 `);
 
-const runSeed = db.transaction(() => {
-    // Roles
-    for (const role of roles) {
-        insertRole.run(role);
-    }
-    // Assets & Grants
+db.exec('BEGIN');
+try {
+    for (const role of roles) insertRole.run(role);
     for (const asset of assetsData) {
         asset.name = asset.name || asset.category || "Unnamed Asset";
         asset.depreciation = asset.depreciation || 0;
@@ -157,12 +154,9 @@ const runSeed = db.transaction(() => {
         asset.usefulLife = asset.usefulLife || null;
         insertAsset.run(asset);
     }
-    for (const grant of grantsData) {
-        insertGrant.run(grant);
-    }
-});
-
-runSeed();
+    for (const grant of grantsData) insertGrant.run(grant);
+    db.exec('COMMIT');
+} catch (e) { db.exec('ROLLBACK'); throw e; }
 console.log(`Seeding complete. Processed ${usersProcessed} users and ${roles.length} roles.`);
 
 // Verification

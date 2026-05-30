@@ -681,10 +681,10 @@ app.post('/api/far/rollover', (req, res) => {
         ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
         const lockOld = db.prepare('UPDATE asset_far SET locked = 1, updatedAt = ? WHERE id = ?');
 
-        const tx = db.transaction(() => {
+        db.exec('BEGIN');
+        try {
             for (const old of rows) {
                 const computed = computeFarRow(old);
-                // Drop fully-disposed assets from the new FY (closing net block 0 and status Disposed)
                 if ((old.status || '').toLowerCase() === 'disposed' && computed.P <= 0.01) {
                     lockOld.run(now, old.id);
                     continue;
@@ -696,19 +696,19 @@ app.post('/api/far/rollover', (req, res) => {
                     old.acqDate, old.supplierName, old.billNo, old.installationDate, old.datePutToUse,
                     old.quantity, old.voucherNo, old.depRate, old.usefulLifeYears,
                     old.refinedAcqDate,
-                    computed.I,            // new F = prior closing gross
-                    0, 0,                  // additions, disposalsGross reset
-                    computed.N,            // new J = prior closing acc dep
-                    0,                     // disposalsAccDep reset
-                    computed.P,            // new O = prior net block
-                    null, 0,               // disposalDate, proceedsOnDisposal reset
+                    computed.I,
+                    0, 0,
+                    computed.N,
+                    0,
+                    computed.P,
+                    null, 0,
                     old.donor, old.status,
                     0, now, now
                 );
                 lockOld.run(now, old.id);
             }
-        });
-        tx();
+            db.exec('COMMIT');
+        } catch (e) { db.exec('ROLLBACK'); throw e; }
 
         logAuditEvent(
             'FAR_ROLLOVER',
@@ -763,7 +763,8 @@ app.post('/api/far/:id/archive', async (req, res) => {
             disposalDate, proceedsOnDisposal, donor, status,
             locked, createdAt, updatedAt, archivedBy, archivedAt, archiveReason
         ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
-        const tx = db.transaction(() => {
+        db.exec('BEGIN');
+        try {
             insertArchive.run(
                 archiveId, row.id, row.assetId, row.fy, row.assetClass,
                 row.description, row.location, row.purchaseOrKind,
@@ -777,8 +778,8 @@ app.post('/api/far/:id/archive', async (req, res) => {
                 req.user.id, now, (reason || '').toString().slice(0, 500)
             );
             db.prepare('DELETE FROM asset_far WHERE id = ?').run(req.params.id);
-        });
-        tx();
+            db.exec('COMMIT');
+        } catch (e) { db.exec('ROLLBACK'); throw e; }
 
         logAuditEvent(
             'FAR_ARCHIVED', req.user.id, req.user.id,
@@ -1181,9 +1182,10 @@ app.post('/api/sync', (req, res) => {
             };
         };
 
-        const transaction = db.transaction((items) => {
+        db.exec('BEGIN');
+        try {
             deleteStmt.run();
-            for (const item of items) {
+            for (const item of data) {
                 try {
                     const built = buildInsert(item);
                     if (built) built.stmt.run(...built.values);
@@ -1191,8 +1193,8 @@ app.post('/api/sync', (req, res) => {
                     console.warn(`Sync skip row in ${table}:`, e.message);
                 }
             }
-        });
-        transaction(data);
+            db.exec('COMMIT');
+        } catch (e) { db.exec('ROLLBACK'); throw e; }
     };
 
     try {
