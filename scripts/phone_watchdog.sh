@@ -84,6 +84,28 @@ run_migrations_if_any() {
     fi
 }
 
+# One snapshot per calendar day, keep last 30
+daily_backup() {
+    [ -f db.sqlite ] || return 0
+    mkdir -p backups
+    local snap="backups/db-$(date +%F).sqlite"
+    if [ ! -f "$snap" ]; then
+        cp db.sqlite "$snap" && log "Backup: $snap"
+    fi
+    ls -1t backups/db-*.sqlite 2>/dev/null | tail -n +31 | xargs -r rm -f
+}
+
+# If a bank master xlsx is present and the table is empty, import it
+maybe_import_bank() {
+    [ -f master_bank_details.xlsx ] || return 0
+    local count
+    count=$(node -e "try{const{DatabaseSync}=require('node:sqlite');const db=new DatabaseSync('./db.sqlite');console.log(db.prepare('SELECT COUNT(*) AS c FROM bank_accounts').get().c)}catch(e){console.log(0)}" 2>/dev/null)
+    if [ "${count:-0}" = "0" ]; then
+        log "Bank master xlsx present + table empty → importing..."
+        npm run db:import-bank master_bank_details.xlsx >>"$LOG" 2>&1 || log "Bank import FAILED."
+    fi
+}
+
 check_updates() {
     git fetch origin main --quiet 2>>"$LOG" || { log "git fetch failed (network?)"; return; }
     local local_head remote_head
@@ -146,7 +168,10 @@ while true; do
     ensure_server_alive
     ensure_tunnel_alive
     check_updates
+    maybe_import_bank
     cycle=$(( cycle + 1 ))
+    # Daily backup once per hour (one snapshot per day is enforced inside)
+    [ $(( cycle % 60 )) -eq 0 ] && daily_backup
     # Rotate logs every 60 cycles (~ every hour at default idle)
     [ $(( cycle % 60 )) -eq 0 ] && rotate_logs
     sleep "$(current_interval)"
