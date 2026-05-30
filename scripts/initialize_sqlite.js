@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+import Database from 'node-sqlite3-wasm';
 import fs from 'fs';
 import bcrypt from 'bcryptjs';
 

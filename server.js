@@ -1,6 +1,6 @@
 import 'dotenv/config.js';
 import express from 'express';
-import Database from 'better-sqlite3';
+import Database from 'node-sqlite3-wasm';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -49,8 +49,8 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 const db = new Database(dbPath);
-db.pragma('journal_mode = WAL');
-db.pragma('foreign_keys = ON');
+db.exec('PRAGMA journal_mode = WAL');
+db.exec('PRAGMA foreign_keys = ON');
 
 // Initialize DB with schema
 const schema = fs.readFileSync(schemaPath, 'utf8');
@@ -384,9 +384,8 @@ const requireAuth = (req, res, next) => {
         return res.status(401).json({ error: 'Invalid or expired token' });
     }
 };
-app.use(requireAuth);
-
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
+app.use(requireAuth);
 
 // ── AUTHENTICATION ENDPOINT ─────────────────────────────────
 app.post('/api/login', async (req, res) => {
