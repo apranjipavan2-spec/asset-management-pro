@@ -26,6 +26,14 @@ else
     echo "▶ Database found — skipping init."
 fi
 
+# Build frontend if dist doesn't exist
+if [ ! -d "dist" ]; then
+    echo "▶ Building frontend..."
+    npm run build
+else
+    echo "▶ Frontend build found — skipping."
+fi
+
 echo ""
 echo "✓ Ready. Starting server..."
 echo ""
