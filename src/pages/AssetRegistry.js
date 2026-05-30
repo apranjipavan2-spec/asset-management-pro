@@ -102,9 +102,9 @@ function renderRegistryTbody(rows) {
         </td></tr>`;
     }
     return rows.map(({ asset }) => {
-        const gross = parseFloat(asset.grossBlock || asset.amount || 0);
-        const accumDep = parseFloat(asset.accumulatedDepreciation || asset.depreciation || 0);
-        const net = parseFloat(asset.netBlock || (gross - accumDep) || 0);
+        const dep = window.app?.computeAssetDepreciation?.(asset) || {};
+        const gross = Number(dep.gross) || 0;
+        const net = Number(dep.nbv) || 0;
         const isAssigned = !!(asset.assignedTo && String(asset.assignedTo).trim());
         const safeId = (asset.id || '').replace(/'/g, "\\'");
         return `
@@ -184,29 +184,29 @@ export function renderAssetRegistry() {
     const canManage = window.app.hasPermission('manage_assets');
 
     const statChip = (bg, border, iconColor, labelColor, valueColor, icon, label, value) => `
-        <div class="${bg} ${border} border rounded-lg px-2.5 py-1.5 flex items-center gap-2 flex-1 min-w-[110px]">
-            <span class="material-symbols-outlined ${iconColor} text-[18px]">${icon}</span>
-            <div class="leading-tight">
-                <p class="text-[8px] font-black uppercase tracking-widest ${labelColor}">${label}</p>
-                <p class="text-sm font-black ${valueColor} leading-none">${value}</p>
+        <div class="${bg} ${border} border rounded-lg px-2.5 py-1.5 flex items-center gap-2 min-w-0 md:flex-1 md:min-w-[110px]">
+            <span class="material-symbols-outlined ${iconColor} text-[18px] shrink-0">${icon}</span>
+            <div class="leading-tight min-w-0">
+                <p class="text-[8px] font-black uppercase tracking-widest ${labelColor} truncate">${label}</p>
+                <p class="text-sm font-black ${valueColor} leading-none truncate">${value}</p>
             </div>
         </div>`;
 
     return `
         <div class="h-full flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-2 duration-200 font-sans">
-            <header class="flex items-center gap-3 flex-wrap flex-shrink-0">
+            <header class="flex flex-col gap-2 md:flex-row md:items-center md:flex-wrap md:gap-3 flex-shrink-0">
                 <div class="flex-shrink-0">
-                    <h2 class="text-xl text-slate-900 font-black tracking-tight leading-tight">Master Asset Registry</h2>
+                    <h2 class="text-lg md:text-xl text-slate-900 font-black tracking-tight leading-tight">Master Asset Registry</h2>
                     <p class="text-slate-500 text-[10px] font-bold tracking-[.15em] uppercase mt-0.5">Institutional Inventory · ${totalCount.toLocaleString('en-IN')} records</p>
                 </div>
 
-                <div class="flex items-center gap-2 flex-1 flex-wrap min-w-0">
+                <div class="grid grid-cols-3 gap-2 w-full md:flex md:items-center md:flex-1 md:flex-wrap md:min-w-0">
                     ${statChip('bg-emerald-50', 'border-emerald-200', 'text-emerald-400', 'text-emerald-700', 'text-emerald-900', 'verified', 'Assigned', assignedCount.toLocaleString('en-IN'))}
                     ${statChip(unassignedCount ? 'bg-amber-50' : 'bg-slate-50', unassignedCount ? 'border-amber-200' : 'border-slate-200', unassignedCount ? 'text-amber-400' : 'text-slate-300', unassignedCount ? 'text-amber-700' : 'text-slate-500', unassignedCount ? 'text-amber-900' : 'text-slate-900', 'person_off', 'Unassigned', unassignedCount.toLocaleString('en-IN'))}
                     ${statChip('bg-slate-50', 'border-slate-200', 'text-slate-300', 'text-slate-500', 'text-slate-900', 'visibility', 'Showing', filtered.length.toLocaleString('en-IN'))}
                 </div>
 
-                <div class="flex items-center gap-1.5 flex-shrink-0">
+                <div class="flex items-center gap-1.5 flex-wrap md:flex-shrink-0">
                     <button onclick="app.toggleRegFilters()" class="md:hidden px-2 py-1 bg-white border border-slate-200 text-slate-600 text-[9px] font-black uppercase tracking-wider rounded-md hover:bg-slate-50 transition-all flex items-center gap-1 shadow-sm">
                         <span class="material-symbols-outlined text-[13px]">filter_alt</span>
                         Filters${activeAssetFilterCount(REG_STATE) ? ` (${activeAssetFilterCount(REG_STATE)})` : ''}
@@ -244,7 +244,7 @@ export function renderAssetRegistry() {
             </div>
 
             <div class="flex flex-col md:flex-row gap-3 flex-1 min-h-0">
-                <aside id="reg-toolbar" class="hidden md:block md:w-60 md:flex-shrink-0">
+                <aside id="reg-toolbar" class="hidden md:block md:w-60 md:flex-shrink-0 max-h-[55vh] md:max-h-none overflow-y-auto md:overflow-visible">
                     ${renderAssetFilterPanel({
                         state: REG_STATE,
                         allRows: filterRows,

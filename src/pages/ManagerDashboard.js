@@ -253,7 +253,7 @@ window.openAssetDetailModal = (assetId) => {
             </div>
             <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
                  <p class="text-[9px] uppercase tracking-widest font-black text-slate-400">Value Marker</p>
-                 <p class="text-xs font-bold text-emerald-600 mt-1">₹${parseFloat(asset.amount).toLocaleString()}</p>
+                 <p class="text-xs font-bold text-emerald-600 mt-1">₹${(Number(window.app?.computeAssetDepreciation?.(asset)?.gross) || 0).toLocaleString('en-IN')}</p>
             </div>
             <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
                  <p class="text-[9px] uppercase tracking-widest font-black text-slate-400">Health Index</p>
@@ -343,7 +343,7 @@ window.exportAssetPDF = (assetId) => {
                  </div>
                  <div class="text-right">
                     <p class="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-2">Liability Ledger Valuation</p>
-                    <p class="text-2xl font-black tabular-nums">₹${parseFloat(asset.amount).toLocaleString()}</p>
+                    <p class="text-2xl font-black tabular-nums">₹${(Number(window.app?.computeAssetDepreciation?.(asset)?.gross) || 0).toLocaleString('en-IN')}</p>
                     <p class="text-sm font-bold text-slate-500 uppercase tracking-widest mt-1">Status: ${asset.status}</p>
                  </div>
             </div>

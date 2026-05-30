@@ -43,6 +43,7 @@ employee_data_setup.csv
 scratch/
 graphify-out/
 .agent/
+db_backups/
 
 # Backup HTML snapshots
 KALIKE_HISTORY.html

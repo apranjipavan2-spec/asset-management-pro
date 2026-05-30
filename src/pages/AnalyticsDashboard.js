@@ -59,19 +59,22 @@ export function renderAnalyticsDashboard() {
     const byLocation = groupBy('location');
     const byCategory = groupBy('category');
 
-    // Custodians
+    // Custodians — Unassigned is tracked separately so it doesn't crowd out
+    // the named custodians (most assets currently have no assignedTo).
     const custMap = {};
+    let unassignedCount = 0, unassignedVal = 0;
     assets.forEach(a => {
-        const name = a.assignedTo || 'Unassigned';
-        if (!custMap[name]) custMap[name] = { id: a.assignedToId || '', count: 0, val: 0 };
-        custMap[name].count++;
-        custMap[name].val += assetValue(a);
+        const raw = (a.assignedTo || '').trim();
+        if (!raw) { unassignedCount++; unassignedVal += assetValue(a); return; }
+        if (!custMap[raw]) custMap[raw] = { id: a.assignedToId || '', count: 0, val: 0 };
+        custMap[raw].count++;
+        custMap[raw].val += assetValue(a);
     });
     const topCustodians = Object.entries(custMap)
         .map(([name, d]) => ({ name, ...d }))
-        .sort((a, b) => b.val - a.val)
+        .sort((a, b) => (b.val - a.val) || (b.count - a.count))
         .slice(0, 10);
-    const maxCustVal = topCustodians[0]?.val || 1;
+    const maxCustVal = topCustodians[0]?.val || topCustodians[0]?.count || 1;
 
     const uniqueEmployees = Object.entries(custMap)
         .map(([name, d]) => ({ name, id: d.id }))
@@ -185,15 +188,28 @@ export function renderAnalyticsDashboard() {
                     <span class="text-[9px] text-slate-300 font-bold">by liability value</span>
                 </div>
                 <div class="overflow-y-auto p-2 space-y-0.5 flex-1">
+                    ${unassignedCount > 0 ? `
+                    <div onclick="window.openDrillModal('custodian','Unassigned')"
+                         class="cursor-pointer flex items-center justify-between px-3 py-2 mb-1 rounded-lg bg-amber-50 border border-amber-200 hover:bg-amber-100 transition-all">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-amber-600 text-base">person_off</span>
+                            <span class="text-[10px] font-black text-amber-900 uppercase tracking-widest">Unassigned</span>
+                        </div>
+                        <span class="text-[10px] font-black text-amber-700 tabular-nums">${unassignedCount} · ₹${fmtShort(unassignedVal)}</span>
+                    </div>` : ''}
+                    ${topCustodians.length === 0 ? `
+                    <p class="text-[10px] font-bold text-slate-400 text-center py-6 italic">No custodian assignments recorded yet.</p>` : ''}
                     ${topCustodians.map(c => {
-                        const barW = ((c.val / maxCustVal) * 100).toFixed(1);
+                        const denom = maxCustVal || 1;
+                        const metric = c.val > 0 ? c.val : c.count;
+                        const barW = ((metric / denom) * 100).toFixed(1);
                         return `
                         <div onclick="window.selectCustodian('${c.name.replace(/'/g, "\\'")}','${c.id}')"
                              class="cursor-pointer group flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-50 transition-all">
                             <div class="flex-1 min-w-0">
                                 <div class="flex justify-between items-center mb-1">
                                     <span class="text-[10px] font-bold text-slate-800 truncate pr-2 group-hover:text-accent transition-colors">${c.name}</span>
-                                    <span class="text-[9px] font-bold text-slate-400 shrink-0 tabular-nums" title="₹${c.val.toLocaleString('en-IN')}">₹${fmtShort(c.val)}</span>
+                                    <span class="text-[9px] font-bold text-slate-400 shrink-0 tabular-nums" title="₹${c.val.toLocaleString('en-IN')}">${c.count} · ₹${fmtShort(c.val)}</span>
                                 </div>
                                 <div class="w-full bg-slate-100 h-0.5 rounded-full overflow-hidden">
                                     <div class="bg-slate-700 group-hover:bg-accent h-full rounded-full transition-colors duration-500" style="width:${barW}%"></div>
@@ -279,7 +295,13 @@ window.selectCustodian = (name, id) => {
 
 // --- Drill modal ---
 window.openDrillModal = (filterType, filterValue) => {
-    window.currentDrillData = db.assets.filter(a => (a[filterType] || 'Unknown') === filterValue);
+    if (filterType === 'custodian') {
+        window.currentDrillData = filterValue === 'Unassigned'
+            ? db.assets.filter(a => !(a.assignedTo || '').trim())
+            : db.assets.filter(a => (a.assignedTo || '').trim() === filterValue);
+    } else {
+        window.currentDrillData = db.assets.filter(a => (a[filterType] || 'Unknown') === filterValue);
+    }
     document.getElementById('drill-title').innerText = filterValue;
     document.getElementById('drill-subtitle').innerText = `Filtered by: ${filterType}`;
 

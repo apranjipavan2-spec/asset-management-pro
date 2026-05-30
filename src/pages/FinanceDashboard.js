@@ -157,8 +157,11 @@ export function renderFinanceDashboard() {
                         </div>
                         <div class="p-5 flex flex-col gap-3 max-h-[400px] overflow-y-auto scroll-container bg-slate-50/30">
                             ${[...new Set(db.assets.map(a => a.category))].map(cat => {
-                                const total = db.assets.filter(a => a.category === cat).reduce((s, a) => s + a.amount, 0);
-                                const pct = (total / stats.totalValue * 100).toFixed(0);
+                                const total = db.assets.filter(a => a.category === cat).reduce((s, a) => {
+                                    const dep = window.app?.computeAssetDepreciation?.(a) || {};
+                                    return s + (Number(dep.gross) || Number(a.grossBlock) || Number(a.amount) || 0);
+                                }, 0);
+                                const pct = stats.totalValue > 0 ? (total / stats.totalValue * 100).toFixed(0) : 0;
                                 return `
                                 <div class="p-4 bg-white border border-slate-300 rounded-xl shadow-sm hover:shadow-[0_4px_15px_-3px_rgba(6,81,237,0.15)] hover:border-accent/30 transition-all space-y-3 group">
                                     <div class="flex justify-between items-end">
