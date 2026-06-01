@@ -110,6 +110,10 @@ safeAddColumn('audit_logs', 'level', 'TEXT', 'INFO');
 safeAddColumn('procurement', 'location', 'TEXT');
 safeAddColumn('procurement', 'reportsTo', 'TEXT');
 
+// Bank accounts archive flag — used by the Bank Accounts admin page to hide
+// rows from the export page without deleting them.
+safeAddColumn('bank_accounts', 'archived', 'INTEGER', 0);
+
 // Seed default payment programs only if the table is empty. Editing/adding
 // later is done via the Payment Programs admin page — these are not re-seeded.
 try {
