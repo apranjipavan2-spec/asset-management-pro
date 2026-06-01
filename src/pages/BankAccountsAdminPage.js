@@ -13,6 +13,10 @@ window.baaState = window.baaState || {
     accounts: [],
     query: '',
     statusFilter: 'active',   // 'active' | 'archived' | 'all'
+    sheetFilter: '',          // '' = any source sheet
+    notesOnly: false,         // true → only rows with non-empty notes
+    sortKey: 'name',          // name | bankName | accountNumber | ifsc | sourceSheet | archived
+    sortDir: 'asc',           // 'asc' | 'desc'
     page: 1,
     editingId: null,
     creating: false,
@@ -66,6 +70,7 @@ function readFormFields(rowId) {
         accountNumber: get('accountNumber'),
         ifsc:          get('ifsc'),
         reviewNotes:   get('reviewNotes'),
+        sourceSheet:   get('sourceSheet'),
         archived:      row.querySelector('[data-field="archived"]')?.checked ? 1 : 0
     };
 }
@@ -114,7 +119,7 @@ window.baaSave = async (rowKey) => {
     const payload = {
         ...data,
         sourceFile:  existing?.sourceFile  || 'manual',
-        sourceSheet: existing?.sourceSheet || '',
+        sourceSheet: data.sourceSheet || existing?.sourceSheet || '',
         createdAt:   existing?.createdAt   || now,
         updatedAt:   now
     };
@@ -169,6 +174,30 @@ window.baaFilter = (val) => {
     rerender();
 };
 
+window.baaSheetFilter = (val) => {
+    stOf().sheetFilter = val || '';
+    stOf().page = 1;
+    rerender();
+};
+
+window.baaToggleNotesOnly = () => {
+    stOf().notesOnly = !stOf().notesOnly;
+    stOf().page = 1;
+    rerender();
+};
+
+window.baaSort = (key) => {
+    const st = stOf();
+    if (st.sortKey === key) {
+        st.sortDir = st.sortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+        st.sortKey = key;
+        st.sortDir = 'asc';
+    }
+    st.page = 1;
+    rerender();
+};
+
 window.baaGoto = (page) => {
     stOf().page = Math.max(1, page);
     rerender();
@@ -176,9 +205,10 @@ window.baaGoto = (page) => {
 
 // ── Bulk import ────────────────────────────────────────────────────
 // Parse tab-separated values pasted from Excel: one row per line, columns
-// expected in order: Name, Bank, Account #, IFSC, Notes (Notes optional).
-// Blank lines are skipped; a header row whose first cell is "Name" is also
-// skipped automatically so users can paste with or without headers.
+// expected in order: Name, Bank, Account #, IFSC, Notes, Source Sheet
+// (the last two are optional). Blank lines are skipped; a header row whose
+// first cell is "Name" is also skipped automatically so users can paste
+// with or without headers.
 function parseBulkText(text) {
     const valid = [];
     const errors = [];
@@ -188,12 +218,19 @@ function parseBulkText(text) {
         if (!raw.trim()) continue;
         const cells = raw.split('\t').map(s => s.trim());
         if (i === 0 && /^name$/i.test(cells[0] || '')) continue; // header row
-        const [name, bankName, accountNumber, ifsc, reviewNotes] = cells;
+        const [name, bankName, accountNumber, ifsc, reviewNotes, sourceSheet] = cells;
         if (!name || !accountNumber) {
             errors.push({ line: i + 1, reason: !name ? 'missing name' : 'missing account #', raw });
             continue;
         }
-        valid.push({ name, bankName: bankName || '', accountNumber, ifsc: (ifsc || '').toUpperCase(), reviewNotes: reviewNotes || '' });
+        valid.push({
+            name,
+            bankName: bankName || '',
+            accountNumber,
+            ifsc: (ifsc || '').toUpperCase(),
+            reviewNotes: reviewNotes || '',
+            sourceSheet: sourceSheet || ''
+        });
     }
     return { valid, errors };
 }
@@ -260,7 +297,7 @@ window.baaBulkImport = async () => {
             ifsc: row.ifsc,
             reviewNotes: row.reviewNotes,
             sourceFile: 'bulk-paste',
-            sourceSheet: '',
+            sourceSheet: row.sourceSheet || '',
             archived: 0,
             createdAt: now,
             updatedAt: now
@@ -289,7 +326,7 @@ window.baaBulkImport = async () => {
 function renderBulkModal() {
     const st = stOf();
     if (!st.bulkOpen) return '';
-    const sample = `Anand Kumar\tHDFC\t50100123456789\tHDFC0001234\t\nMeera S\tAXIS\t910010012345678\tUTIB0000123\tPart-time`;
+    const sample = `Anand Kumar\tHDFC\t50100123456789\tHDFC0001234\t\tSalary HDFC\nMeera S\tAXIS\t910010012345678\tUTIB0000123\tPart-time\tCSA`;
     return `
         <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onclick="if(event.target===this) baaBulkClose()">
             <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
@@ -305,8 +342,8 @@ function renderBulkModal() {
                 <div class="p-5 space-y-3 overflow-auto flex-1">
                     <div class="text-xs text-slate-600">
                         Paste rows directly from Excel. Expected column order
-                        (tab-separated): <strong>Name → Bank → Account # → IFSC → Notes</strong>.
-                        Header row is auto-detected and skipped.
+                        (tab-separated): <strong>Name → Bank → Account # → IFSC → Notes → Source Sheet</strong>.
+                        Notes and Source Sheet are optional. Header row is auto-detected and skipped.
                     </div>
                     <textarea id="baa-bulk-textarea"
                         oninput="baaBulkPreview()"
@@ -336,16 +373,39 @@ function applyFilters() {
     let rows = st.accounts;
     if (st.statusFilter === 'active')   rows = rows.filter(r => !r.archived);
     if (st.statusFilter === 'archived') rows = rows.filter(r => !!r.archived);
+    if (st.sheetFilter) rows = rows.filter(r => String(r.sourceSheet || '') === st.sheetFilter);
+    if (st.notesOnly)   rows = rows.filter(r => String(r.reviewNotes || '').trim() !== '');
     if (q) {
         rows = rows.filter(r =>
-            String(r.name || '').toLowerCase().includes(q)         ||
-            String(r.bankName || '').toLowerCase().includes(q)     ||
-            String(r.accountNumber || '').toLowerCase().includes(q)||
-            String(r.ifsc || '').toLowerCase().includes(q)         ||
+            String(r.name || '').toLowerCase().includes(q)          ||
+            String(r.bankName || '').toLowerCase().includes(q)      ||
+            String(r.accountNumber || '').toLowerCase().includes(q) ||
+            String(r.ifsc || '').toLowerCase().includes(q)          ||
+            String(r.reviewNotes || '').toLowerCase().includes(q)   ||
+            String(r.sourceSheet || '').toLowerCase().includes(q)   ||
             String(r.id || '').toLowerCase().includes(q)
         );
     }
+    // Sort
+    const key = st.sortKey;
+    const dir = st.sortDir === 'desc' ? -1 : 1;
+    rows = rows.slice().sort((a, b) => {
+        const av = String(a[key] ?? '').toLowerCase();
+        const bv = String(b[key] ?? '').toLowerCase();
+        if (av < bv) return -1 * dir;
+        if (av > bv) return  1 * dir;
+        return 0;
+    });
     return rows;
+}
+
+function distinctSheets() {
+    const set = new Set();
+    for (const a of stOf().accounts) {
+        const s = String(a.sourceSheet || '').trim();
+        if (s) set.add(s);
+    }
+    return [...set].sort((a, b) => a.localeCompare(b));
 }
 
 const inputCls = 'w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-800 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all';
@@ -373,6 +433,9 @@ function renderEditableRow(rowKey, source) {
             </td>
             <td>
                 <input data-field="reviewNotes" value="${(a.reviewNotes || '').replace(/"/g, '&quot;')}" placeholder="Notes" class="${inputCls} py-1.5 text-xs" />
+            </td>
+            <td>
+                <input data-field="sourceSheet" value="${(a.sourceSheet || '').replace(/"/g, '&quot;')}" placeholder="Source sheet" class="${inputCls} py-1.5 text-xs" />
             </td>
             <td class="text-center">
                 <input data-field="archived" type="checkbox" ${a.archived ? 'checked' : ''} class="w-4 h-4 accent-rose-500" />
@@ -403,6 +466,7 @@ function renderReadOnlyRow(a) {
             <td class="font-mono text-[11.5px] text-slate-700">${esc(a.accountNumber) || '—'}</td>
             <td class="font-mono text-[11.5px] text-slate-600 uppercase">${esc(a.ifsc) || '—'}</td>
             <td class="text-xs text-slate-500">${esc(a.reviewNotes) || '—'}</td>
+            <td class="text-xs text-slate-600">${esc(a.sourceSheet) || '—'}</td>
             <td class="text-center">${statusBadge}</td>
             <td class="whitespace-nowrap">
                 <button onclick="baaEdit('${esc(a.id)}')" title="Edit" class="pay-icon-btn">
@@ -453,10 +517,10 @@ function renderTable() {
     if (!rows.length) {
         rows.push(`
             <tr>
-                <td colspan="8" class="p-10 text-center">
+                <td colspan="9" class="p-10 text-center">
                     <span class="material-symbols-outlined text-[40px] text-slate-300 block mb-2">savings</span>
-                    <div class="text-sm text-slate-600 font-semibold">${st.query ? 'No matches.' : 'No bank accounts yet.'}</div>
-                    <div class="text-xs text-slate-500 mt-1">${st.query ? 'Try a different search term.' : 'Click <strong>Add Record</strong> above to create one.'}</div>
+                    <div class="text-sm text-slate-600 font-semibold">${st.query || st.sheetFilter || st.notesOnly ? 'No matches.' : 'No bank accounts yet.'}</div>
+                    <div class="text-xs text-slate-500 mt-1">${st.query || st.sheetFilter || st.notesOnly ? 'Try clearing filters or a different search term.' : 'Click <strong>Add Record</strong> above to create one.'}</div>
                 </td>
             </tr>`);
     }
@@ -471,12 +535,13 @@ function renderTable() {
                     <thead>
                         <tr>
                             <th>ID</th>
-                            <th>Name</th>
-                            <th>Bank</th>
-                            <th>Account #</th>
-                            <th>IFSC</th>
+                            ${sortableTh('name',          'Name')}
+                            ${sortableTh('bankName',      'Bank')}
+                            ${sortableTh('accountNumber', 'Account #')}
+                            ${sortableTh('ifsc',          'IFSC')}
                             <th>Notes</th>
-                            <th class="text-center">Status</th>
+                            ${sortableTh('sourceSheet',   'Source Sheet')}
+                            ${sortableTh('archived',      'Status', 'text-center')}
                             <th></th>
                         </tr>
                     </thead>
@@ -485,6 +550,15 @@ function renderTable() {
             </div>
             ${renderPagination(filtered.length)}
         </div>`;
+}
+
+// Sortable header cell — clicking toggles asc/desc on this column.
+function sortableTh(key, label, extraCls = '') {
+    const st = stOf();
+    const active = st.sortKey === key;
+    const arrow = !active ? '' : (st.sortDir === 'asc' ? ' ▲' : ' ▼');
+    const cls = `${extraCls} cursor-pointer select-none ${active ? 'text-slate-900 font-bold' : ''}`.trim();
+    return `<th class="${cls}" onclick="baaSort('${key}')" title="Sort by ${label}">${label}${arrow}</th>`;
 }
 
 function renderStatTiles() {
@@ -510,6 +584,7 @@ function renderStatTiles() {
 
 function renderFilterBar() {
     const st = stOf();
+    const sheets = distinctSheets();
     const pill = (val, label) => `
         <button onclick="baaFilter('${val}')" class="pay-pill ${st.statusFilter === val ? 'pay-pill--primary' : 'pay-pill--ghost'}">${label}</button>`;
     return `
@@ -521,9 +596,16 @@ function renderFilterBar() {
                         type="text"
                         value="${esc(st.query)}"
                         oninput="baaSearch(this.value)"
-                        placeholder="Search name, bank, account # or IFSC..."
+                        placeholder="Search name, bank, account #, IFSC, notes, or sheet..."
                         class="${inputCls} py-2 text-sm flex-1" />
                 </div>
+                <select onchange="baaSheetFilter(this.value)" class="pay-pill pay-pill--ghost px-3 py-2 text-sm" title="Filter by source sheet">
+                    <option value="" ${!st.sheetFilter ? 'selected' : ''}>All sheets (${sheets.length})</option>
+                    ${sheets.map(s => `<option value="${esc(s)}" ${st.sheetFilter === s ? 'selected' : ''}>${esc(s)}</option>`).join('')}
+                </select>
+                <button onclick="baaToggleNotesOnly()" class="pay-pill ${st.notesOnly ? 'pay-pill--primary' : 'pay-pill--ghost'}" title="Show only rows that have notes">
+                    <span class="material-symbols-outlined text-[14px]">sticky_note_2</span> Has notes
+                </button>
                 <div class="flex items-center gap-1">
                     ${pill('active',   'Active')}
                     ${pill('archived', 'Archived')}
