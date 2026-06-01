@@ -27,10 +27,29 @@ sleep 2
 # Keep Termux alive across screen-off (no-op on non-Termux systems)
 termux-wake-lock 2>/dev/null || true
 
-# Pull latest code cleanly
+# Pull latest code cleanly. Verbose + verified so silent staleness is visible.
 echo "▶ Pulling latest code..."
-git fetch origin main
-git reset --hard origin/main
+echo "  Remote: $(git config --get remote.origin.url)"
+BEFORE=$(git rev-parse HEAD 2>/dev/null || echo unknown)
+echo "  Before: ${BEFORE:0:7}"
+
+# Force refetch + prune so a corrupted remote-tracking ref can't stick
+if ! git fetch --prune --force origin main; then
+    echo "✗ git fetch FAILED. Check network / GitHub access on this device."
+    echo "  Staying on ${BEFORE:0:7} and continuing — server will boot, but code is stale."
+fi
+
+REMOTE=$(git rev-parse origin/main 2>/dev/null || echo unknown)
+echo "  Remote/main: ${REMOTE:0:7}"
+
+if [ "$BEFORE" = "$REMOTE" ] && [ "$REMOTE" != "unknown" ]; then
+    echo "  ✓ Already on latest commit."
+else
+    echo "  ▶ Resetting working tree to origin/main..."
+    git reset --hard origin/main
+    AFTER=$(git rev-parse HEAD)
+    echo "  ✓ Now on ${AFTER:0:7} (was ${BEFORE:0:7})"
+fi
 
 # Install / update dependencies
 echo "▶ Checking dependencies..."
@@ -107,8 +126,10 @@ chmod +x scripts/phone_watchdog.sh 2>/dev/null
 nohup ./scripts/phone_watchdog.sh > /dev/null 2>&1 &
 echo "✓ Watchdog running (pid $!)"
 
+DEPLOYED=$(git rev-parse HEAD 2>/dev/null | cut -c1-7)
 echo ""
 echo "════════════════════════════════════════════════════"
+echo "  DEPLOYED:    $DEPLOYED  ($(git log -1 --pretty=%s 2>/dev/null))"
 if [ -n "$PUBLIC_URL" ]; then
     echo "  PUBLIC URL:  $PUBLIC_URL"
 fi
