@@ -227,6 +227,16 @@ window.payexSearch = (q) => {
     const st = stOf();
     st.query = q;
     const raw = String(q || '').trim();
+    // Toggle the clear (×) button vs the hint label.
+    const clearBtn = document.getElementById('payex-search-clear');
+    const hint = document.getElementById('payex-search-hint');
+    if (raw) {
+        clearBtn?.classList.remove('is-hidden');
+        hint?.classList.add('is-hidden');
+    } else {
+        clearBtn?.classList.add('is-hidden');
+        hint?.classList.remove('is-hidden');
+    }
     if (!raw) { st.matches = []; document.getElementById('payex-results').innerHTML = renderResults(); return; }
     const out = [];
     for (const a of st.accounts) {
@@ -235,6 +245,12 @@ window.payexSearch = (q) => {
     }
     st.matches = out;
     document.getElementById('payex-results').innerHTML = renderResults();
+};
+
+window.payexClearSearch = () => {
+    const input = document.getElementById('payex-search-input');
+    if (input) { input.value = ''; input.focus(); }
+    window.payexSearch('');
 };
 
 window.payexAdd = (accountId) => {
@@ -717,8 +733,12 @@ function renderCartStage() {
             <div class="p-5">
                 <div class="pay-search">
                     <span class="pay-search__icon material-symbols-outlined text-[20px]">search</span>
-                    <input type="text" value="${st.query || ''}" oninput="payexSearch(this.value)" placeholder="Name, account number, IFSC, or bank…" autofocus />
-                    <span class="pay-search__hint">Name · Account · IFSC</span>
+                    <input id="payex-search-input" type="text" value="${st.query || ''}" oninput="payexSearch(this.value)" placeholder="Name, account number, IFSC, or bank…" autofocus />
+                    <button id="payex-search-clear" onclick="payexClearSearch()" title="Clear search"
+                        class="pay-search__clear ${st.query ? '' : 'is-hidden'}">
+                        <span class="material-symbols-outlined text-[18px]">close</span>
+                    </button>
+                    <span id="payex-search-hint" class="pay-search__hint ${st.query ? 'is-hidden' : ''}">Name · Account · IFSC</span>
                 </div>
             </div>
             <div id="payex-results" class="border-t border-slate-100">${renderResults()}</div>
