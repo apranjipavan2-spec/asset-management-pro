@@ -42,30 +42,35 @@ function buildRow(program, account, amount, chequeNo) {
     const date = todayDMY();
 
     if (program.format === 'hdfc') {
-        // 29 columns; only the indices below carry data, the rest stay empty.
+        // 29 columns. The bank template has literal labels 'Cheque No' at col 13
+        // and 'Date' at col 23; keep those labels — put the actual values in the
+        // next (originally empty) column.
         const row = Array(29).fill('');
         row[0]  = flag;
         row[2]  = account.accountNumber;
         row[3]  = amt;
         row[4]  = name;
-        row[13] = chq;
-        row[23] = date;
+        row[13] = 'Cheque No';
+        row[14] = chq;
+        row[23] = 'Date';
+        row[24] = date;
         row[25] = account.ifsc;
         row[26] = account.bankName;
         row[28] = program.email || '';
         return row;
     }
-    // axis 12-column format
+    // axis 12-column format. Labels 'Date' at idx 2 and 'Cheque No' at idx 8
+    // stay as literals; the actual values go into the empty slots (5 and 6).
     return [
         flag,
         amt,
-        date,
+        'Date',
         name,
         account.accountNumber,
-        '',
-        '',
-        program.debitAccount,
+        date,
         chq,
+        program.debitAccount,
+        'Cheque No',
         account.ifsc,
         11,
         program.entity
@@ -340,8 +345,8 @@ function coerceColumnsToText(sheet, cols) {
 
 // Text-typed column indices per bank format (account #, IFSC, cheque, date, etc.).
 function textColumnsFor(format) {
-    if (format === 'hdfc') return [2, 13, 23, 25, 26, 28]; // accountNumber, cheque, date, ifsc, bankName, email
-    if (format === 'axis') return [2, 4, 7, 8, 9, 11];     // date, accountNumber, debitAccount, cheque, ifsc, entity
+    if (format === 'hdfc') return [2, 14, 24, 25, 26, 28]; // accountNumber, cheque value, date value, ifsc, bankName, email
+    if (format === 'axis') return [4, 5, 6, 7, 9, 11];     // accountNumber, date value, cheque value, debitAccount, ifsc, entity
     return [];
 }
 
