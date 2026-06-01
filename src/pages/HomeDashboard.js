@@ -42,6 +42,9 @@ export function renderHomeDashboard(user) {
         // FINANCE
         { id: 'reimbursements', group: 'finance', label: 'Expenses', icon: 'receipt_long', desc: 'Expense claims & settlements', color: 'from-rose-500 to-pink-600', stat: `${pendingReimb} Pending`, permission: 'any' },
         { id: 'payroll', group: 'finance', label: 'Payroll', icon: 'payments', desc: 'Salary slips & payroll', color: 'from-fuchsia-600 to-pink-700', stat: `${db.payroll.length} Slips`, permission: 'manage_payroll' },
+        { id: 'payment_export', group: 'finance', label: 'Bank Payment', icon: 'account_balance', desc: 'Disbursement file builder', color: 'from-emerald-500 to-teal-600', stat: 'Export', permission: 'approve_finance' },
+        { id: 'payment_programs', group: 'finance', label: 'Payment Programs', icon: 'tune', desc: 'Programs & cheque settings', color: 'from-violet-500 to-purple-600', stat: 'Setup', permission: 'approve_finance' },
+        { id: 'bank_accounts', group: 'finance', label: 'Bank Accounts', icon: 'savings', desc: 'Master beneficiary list', color: 'from-sky-500 to-blue-600', stat: 'Master', permission: 'approve_finance' },
         // PEOPLE
         { id: 'org_chart', group: 'people', label: 'Org Chart', icon: 'account_tree', desc: 'Employee hierarchy & teams', color: 'from-slate-600 to-gray-700', stat: `${db.hierarchy.length} Mapped`, permission: 'any' },
         { id: 'performance', group: 'people', label: 'Reviews', icon: 'workspace_premium', desc: 'Performance reviews & feedback', color: 'from-rose-500 to-pink-600', stat: `${db.performanceReviews.length} Reviews`, permission: 'any' },
