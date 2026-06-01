@@ -104,12 +104,23 @@ window.payexState = window.payexState || {
     accounts: [],           // all bank_accounts from server
     query: '',
     matches: [],            // search results
-    cart: []                // [{ accountId, amount }]
+    cart: [],               // [{ accountId, amount }]
+    chequeStart: ''         // user-editable starting cheque #, seeded from program on pick
 };
 
 const stOf = () => window.payexState;
 const programOf = () => stOf().programs.find(p => p.id === stOf().programId) || null;
 const accountById = id => stOf().accounts.find(a => a.id === id) || null;
+
+// Resolves the effective starting cheque number: the user's input if valid,
+// otherwise falls back to the program's stored baseChequeNumber (or 1001).
+function effectiveChequeStart() {
+    const st = stOf();
+    const fromInput = Number.parseInt(st.chequeStart, 10);
+    if (Number.isFinite(fromInput) && fromInput > 0) return fromInput;
+    const program = programOf();
+    return Number.isFinite(+program?.baseChequeNumber) ? +program.baseChequeNumber : 1001;
+}
 
 async function loadAccounts() {
     const res = await fetch('/api/bank_accounts', {
@@ -161,7 +172,28 @@ window.payexPickProgram = (id) => {
     stOf().query = '';
     stOf().matches = [];
     stOf().cart = [];
+    // Seed the cheque-start input from the program's next baseChequeNumber.
+    const p = programOf();
+    stOf().chequeStart = String(p?.baseChequeNumber ?? 1001);
     rerender();
+};
+
+// Lightweight in-place update: avoid full cart re-render so the input
+// keeps focus while the user is typing. Updates each row's Chq # cell
+// and the range hint above the table.
+window.payexSetChequeStart = (v) => {
+    stOf().chequeStart = v;
+    const program = programOf();
+    const start = effectiveChequeStart();
+    document.querySelectorAll('[data-payex-cheque-row]').forEach(el => {
+        const idx = Number.parseInt(el.dataset.payexChequeRow, 10);
+        el.textContent = formatCheque(program, start + idx);
+    });
+    const fromEl = document.getElementById('payex-cheque-from');
+    const toEl = document.getElementById('payex-cheque-to');
+    const lastIdx = stOf().cart.length - 1;
+    if (fromEl) fromEl.textContent = formatCheque(program, start);
+    if (toEl) toEl.textContent = lastIdx >= 0 ? formatCheque(program, start + lastIdx) : formatCheque(program, start);
 };
 
 window.payexChangeProgram = () => {
@@ -243,8 +275,8 @@ function buildExport() {
         if (!proceed) return null;
     }
 
-    // Assign sequential cheque numbers starting from the program's base.
-    const baseCheque = Number.isFinite(+program.baseChequeNumber) ? +program.baseChequeNumber : 1001;
+    // Assign sequential cheque numbers starting from the user-set (or program-default) base.
+    const baseCheque = effectiveChequeStart();
     const rows = [];
     const usedCheques = [];
     let idx = 0;
@@ -526,6 +558,9 @@ function renderCart() {
             </div>`;
     }
     const program = programOf();
+    const start = effectiveChequeStart();
+    const prefix = program?.chequePrefix || '';
+    const lastIdx = st.cart.length - 1;
     return `
         <div class="pay-section">
             <div class="pay-section__head">
@@ -533,6 +568,24 @@ function renderCart() {
                 <button onclick="payexClearCart()" class="pay-pill pay-pill--danger-soft">
                     <span class="material-symbols-outlined text-[14px]">delete_sweep</span> Clear all
                 </button>
+            </div>
+            <div class="px-5 py-3 border-b border-slate-100 bg-slate-50/40 flex flex-wrap items-center gap-3">
+                <label class="text-[11px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[15px] text-slate-400">receipt_long</span>
+                    Starting cheque #
+                </label>
+                <div class="flex items-center gap-1">
+                    ${prefix ? `<span class="text-sm font-mono text-slate-600 px-2 py-1.5 bg-slate-100 rounded-l-lg border border-r-0 border-slate-200">${prefix}</span>` : ''}
+                    <input type="number" min="1" step="1" value="${st.chequeStart || start}"
+                        oninput="payexSetChequeStart(this.value)"
+                        class="w-32 px-2 py-1.5 bg-white border border-slate-200 ${prefix ? 'rounded-r-lg' : 'rounded-lg'} text-sm font-mono outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+                </div>
+                <span class="text-xs text-slate-500">
+                    Range:
+                    <strong class="font-mono text-slate-700" id="payex-cheque-from">${formatCheque(program, start)}</strong>
+                    →
+                    <strong class="font-mono text-slate-700" id="payex-cheque-to">${formatCheque(program, start + Math.max(lastIdx, 0))}</strong>
+                </span>
             </div>
             <div class="overflow-x-auto">
                 <table class="pay-table">
@@ -542,12 +595,13 @@ function renderCart() {
                             <th>Account</th>
                             <th>IFSC</th>
                             <th class="text-center">Route</th>
+                            <th>Chq #</th>
                             <th>Amount (₹)</th>
                             <th></th>
                         </tr>
                     </thead>
                     <tbody>
-                        ${st.cart.map(c => {
+                        ${st.cart.map((c, i) => {
                             const a = accountById(c.accountId);
                             if (!a) return '';
                             const flag = program ? flagFor(program, a.ifsc) : '';
@@ -558,6 +612,7 @@ function renderCart() {
                                     <td class="font-mono text-[11.5px] text-slate-700">${a.accountNumber || ''}</td>
                                     <td class="font-mono text-[11.5px] text-slate-500">${a.ifsc || ''}</td>
                                     <td class="text-center"><span class="${flagBadge}">${flag || '—'}</span></td>
+                                    <td class="font-mono text-[11.5px] text-slate-700" data-payex-cheque-row="${i}">${formatCheque(program, start + i)}</td>
                                     <td>
                                         <div class="relative">
                                             <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">₹</span>
