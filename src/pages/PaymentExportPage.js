@@ -154,9 +154,13 @@ async function postAuditEvent(extra) {
                 programId: program?.id,
                 programLabel: program?.label,
                 format: program?.format,
+                fileFormat: extra.fileFormat || '',
                 rowCount: extra.rowCount,
                 totalAmount: extra.totalAmount,
-                beneficiaryIds: extra.beneficiaryIds
+                beneficiaryIds: extra.beneficiaryIds,
+                chequeFrom: extra.chequeFrom,
+                chequeTo: extra.chequeTo,
+                chequePrefix: program?.chequePrefix || ''
             })
         });
     } catch (e) {
@@ -290,15 +294,14 @@ function buildExport() {
     }
 
     const total = st.cart.reduce((s, c) => s + (Number.isFinite(+c.amount) ? +c.amount : 0), 0);
-    postAuditEvent({
-        rowCount: rows.length,
-        totalAmount: total,
-        beneficiaryIds: st.cart.map(c => c.accountId),
+    // Audit is posted by the calling exporter so it can include the file format.
+    return {
+        program, rows,
         chequeFrom: usedCheques[0],
-        chequeTo: usedCheques[usedCheques.length - 1]
-    });
-
-    return { program, rows, chequeFrom: usedCheques[0], chequeTo: usedCheques[usedCheques.length - 1] };
+        chequeTo: usedCheques[usedCheques.length - 1],
+        totalAmount: total,
+        beneficiaryIds: st.cart.map(c => c.accountId)
+    };
 }
 
 // After a successful export, push the next cheque number back to the program
@@ -353,7 +356,15 @@ window.payexExportCsv = async () => {
     const fname = `${built.program.id}_${stamp()}.csv`;
     downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), fname);
     await advanceChequeNumber(built.program.id, built.chequeTo + 1);
-    showExportBanner(built);
+    await postAuditEvent({
+        fileFormat: 'csv',
+        rowCount: built.rows.length,
+        totalAmount: built.totalAmount,
+        beneficiaryIds: built.beneficiaryIds,
+        chequeFrom: built.chequeFrom,
+        chequeTo: built.chequeTo
+    });
+    finalizeAfterExport(built);
 };
 
 // Force the given column indices to be stored as text cells in the worksheet.
@@ -393,8 +404,27 @@ window.payexExportXlsx = async () => {
     const fname = `${built.program.id}_${stamp()}.xlsx`;
     XLSX.writeFile(wb, fname);
     await advanceChequeNumber(built.program.id, built.chequeTo + 1);
-    showExportBanner(built);
+    await postAuditEvent({
+        fileFormat: 'xlsx',
+        rowCount: built.rows.length,
+        totalAmount: built.totalAmount,
+        beneficiaryIds: built.beneficiaryIds,
+        chequeFrom: built.chequeFrom,
+        chequeTo: built.chequeTo
+    });
+    finalizeAfterExport(built);
 };
+
+// Clear the cart, bump the chequeStart input to the next number, and show
+// the success banner. Called by both CSV and XLSX exporters after the file
+// has been downloaded and the audit row has been written.
+function finalizeAfterExport(built) {
+    stOf().cart = [];
+    stOf().chequeStart = String(built.chequeTo + 1);
+    showExportBanner(built);
+    const cartEl = document.getElementById('payex-cart');
+    if (cartEl) cartEl.innerHTML = renderCart();
+}
 
 // ── render helpers ─────────────────────────────────────────────────
 function cartTotal() {
@@ -542,8 +572,35 @@ function renderResults() {
         </div>`;
 }
 
+function renderChequeBar(start, prefix, lastIdx) {
+    const program = programOf();
+    return `
+        <div class="px-5 py-3 border-b border-slate-100 bg-slate-50/40 flex flex-wrap items-center gap-3">
+            <label class="text-[11px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-1">
+                <span class="material-symbols-outlined text-[15px] text-slate-400">receipt_long</span>
+                Starting cheque #
+            </label>
+            <div class="flex items-center gap-1">
+                ${prefix ? `<span class="text-sm font-mono text-slate-600 px-2 py-1.5 bg-slate-100 rounded-l-lg border border-r-0 border-slate-200">${prefix}</span>` : ''}
+                <input type="number" min="1" step="1" value="${stOf().chequeStart || start}"
+                    oninput="payexSetChequeStart(this.value)"
+                    class="w-32 px-2 py-1.5 bg-white border border-slate-200 ${prefix ? 'rounded-r-lg' : 'rounded-lg'} text-sm font-mono outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+            </div>
+            <span class="text-xs text-slate-500">
+                Range:
+                <strong class="font-mono text-slate-700" id="payex-cheque-from">${formatCheque(program, start)}</strong>
+                →
+                <strong class="font-mono text-slate-700" id="payex-cheque-to">${formatCheque(program, start + Math.max(lastIdx, 0))}</strong>
+            </span>
+        </div>`;
+}
+
 function renderCart() {
     const st = stOf();
+    const program = programOf();
+    const start = effectiveChequeStart();
+    const prefix = program?.chequePrefix || '';
+    const lastIdx = st.cart.length - 1;
     if (!st.cart.length) {
         return `
             <div class="pay-section">
@@ -551,16 +608,13 @@ function renderCart() {
                     <span class="pay-section__title"><span class="material-symbols-outlined text-[16px] text-slate-500">shopping_cart</span> Selected beneficiaries</span>
                     <span class="pay-section__meta">0 selected</span>
                 </div>
+                ${renderChequeBar(start, prefix, 0)}
                 <div class="p-8 text-center text-xs text-slate-400 italic">
                     <span class="material-symbols-outlined text-[28px] text-slate-300 block mb-2">shopping_cart</span>
                     Search above and click <strong>Add</strong> to include beneficiaries in the export.
                 </div>
             </div>`;
     }
-    const program = programOf();
-    const start = effectiveChequeStart();
-    const prefix = program?.chequePrefix || '';
-    const lastIdx = st.cart.length - 1;
     return `
         <div class="pay-section">
             <div class="pay-section__head">
@@ -569,24 +623,7 @@ function renderCart() {
                     <span class="material-symbols-outlined text-[14px]">delete_sweep</span> Clear all
                 </button>
             </div>
-            <div class="px-5 py-3 border-b border-slate-100 bg-slate-50/40 flex flex-wrap items-center gap-3">
-                <label class="text-[11px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-1">
-                    <span class="material-symbols-outlined text-[15px] text-slate-400">receipt_long</span>
-                    Starting cheque #
-                </label>
-                <div class="flex items-center gap-1">
-                    ${prefix ? `<span class="text-sm font-mono text-slate-600 px-2 py-1.5 bg-slate-100 rounded-l-lg border border-r-0 border-slate-200">${prefix}</span>` : ''}
-                    <input type="number" min="1" step="1" value="${st.chequeStart || start}"
-                        oninput="payexSetChequeStart(this.value)"
-                        class="w-32 px-2 py-1.5 bg-white border border-slate-200 ${prefix ? 'rounded-r-lg' : 'rounded-lg'} text-sm font-mono outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
-                </div>
-                <span class="text-xs text-slate-500">
-                    Range:
-                    <strong class="font-mono text-slate-700" id="payex-cheque-from">${formatCheque(program, start)}</strong>
-                    →
-                    <strong class="font-mono text-slate-700" id="payex-cheque-to">${formatCheque(program, start + Math.max(lastIdx, 0))}</strong>
-                </span>
-            </div>
+            ${renderChequeBar(start, prefix, lastIdx)}
             <div class="overflow-x-auto">
                 <table class="pay-table">
                     <thead>
@@ -710,6 +747,102 @@ function renderCartStage() {
         </div>`;
 }
 
+// ── history modal ─────────────────────────────────────────────────
+window.payexOpenHistory = async () => {
+    if (document.getElementById('payex-history-modal')) return;
+    const modal = document.createElement('div');
+    modal.id = 'payex-history-modal';
+    modal.className = 'fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-6';
+    modal.innerHTML = `
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[85vh] flex flex-col">
+            <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+                <h3 class="font-headline font-extrabold text-slate-900 text-[16px] flex items-center gap-2">
+                    <span class="material-symbols-outlined text-[20px] text-slate-500">history</span>
+                    Export history
+                </h3>
+                <button onclick="payexCloseHistory()" class="pay-icon-btn">
+                    <span class="material-symbols-outlined text-[18px]">close</span>
+                </button>
+            </div>
+            <div id="payex-history-body" class="p-5 overflow-auto flex-1">
+                <div class="text-center text-slate-400 py-12 text-sm">Loading…</div>
+            </div>
+        </div>`;
+    modal.addEventListener('click', (e) => { if (e.target === modal) window.payexCloseHistory(); });
+    document.body.appendChild(modal);
+
+    try {
+        const res = await fetch('/api/payment_export_audit', {
+            headers: { Authorization: `Bearer ${localStorage.getItem('amp_token')}` }
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const rows = await res.json();
+        document.getElementById('payex-history-body').innerHTML = renderHistoryTable(rows);
+    } catch (e) {
+        const body = document.getElementById('payex-history-body');
+        if (body) body.innerHTML = `<div class="bg-red-50 border border-red-200 text-red-700 rounded p-3 text-sm">Failed to load history: ${e.message}</div>`;
+    }
+};
+
+window.payexCloseHistory = () => {
+    document.getElementById('payex-history-modal')?.remove();
+};
+
+function renderHistoryTable(rows) {
+    if (!rows || !rows.length) {
+        return `
+            <div class="text-center py-12 text-slate-400">
+                <span class="material-symbols-outlined text-[40px] text-slate-300 block mb-2">inbox</span>
+                <div class="text-sm">No exports recorded yet.</div>
+            </div>`;
+    }
+    const fmtWhen = ts => {
+        const d = new Date(ts);
+        if (isNaN(+d)) return ts || '';
+        return d.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+    };
+    const inr = v => `₹${Number(v || 0).toLocaleString('en-IN')}`;
+    return `
+        <div class="overflow-x-auto">
+            <table class="pay-table">
+                <thead>
+                    <tr>
+                        <th>When</th>
+                        <th>By</th>
+                        <th>Program</th>
+                        <th class="text-center">Bank</th>
+                        <th class="text-center">File</th>
+                        <th>Cheques</th>
+                        <th class="text-right">Rows</th>
+                        <th class="text-right">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rows.map(r => {
+                        const prefix = r.chequePrefix || '';
+                        const range = (r.chequeFrom && r.chequeTo)
+                            ? (String(r.chequeFrom) === String(r.chequeTo)
+                                ? `${prefix}${r.chequeFrom}`
+                                : `${prefix}${r.chequeFrom} – ${prefix}${r.chequeTo}`)
+                            : '—';
+                        const bankBadge = r.format === 'hdfc' ? 'pay-badge pay-badge--hdfc' : 'pay-badge pay-badge--axis';
+                        return `
+                            <tr>
+                                <td class="text-slate-700 text-[12px]">${fmtWhen(r.timestamp)}</td>
+                                <td class="text-slate-600 text-[12px]">${r.userName || r.userId || ''}</td>
+                                <td class="font-semibold text-slate-800 text-[12px]">${r.programLabel || r.programId || ''}</td>
+                                <td class="text-center"><span class="${bankBadge}">${(r.format || '').toUpperCase() || '—'}</span></td>
+                                <td class="text-center text-[11px] font-bold uppercase tracking-widest text-slate-500">${r.fileFormat || '—'}</td>
+                                <td class="font-mono text-[11.5px] text-slate-700">${range}</td>
+                                <td class="text-right text-slate-700">${r.rowCount || 0}</td>
+                                <td class="text-right font-mono text-slate-800 font-semibold">${inr(r.totalAmount)}</td>
+                            </tr>`;
+                    }).join('')}
+                </tbody>
+            </table>
+        </div>`;
+}
+
 function rerender() {
     const root = document.getElementById('payex-root');
     if (!root) return;
@@ -744,9 +877,14 @@ export async function renderPaymentExportPage() {
                     <h2 class="page-title flex items-center gap-2"><span class="material-symbols-outlined text-[22px] text-slate-400">account_balance</span> Salary Payment Export</h2>
                     <p class="page-subtitle">Bank-Ready Disbursement Builder</p>
                 </div>
-                <a href="#payment_programs" class="pay-pill pay-pill--ghost">
-                    <span class="material-symbols-outlined text-[14px]">tune</span> Manage Programs
-                </a>
+                <div class="flex items-center gap-2">
+                    <button onclick="payexOpenHistory()" class="pay-pill pay-pill--ghost">
+                        <span class="material-symbols-outlined text-[14px]">history</span> History
+                    </button>
+                    <a href="#payment_programs" class="pay-pill pay-pill--ghost">
+                        <span class="material-symbols-outlined text-[14px]">tune</span> Manage Programs
+                    </a>
+                </div>
             </header>
             <div id="payex-root" class="space-y-5">
                 ${stOf().stage === 'pick_program' ? renderProgramPicker() : renderCartStage()}

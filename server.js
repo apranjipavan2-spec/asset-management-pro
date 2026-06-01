@@ -1160,17 +1160,64 @@ app.post('/api/payment_export_audit', (req, res) => {
         logAuditEvent('AUTHZ_DENIED', req.user.id, req.user.id, `Tried to log payment export with role '${req.user.role}'`, 'WARN');
         return res.status(403).json({ error: 'forbidden' });
     }
-    const { programId, programLabel, format, rowCount, totalAmount, beneficiaryIds } = req.body || {};
+    const {
+        programId, programLabel, format, rowCount, totalAmount, beneficiaryIds,
+        chequeFrom, chequeTo, chequePrefix, fileFormat
+    } = req.body || {};
     const details = JSON.stringify({
         programId: String(programId || ''),
         programLabel: String(programLabel || ''),
         format: String(format || ''),
+        fileFormat: String(fileFormat || ''),
         rowCount: Number(rowCount) || 0,
         totalAmount: Number(totalAmount) || 0,
-        beneficiaryIds: Array.isArray(beneficiaryIds) ? beneficiaryIds.slice(0, 500) : []
+        beneficiaryIds: Array.isArray(beneficiaryIds) ? beneficiaryIds.slice(0, 500) : [],
+        chequeFrom: chequeFrom !== undefined && chequeFrom !== null ? String(chequeFrom) : '',
+        chequeTo: chequeTo !== undefined && chequeTo !== null ? String(chequeTo) : '',
+        chequePrefix: String(chequePrefix || '')
     });
     logAuditEvent('PAYMENT_EXPORT', req.user.id, req.user.id, details, 'INFO');
     res.json({ ok: true });
+});
+
+// History of payment exports. Returns most recent 200 PAYMENT_EXPORT audit rows
+// with their JSON details unpacked for the front-end History modal.
+app.get('/api/payment_export_audit', (req, res) => {
+    if (!PAYMENT_EXPORT_ROLES.has(req.user.role)) {
+        return res.status(403).json({ error: 'forbidden' });
+    }
+    try {
+        const rows = db.prepare(
+            `SELECT id, userId, userName, details, timestamp
+             FROM audit_logs
+             WHERE action = 'PAYMENT_EXPORT'
+             ORDER BY timestamp DESC
+             LIMIT 200`
+        ).all();
+        const out = rows.map(r => {
+            let d = {};
+            try { d = JSON.parse(r.details || '{}'); } catch {}
+            return {
+                id: r.id,
+                userId: r.userId,
+                userName: r.userName,
+                timestamp: r.timestamp,
+                programId: d.programId || '',
+                programLabel: d.programLabel || '',
+                format: d.format || '',
+                fileFormat: d.fileFormat || '',
+                rowCount: d.rowCount || 0,
+                totalAmount: d.totalAmount || 0,
+                chequeFrom: d.chequeFrom || '',
+                chequeTo: d.chequeTo || '',
+                chequePrefix: d.chequePrefix || ''
+            };
+        });
+        res.json(out);
+    } catch (err) {
+        console.error('GET /api/payment_export_audit:', err);
+        res.status(500).json({ error: 'history fetch failed' });
+    }
 });
 
 // YouTube RSS proxy. Reads the first active social_accounts row with
