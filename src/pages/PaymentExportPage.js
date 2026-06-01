@@ -16,17 +16,30 @@ const stamp = () => {
     const p = n => String(n).padStart(2, '0');
     return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}`;
 };
+// dd-mm-yyyy — what the bank import templates expect.
+const todayDMY = () => {
+    const d = new Date();
+    const p = n => String(n).padStart(2, '0');
+    return `${p(d.getDate())}-${p(d.getMonth()+1)}-${d.getFullYear()}`;
+};
 
 function flagFor(program, ifsc) {
     const prefix = INTRA_BANK_PREFIX[program.debitBank] || '';
     return (prefix && String(ifsc || '').toUpperCase().startsWith(prefix)) ? 'I' : 'N';
 }
 
-// Build one bank-format row for a single beneficiary + amount.
-function buildRow(program, account, amount) {
+// Format the cheque number with the program's optional prefix.
+function formatCheque(program, n) {
+    return `${program.chequePrefix || ''}${n}`;
+}
+
+// Build one bank-format row for a single beneficiary + amount + cheque #.
+function buildRow(program, account, amount, chequeNo) {
     const name = stripSpaces(account.name);
     const flag = flagFor(program, account.ifsc);
     const amt = Number.isFinite(+amount) ? +amount : 0;
+    const chq = formatCheque(program, chequeNo);
+    const date = todayDMY();
 
     if (program.format === 'hdfc') {
         // 29 columns; only the indices below carry data, the rest stay empty.
@@ -35,8 +48,8 @@ function buildRow(program, account, amount) {
         row[2]  = account.accountNumber;
         row[3]  = amt;
         row[4]  = name;
-        row[13] = 'Cheque No';
-        row[23] = 'Date';
+        row[13] = chq;
+        row[23] = date;
         row[25] = account.ifsc;
         row[26] = account.bankName;
         row[28] = program.email || '';
@@ -46,13 +59,13 @@ function buildRow(program, account, amount) {
     return [
         flag,
         amt,
-        'Date',
+        date,
         name,
         account.accountNumber,
         '',
         '',
         program.debitAccount,
-        'Cheque No',
+        chq,
         account.ifsc,
         11,
         program.entity
@@ -225,29 +238,85 @@ function buildExport() {
         if (!proceed) return null;
     }
 
-    const rows = st.cart
-        .map(c => {
-            const acc = accountById(c.accountId);
-            return acc ? buildRow(program, acc, c.amount) : null;
-        })
-        .filter(Boolean);
+    // Assign sequential cheque numbers starting from the program's base.
+    const baseCheque = Number.isFinite(+program.baseChequeNumber) ? +program.baseChequeNumber : 1001;
+    const rows = [];
+    const usedCheques = [];
+    let idx = 0;
+    for (const c of st.cart) {
+        const acc = accountById(c.accountId);
+        if (!acc) continue;
+        const chq = baseCheque + idx;
+        rows.push(buildRow(program, acc, c.amount, chq));
+        usedCheques.push(chq);
+        idx++;
+    }
 
     const total = st.cart.reduce((s, c) => s + (Number.isFinite(+c.amount) ? +c.amount : 0), 0);
     postAuditEvent({
         rowCount: rows.length,
         totalAmount: total,
-        beneficiaryIds: st.cart.map(c => c.accountId)
+        beneficiaryIds: st.cart.map(c => c.accountId),
+        chequeFrom: usedCheques[0],
+        chequeTo: usedCheques[usedCheques.length - 1]
     });
 
-    return { program, rows };
+    return { program, rows, chequeFrom: usedCheques[0], chequeTo: usedCheques[usedCheques.length - 1] };
 }
 
-window.payexExportCsv = () => {
+// After a successful export, push the next cheque number back to the program
+// so the next batch starts where this one stopped. Re-loads programs after.
+async function advanceChequeNumber(programId, nextBase) {
+    const program = stOf().programs.find(p => p.id === programId);
+    if (!program) return;
+    const payload = { ...program, baseChequeNumber: nextBase, updatedAt: new Date().toISOString() };
+    try {
+        const res = await fetch('/api/payment_programs', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${localStorage.getItem('amp_token')}`
+            },
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        program.baseChequeNumber = nextBase; // update local cache
+    } catch (e) {
+        console.warn('Failed to advance cheque number on server:', e);
+    }
+}
+
+function showExportBanner(built) {
+    const program = built.program;
+    const from = formatCheque(program, built.chequeFrom);
+    const to = formatCheque(program, built.chequeTo);
+    const next = formatCheque(program, built.chequeTo + 1);
+    const msg = built.chequeFrom === built.chequeTo
+        ? `Exported 1 row · Cheque #${from} · Next batch will start at #${next}`
+        : `Exported ${built.rows.length} rows · Cheques #${from}–#${to} · Next batch will start at #${next}`;
+    const el = document.getElementById('payex-banner');
+    if (el) {
+        el.innerHTML = `
+            <div class="pay-section" style="border-left: 4px solid #10b981">
+                <div class="p-3 flex items-start gap-2 text-sm text-emerald-800">
+                    <span class="material-symbols-outlined text-[18px] text-emerald-600 mt-0.5">check_circle</span>
+                    <div class="flex-1">${msg}</div>
+                    <button onclick="document.getElementById('payex-banner').innerHTML=''" class="pay-icon-btn">
+                        <span class="material-symbols-outlined text-[16px]">close</span>
+                    </button>
+                </div>
+            </div>`;
+    }
+}
+
+window.payexExportCsv = async () => {
     const built = buildExport();
     if (!built) return;
     const csv = toCsv(built.rows);
     const fname = `${built.program.id}_${stamp()}.csv`;
     downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), fname);
+    await advanceChequeNumber(built.program.id, built.chequeTo + 1);
+    showExportBanner(built);
 };
 
 // Force the given column indices to be stored as text cells in the worksheet.
@@ -269,14 +338,14 @@ function coerceColumnsToText(sheet, cols) {
     }
 }
 
-// Text-typed column indices per bank format (account #, IFSC, etc.).
+// Text-typed column indices per bank format (account #, IFSC, cheque, date, etc.).
 function textColumnsFor(format) {
-    if (format === 'hdfc') return [2, 25, 26, 28]; // accountNumber, ifsc, bankName, email
-    if (format === 'axis') return [4, 7, 9, 11];   // accountNumber, debitAccount, ifsc, entity
+    if (format === 'hdfc') return [2, 13, 23, 25, 26, 28]; // accountNumber, cheque, date, ifsc, bankName, email
+    if (format === 'axis') return [2, 4, 7, 8, 9, 11];     // date, accountNumber, debitAccount, cheque, ifsc, entity
     return [];
 }
 
-window.payexExportXlsx = () => {
+window.payexExportXlsx = async () => {
     if (typeof XLSX === 'undefined') return alert('Excel library still loading — try again.');
     const built = buildExport();
     if (!built) return;
@@ -286,6 +355,8 @@ window.payexExportXlsx = () => {
     XLSX.utils.book_append_sheet(wb, ws, built.program.label.slice(0, 31));
     const fname = `${built.program.id}_${stamp()}.xlsx`;
     XLSX.writeFile(wb, fname);
+    await advanceChequeNumber(built.program.id, built.chequeTo + 1);
+    showExportBanner(built);
 };
 
 // ── render helpers ─────────────────────────────────────────────────
@@ -558,6 +629,9 @@ function renderCartStage() {
 
         <!-- Cart -->
         <div id="payex-cart">${renderCart()}</div>
+
+        <!-- Post-export confirmation banner -->
+        <div id="payex-banner"></div>
 
         <!-- Export action bar -->
         <div class="pay-action-bar">

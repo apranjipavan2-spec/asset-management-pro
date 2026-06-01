@@ -114,6 +114,12 @@ safeAddColumn('procurement', 'reportsTo', 'TEXT');
 // rows from the export page without deleting them.
 safeAddColumn('bank_accounts', 'archived', 'INTEGER', 0);
 
+// Per-program cheque numbering — the export page assigns sequential cheque
+// numbers starting from baseChequeNumber and auto-advances it after each
+// successful export so the next batch picks up where this one stopped.
+safeAddColumn('payment_programs', 'baseChequeNumber', 'INTEGER', 1001);
+safeAddColumn('payment_programs', 'chequePrefix',     'TEXT',    '');
+
 // Seed default payment programs only if the table is empty. Editing/adding
 // later is done via the Payment Programs admin page — these are not re-seeded.
 try {

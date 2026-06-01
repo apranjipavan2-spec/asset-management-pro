@@ -16,7 +16,10 @@ window.baaState = window.baaState || {
     page: 1,
     editingId: null,
     creating: false,
-    error: ''
+    error: '',
+    bulkOpen: false,
+    bulkBusy: false,
+    bulkProgress: ''
 };
 
 const stOf = () => window.baaState;
@@ -170,6 +173,162 @@ window.baaGoto = (page) => {
     stOf().page = Math.max(1, page);
     rerender();
 };
+
+// ── Bulk import ────────────────────────────────────────────────────
+// Parse tab-separated values pasted from Excel: one row per line, columns
+// expected in order: Name, Bank, Account #, IFSC, Notes (Notes optional).
+// Blank lines are skipped; a header row whose first cell is "Name" is also
+// skipped automatically so users can paste with or without headers.
+function parseBulkText(text) {
+    const valid = [];
+    const errors = [];
+    const lines = String(text || '').split(/\r?\n/);
+    for (let i = 0; i < lines.length; i++) {
+        const raw = lines[i].replace(/\s+$/, '');
+        if (!raw.trim()) continue;
+        const cells = raw.split('\t').map(s => s.trim());
+        if (i === 0 && /^name$/i.test(cells[0] || '')) continue; // header row
+        const [name, bankName, accountNumber, ifsc, reviewNotes] = cells;
+        if (!name || !accountNumber) {
+            errors.push({ line: i + 1, reason: !name ? 'missing name' : 'missing account #', raw });
+            continue;
+        }
+        valid.push({ name, bankName: bankName || '', accountNumber, ifsc: (ifsc || '').toUpperCase(), reviewNotes: reviewNotes || '' });
+    }
+    return { valid, errors };
+}
+
+window.baaBulkOpen = () => {
+    stOf().bulkOpen = true;
+    stOf().bulkProgress = '';
+    rerender();
+    setTimeout(() => document.getElementById('baa-bulk-textarea')?.focus(), 50);
+};
+
+window.baaBulkClose = () => {
+    if (stOf().bulkBusy) return; // don't close mid-import
+    stOf().bulkOpen = false;
+    stOf().bulkProgress = '';
+    rerender();
+};
+
+window.baaBulkPreview = () => {
+    const text = document.getElementById('baa-bulk-textarea')?.value || '';
+    const { valid, errors } = parseBulkText(text);
+    const dupIds = new Set();
+    for (const row of valid) {
+        const id = generateId(row.name);
+        if (stOf().accounts.some(a => a.id === id)) dupIds.add(id);
+    }
+    const out = document.getElementById('baa-bulk-preview');
+    if (!out) return;
+    out.innerHTML = `
+        <div class="text-xs space-y-1">
+            <div class="text-emerald-700"><strong>${valid.length}</strong> valid row${valid.length === 1 ? '' : 's'} ready to import</div>
+            ${errors.length ? `<div class="text-rose-700"><strong>${errors.length}</strong> skipped: ${errors.slice(0, 3).map(e => `line ${e.line} (${e.reason})`).join(', ')}${errors.length > 3 ? '…' : ''}</div>` : ''}
+            ${dupIds.size ? `<div class="text-amber-700"><strong>${dupIds.size}</strong> potential ID collision${dupIds.size === 1 ? '' : 's'} — these will get a unique suffix on save.</div>` : ''}
+        </div>`;
+};
+
+window.baaBulkImport = async () => {
+    if (stOf().bulkBusy) return;
+    const text = document.getElementById('baa-bulk-textarea')?.value || '';
+    const { valid, errors } = parseBulkText(text);
+    if (!valid.length) {
+        alert(`No valid rows to import.${errors.length ? ` ${errors.length} row(s) had errors.` : ''}`);
+        return;
+    }
+    if (!confirm(`Import ${valid.length} bank record${valid.length === 1 ? '' : 's'}? ${errors.length ? `(${errors.length} skipped due to errors.)` : ''}`)) return;
+
+    stOf().bulkBusy = true;
+    stOf().bulkProgress = `0 / ${valid.length}`;
+    rerender();
+
+    const now = new Date().toISOString();
+    const existingIds = new Set(stOf().accounts.map(a => a.id));
+    let ok = 0, fail = 0;
+    for (let i = 0; i < valid.length; i++) {
+        const row = valid[i];
+        let id = generateId(row.name);
+        while (existingIds.has(id)) id = `${id}_${Math.random().toString(36).slice(2, 4)}`;
+        existingIds.add(id);
+        const payload = {
+            id,
+            name: row.name,
+            bankName: row.bankName,
+            accountNumber: row.accountNumber,
+            ifsc: row.ifsc,
+            reviewNotes: row.reviewNotes,
+            sourceFile: 'bulk-paste',
+            sourceSheet: '',
+            archived: 0,
+            createdAt: now,
+            updatedAt: now
+        };
+        try {
+            await savePayload(payload);
+            ok++;
+        } catch (e) {
+            fail++;
+            console.warn('Bulk row failed:', row, e);
+        }
+        if (i % 5 === 0 || i === valid.length - 1) {
+            stOf().bulkProgress = `${i + 1} / ${valid.length}`;
+            const el = document.getElementById('baa-bulk-progress');
+            if (el) el.textContent = stOf().bulkProgress;
+        }
+    }
+    stOf().bulkBusy = false;
+    stOf().bulkOpen = false;
+    stOf().bulkProgress = '';
+    try { await loadAccounts(); } catch {}
+    rerender();
+    alert(`Imported ${ok} row${ok === 1 ? '' : 's'}. ${fail ? `${fail} failed — see browser console.` : ''}`);
+};
+
+function renderBulkModal() {
+    const st = stOf();
+    if (!st.bulkOpen) return '';
+    const sample = `Anand Kumar\tHDFC\t50100123456789\tHDFC0001234\t\nMeera S\tAXIS\t910010012345678\tUTIB0000123\tPart-time`;
+    return `
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onclick="if(event.target===this) baaBulkClose()">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
+                <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                    <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-[20px] text-slate-500">content_paste</span>
+                        Bulk import bank accounts
+                    </h3>
+                    <button onclick="baaBulkClose()" ${st.bulkBusy ? 'disabled' : ''} class="pay-icon-btn">
+                        <span class="material-symbols-outlined text-[18px]">close</span>
+                    </button>
+                </div>
+                <div class="p-5 space-y-3 overflow-auto flex-1">
+                    <div class="text-xs text-slate-600">
+                        Paste rows directly from Excel. Expected column order
+                        (tab-separated): <strong>Name → Bank → Account # → IFSC → Notes</strong>.
+                        Header row is auto-detected and skipped.
+                    </div>
+                    <textarea id="baa-bulk-textarea"
+                        oninput="baaBulkPreview()"
+                        placeholder="${sample.replace(/\t/g, '    ').replace(/"/g, '&quot;')}"
+                        class="w-full h-64 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[12px] font-mono outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                        ${st.bulkBusy ? 'disabled' : ''}></textarea>
+                    <div id="baa-bulk-preview" class="min-h-[20px]"></div>
+                    ${st.bulkBusy ? `
+                        <div class="text-xs text-blue-700 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+                            Importing… <span id="baa-bulk-progress" class="font-mono">${st.bulkProgress}</span>
+                        </div>` : ''}
+                </div>
+                <div class="px-5 py-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                    <button onclick="baaBulkClose()" ${st.bulkBusy ? 'disabled' : ''} class="pay-pill pay-pill--ghost">Cancel</button>
+                    <button onclick="baaBulkImport()" ${st.bulkBusy ? 'disabled' : ''} class="pay-pill pay-pill--primary">
+                        <span class="material-symbols-outlined text-[14px]">cloud_upload</span> Import
+                    </button>
+                </div>
+            </div>
+        </div>`;
+}
 
 function applyFilters() {
     const st = stOf();
@@ -377,6 +536,8 @@ function renderFilterBar() {
 function rerender() {
     const root = document.getElementById('baa-root');
     if (root) root.innerHTML = renderBody();
+    const modal = document.getElementById('baa-modal-root');
+    if (modal) modal.innerHTML = renderBulkModal();
 }
 
 function renderBody() {
@@ -429,6 +590,9 @@ export async function renderBankAccountsAdminPage() {
                     <a href="#payment_export" class="pay-pill pay-pill--ghost">
                         <span class="material-symbols-outlined text-[14px]">account_balance</span> Open Export
                     </a>
+                    <button onclick="baaBulkOpen()" ${disabled ? 'disabled' : ''} class="pay-pill pay-pill--ghost ${disabled ? 'opacity-50 cursor-not-allowed' : ''}">
+                        <span class="material-symbols-outlined text-[14px]">content_paste</span> Bulk Import
+                    </button>
                     <button onclick="baaAddNew()" ${disabled ? 'disabled' : ''} class="pay-pill pay-pill--primary ${disabled ? 'opacity-50 cursor-not-allowed' : ''}">
                         <span class="material-symbols-outlined text-[14px]">add</span> Add Record
                     </button>
@@ -437,6 +601,7 @@ export async function renderBankAccountsAdminPage() {
             <div id="baa-root" class="space-y-5">
                 ${renderBody()}
             </div>
+            <div id="baa-modal-root">${renderBulkModal()}</div>
         </div>
     `;
 }

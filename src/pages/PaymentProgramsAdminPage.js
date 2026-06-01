@@ -60,15 +60,17 @@ function readFormFields(rowId) {
         return Number.isFinite(v) ? v : 0;
     };
     return {
-        id:           get('id').trim(),
-        label:        get('label').trim(),
-        format:       get('format').trim(),
-        debitBank:    get('debitBank').trim(),
-        debitAccount: get('debitAccount').trim(),
-        entity:       get('entity').trim(),
-        email:        get('email').trim(),
-        sortOrder:    getNum('sortOrder'),
-        archived:     row.querySelector('[data-field="archived"]')?.checked ? 1 : 0
+        id:                get('id').trim(),
+        label:             get('label').trim(),
+        format:            get('format').trim(),
+        debitBank:         get('debitBank').trim(),
+        debitAccount:      get('debitAccount').trim(),
+        entity:            get('entity').trim(),
+        email:             get('email').trim(),
+        chequePrefix:      get('chequePrefix').trim(),
+        baseChequeNumber:  getNum('baseChequeNumber') || 1001,
+        sortOrder:         getNum('sortOrder'),
+        archived:          row.querySelector('[data-field="archived"]')?.checked ? 1 : 0
     };
 }
 
@@ -189,6 +191,12 @@ function renderEditableRow(rowKey, source) {
                 <input data-field="email" value="${p.email || ''}" placeholder="(HDFC only)" class="${inputCls} py-1.5 text-xs" />
             </td>
             <td>
+                <input data-field="chequePrefix" value="${p.chequePrefix || ''}" placeholder="(optional)" class="w-20 px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-[11.5px] font-mono outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+            </td>
+            <td>
+                <input data-field="baseChequeNumber" type="number" value="${p.baseChequeNumber ?? 1001}" class="w-24 px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-sm text-center font-mono outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+            </td>
+            <td>
                 <input data-field="sortOrder" type="number" value="${p.sortOrder ?? 100}" class="w-16 px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-sm text-center outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
             </td>
             <td class="text-center">
@@ -217,6 +225,8 @@ function renderReadOnlyRow(p) {
             <td class="font-mono text-[11.5px] text-slate-500">${p.debitAccount || '—'}</td>
             <td class="text-sm text-slate-700">${p.entity || '—'}</td>
             <td class="text-xs text-slate-500">${p.email || '—'}</td>
+            <td class="font-mono text-[11.5px] text-slate-600">${p.chequePrefix || '—'}</td>
+            <td class="font-mono text-sm text-center text-slate-700">${p.baseChequeNumber ?? 1001}</td>
             <td class="text-sm text-center text-slate-500">${p.sortOrder ?? ''}</td>
             <td class="text-center">${statusBadge}</td>
             <td class="whitespace-nowrap">
@@ -237,7 +247,7 @@ function renderTable() {
     const st = stOf();
     const rows = [];
     if (st.creating) {
-        rows.push(renderEditableRow('__new__', { sortOrder: 100, format: 'hdfc', debitBank: 'HDFC' }));
+        rows.push(renderEditableRow('__new__', { sortOrder: 100, format: 'hdfc', debitBank: 'HDFC', baseChequeNumber: 1001 }));
     }
     for (const p of st.programs) {
         rows.push(st.editingId === p.id ? renderEditableRow(p.id, p) : renderReadOnlyRow(p));
@@ -245,7 +255,7 @@ function renderTable() {
     if (!rows.length) {
         rows.push(`
             <tr>
-                <td colspan="10" class="p-10 text-center">
+                <td colspan="12" class="p-10 text-center">
                     <span class="material-symbols-outlined text-[40px] text-slate-300 block mb-2">tune</span>
                     <div class="text-sm text-slate-600 font-semibold">No payment programs yet.</div>
                     <div class="text-xs text-slate-500 mt-1">Click <strong>Add Program</strong> above to create the first one.</div>
@@ -269,6 +279,8 @@ function renderTable() {
                             <th>Debit Account</th>
                             <th>Entity</th>
                             <th>Email</th>
+                            <th>Chq Prefix</th>
+                            <th class="text-center">Next Chq #</th>
                             <th class="text-center">Sort</th>
                             <th class="text-center">Status</th>
                             <th></th>
@@ -330,6 +342,8 @@ function renderBody() {
                 <div><span class="font-bold text-slate-800">Email</span> — confirmation email (HDFC column 28). Leave blank for Axis.</div>
                 <div><span class="font-bold text-slate-800">Sort</span> — lower numbers appear first on the export page.</div>
                 <div><span class="font-bold text-slate-800">Archive</span> — hides from the export page without deleting; safe to undo any time.</div>
+                <div><span class="font-bold text-slate-800">Chq Prefix</span> — optional text prepended to every cheque number (e.g. <code>HDFC-</code> → <code>HDFC-5001</code>).</div>
+                <div><span class="font-bold text-slate-800">Next Chq #</span> — first cheque number the next export will use. Auto-advances by N after each successful export of N rows; edit here to correct after a voided cheque.</div>
             </div>
         </div>`;
 }
