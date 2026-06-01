@@ -559,3 +559,20 @@ CREATE TABLE IF NOT EXISTS bank_accounts (
     updatedAt TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_bank_accounts_name ON bank_accounts(name);
+
+-- Payment programs (debit sources) used by the Bank Payment Export page.
+-- Each row is one upload target the finance team exports to.
+CREATE TABLE IF NOT EXISTS payment_programs (
+    id TEXT PRIMARY KEY,
+    label TEXT NOT NULL,
+    format TEXT NOT NULL,        -- 'hdfc' or 'axis'
+    debitBank TEXT NOT NULL,     -- 'HDFC' or 'AXIS'
+    debitAccount TEXT,
+    entity TEXT,
+    email TEXT,
+    sortOrder INTEGER DEFAULT 100,
+    archived INTEGER DEFAULT 0,
+    createdAt TEXT,
+    updatedAt TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_payment_programs_archived ON payment_programs(archived);

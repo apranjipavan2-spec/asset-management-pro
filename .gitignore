@@ -33,6 +33,8 @@ db.sqlite-wal
 
 # Credentials / seed data (NEVER commit)
 login_credentials_master.csv
+login_credentials_master.csv.bak
+*.csv.bak
 employee_data_setup.csv
 
 # Data exports / spreadsheets
@@ -44,6 +46,9 @@ scratch/
 graphify-out/
 .agent/
 db_backups/
+.claude/
+.codegraph/
+out_categories.txt
 
 # Backup HTML snapshots
 KALIKE_HISTORY.html

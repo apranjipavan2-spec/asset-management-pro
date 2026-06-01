@@ -152,11 +152,11 @@ export async function renderAssetsLedger(user) {
     const canExport = window.app.canExportAssets();
 
     const statChip = (bg, border, iconColor, labelColor, valueColor, icon, label, value) => `
-        <div class="${bg} ${border} border rounded-lg px-2.5 py-1.5 flex items-center gap-2 flex-1 min-w-[110px]">
-            <span class="material-symbols-outlined ${iconColor} text-[18px]">${icon}</span>
-            <div class="leading-tight">
-                <p class="text-[8px] font-black uppercase tracking-widest ${labelColor}">${label}</p>
-                <p class="text-sm font-black ${valueColor} leading-none">${value}</p>
+        <div class="${bg} ${border} border rounded-lg px-2.5 py-1.5 flex items-center gap-2 min-w-0 md:flex-1 md:min-w-[110px]">
+            <span class="material-symbols-outlined ${iconColor} text-[18px] shrink-0">${icon}</span>
+            <div class="leading-tight min-w-0">
+                <p class="text-[8px] font-black uppercase tracking-widest ${labelColor} truncate">${label}</p>
+                <p class="text-sm font-black ${valueColor} leading-none truncate">${value}</p>
             </div>
         </div>`;
 
@@ -168,20 +168,20 @@ export async function renderAssetsLedger(user) {
 
     return `
         <div class="h-full flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-2 duration-200 font-sans">
-            <header class="flex items-center gap-3 flex-wrap flex-shrink-0">
+            <header class="flex flex-col gap-2 md:flex-row md:items-center md:flex-wrap md:gap-3 flex-shrink-0">
                 <div class="flex-shrink-0">
-                    <h2 class="text-xl text-slate-900 font-black tracking-tight leading-tight">Fixed Assets Ledger</h2>
+                    <h2 class="text-lg md:text-xl text-slate-900 font-black tracking-tight leading-tight">Fixed Assets Ledger</h2>
                     <p class="text-slate-500 text-[10px] font-bold tracking-[.15em] uppercase mt-0.5">Capital Register · ${all.length.toLocaleString('en-IN')} records</p>
                 </div>
 
-                <div class="flex items-center gap-2 flex-1 flex-wrap min-w-0">
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full md:flex md:items-center md:flex-1 md:flex-wrap md:min-w-0">
                     ${statChip('bg-slate-50', 'border-slate-200', 'text-slate-300', 'text-slate-500', 'text-slate-900', 'paid', 'Gross Block', '₹' + fmtShort(totalGross))}
                     ${statChip('bg-rose-50', 'border-rose-200', 'text-rose-400', 'text-rose-700', 'text-rose-900', 'trending_down', 'Accum. Dep', '₹' + fmtShort(totalAccum))}
                     ${statChip('bg-emerald-50', 'border-emerald-200', 'text-emerald-400', 'text-emerald-700', 'text-emerald-900', 'savings', 'Net Book', '₹' + fmtShort(totalNbv))}
                     ${statChip('bg-violet-50', 'border-violet-200', 'text-violet-400', 'text-violet-700', 'text-violet-900', 'verified_user', 'FCRA Lots', fcraCount.toLocaleString('en-IN'))}
                 </div>
 
-                <div class="flex items-center gap-1.5 flex-shrink-0">
+                <div class="flex items-center gap-1.5 flex-wrap md:flex-shrink-0">
                     <button onclick="app.toggleFaFilters()" class="md:hidden px-2 py-1 bg-white border border-slate-200 text-slate-600 text-[9px] font-black uppercase tracking-wider rounded-md hover:bg-slate-50 transition-all flex items-center gap-1 shadow-sm">
                         <span class="material-symbols-outlined text-[13px]">filter_alt</span>
                         Filters${activeAssetFilterCount(FA_STATE) ? ` (${activeAssetFilterCount(FA_STATE)})` : ''}
@@ -197,7 +197,7 @@ export async function renderAssetsLedger(user) {
             </header>
 
             <div class="flex flex-col md:flex-row gap-3 flex-1 min-h-0">
-                <aside id="fa-toolbar" class="hidden md:block md:w-60 md:flex-shrink-0">
+                <aside id="fa-toolbar" class="hidden md:block md:w-60 md:flex-shrink-0 max-h-[55vh] md:max-h-none overflow-y-auto md:overflow-visible">
                     ${renderAssetFilterPanel({
                         state: FA_STATE,
                         allRows: all.map(r => r.filterRow),

@@ -651,3 +651,231 @@
   display: none;
 }
 
+/* ============================================================
+   Payment Export / Programs — visual polish
+   Used by PaymentExportPage and PaymentProgramsAdminPage.
+   ============================================================ */
+
+/* Animated entry for stat tiles and program cards. Children opt-in
+   per-element by setting --pay-delay. */
+@keyframes pay-fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.pay-anim {
+  animation: pay-fade-up 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: var(--pay-delay, 0ms);
+}
+
+/* Program-picker tile — more defined card with stronger shadow on hover
+   and a soft inner glow. */
+.pay-tile {
+  position: relative;
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 14px;
+  padding: 18px 18px 18px 22px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 1px rgba(15, 23, 42, 0.02);
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+  overflow: hidden;
+  text-align: left;
+  width: 100%;
+  cursor: pointer;
+}
+.pay-tile::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(120% 100% at 0% 0%, rgba(37,99,235,0.06), transparent 55%);
+  opacity: 0;
+  transition: opacity 200ms ease;
+  pointer-events: none;
+}
+.pay-tile:hover {
+  transform: translateY(-2px);
+  border-color: rgba(37, 99, 235, 0.35);
+  box-shadow: 0 12px 24px -12px rgba(15, 23, 42, 0.18), 0 4px 8px -4px rgba(15, 23, 42, 0.08);
+}
+.pay-tile:hover::before { opacity: 1; }
+.pay-tile--axis:hover { border-color: rgba(139, 92, 246, 0.4); }
+.pay-tile--axis::before { background: radial-gradient(120% 100% at 0% 0%, rgba(139,92,246,0.06), transparent 55%); }
+
+.pay-tile__strip {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+  border-radius: 14px 0 0 14px;
+}
+
+/* Section header — taller, more defined, with subtle gradient like Finance Dashboard cards. */
+.pay-section { @apply bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden; }
+.pay-section__head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 18px;
+  background: linear-gradient(180deg, rgba(248,250,252,0.9) 0%, rgba(255,255,255,1) 100%);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.7);
+}
+.pay-section__title {
+  font-family: var(--font-headline);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #0f172a;
+  display: flex; align-items: center; gap: 8px;
+}
+.pay-section__meta {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+/* Polished tables — alternating rows, sticky header, stronger separators. */
+.pay-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; }
+.pay-table thead th {
+  position: sticky; top: 0;
+  background: #f8fafc;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #64748b;
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+  z-index: 1;
+}
+.pay-table tbody td {
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(241, 245, 249, 0.9);
+  color: #1e293b;
+  vertical-align: middle;
+}
+.pay-table tbody tr:nth-child(even) td { background: rgba(248, 250, 252, 0.4); }
+.pay-table tbody tr { transition: background-color 120ms ease; }
+.pay-table tbody tr:hover td { background: rgba(241, 245, 249, 0.7); }
+.pay-table tbody tr.is-added td { opacity: 0.55; }
+.pay-table tbody tr.is-archived td { opacity: 0.55; }
+
+/* Route badge */
+.pay-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 22px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+.pay-badge--i { background: #dcfce7; color: #15803d; }
+.pay-badge--n { background: #fef3c7; color: #b45309; }
+.pay-badge--hdfc { background: #dbeafe; color: #1d4ed8; }
+.pay-badge--axis { background: #ede9fe; color: #6d28d9; }
+.pay-badge--active { background: #dcfce7; color: #15803d; }
+.pay-badge--archived { background: #e2e8f0; color: #475569; }
+.pay-badge--dot::before {
+  content: ''; width: 6px; height: 6px; border-radius: 999px; margin-right: 6px; display: inline-block;
+  background: currentColor;
+}
+
+/* Pill button (small, uppercase, used inline in tables/headers). */
+.pay-pill {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  transition: all 150ms ease;
+  white-space: nowrap;
+}
+.pay-pill--primary { background: #0f172a; color: white; }
+.pay-pill--primary:hover { background: #1e293b; transform: translateY(-1px); }
+.pay-pill--accent { background: #2563eb; color: white; }
+.pay-pill--accent:hover { background: #1d4ed8; transform: translateY(-1px); }
+.pay-pill--success { background: #10b981; color: white; }
+.pay-pill--success:hover { background: #059669; transform: translateY(-1px); }
+.pay-pill--ghost { background: white; color: #475569; border: 1px solid #e2e8f0; }
+.pay-pill--ghost:hover { background: #f8fafc; color: #0f172a; }
+.pay-pill--danger-soft { background: #fee2e2; color: #b91c1c; }
+.pay-pill--danger-soft:hover { background: #fecaca; }
+
+/* Icon-only square action button used in row actions. */
+.pay-icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  color: #64748b;
+  transition: all 150ms ease;
+}
+.pay-icon-btn:hover { background: #f1f5f9; color: #0f172a; }
+.pay-icon-btn--danger:hover { background: #fef2f2; color: #dc2626; }
+.pay-icon-btn--warn:hover { background: #fffbeb; color: #d97706; }
+
+/* Stepper dots. */
+.pay-step { display: flex; align-items: center; gap: 8px; }
+.pay-step__num {
+  width: 22px; height: 22px;
+  border-radius: 999px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 800;
+  background: #e2e8f0; color: #64748b;
+  transition: all 200ms ease;
+}
+.pay-step__num--active { background: #0f172a; color: white; box-shadow: 0 0 0 4px rgba(15, 23, 42, 0.08); }
+.pay-step__num--done   { background: #10b981; color: white; }
+.pay-step__label { font-size: 10px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #94a3b8; }
+.pay-step__label--active { color: #0f172a; }
+.pay-step__label--done   { color: #047857; }
+.pay-step__bar { height: 2px; width: 32px; background: #e2e8f0; border-radius: 999px; }
+.pay-step__bar--done { background: #10b981; }
+
+/* Search input with leading icon. */
+.pay-search { position: relative; }
+.pay-search input {
+  width: 100%;
+  padding: 12px 16px 12px 44px;
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 12px;
+  font-size: 14px;
+  color: #0f172a;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+  outline: none;
+}
+.pay-search input::placeholder { color: #94a3b8; }
+.pay-search input:focus {
+  border-color: rgba(37, 99, 235, 0.6);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+}
+.pay-search__icon {
+  position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+  color: #94a3b8;
+  pointer-events: none;
+}
+.pay-search__hint {
+  position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+  font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #94a3b8;
+  pointer-events: none;
+}
+
+/* Sticky export action bar — a "ready to fire" footer at bottom of the page. */
+.pay-action-bar {
+  position: relative;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-left: 4px solid #10b981;
+  border-radius: 14px;
+  padding: 14px 18px;
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: 12px;
+  box-shadow: 0 4px 12px -4px rgba(15, 23, 42, 0.08);
+}
+
+/* Page entrance animation — slightly more substantial than tailwind's default. */
+@keyframes pay-page-enter {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.pay-page { animation: pay-page-enter 420ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+

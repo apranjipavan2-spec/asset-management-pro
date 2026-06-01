@@ -5,7 +5,11 @@ function _wrapStmt(stmt, sql) {
         if (!p || typeof p !== 'object' || Array.isArray(p)) return p;
         const o = {}; for (const k of names) if (k in p) o[k] = p[k]; return o;
     };
-    const call = (m, a) => a.length === 0 ? stmt[m]() : stmt[m](f(a[0]));
+    const call = (m, a) => {
+        if (a.length === 0) return stmt[m]();
+        if (a.length === 1) return stmt[m](f(a[0]));
+        return stmt[m](...a);  // positional args pass through untouched
+    };
     return { run: (...a) => call('run', a), get: (...a) => call('get', a), all: (...a) => call('all', a) };
 }
 class Database extends _DatabaseSync {

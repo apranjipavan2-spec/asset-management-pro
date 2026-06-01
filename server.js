@@ -10,7 +10,11 @@ function _wrapStmt(stmt, sql) {
         if (!p || typeof p !== 'object' || Array.isArray(p)) return p;
         const o = {}; for (const k of names) if (k in p) o[k] = p[k]; return o;
     };
-    const call = (m, a) => a.length === 0 ? stmt[m]() : stmt[m](f(a[0]));
+    const call = (m, a) => {
+        if (a.length === 0) return stmt[m]();
+        if (a.length === 1) return stmt[m](f(a[0]));
+        return stmt[m](...a);  // positional args pass through untouched
+    };
     return { run: (...a) => call('run', a), get: (...a) => call('get', a), all: (...a) => call('all', a) };
 }
 class Database extends _DatabaseSync {
@@ -40,7 +44,7 @@ const ALLOWED_TABLES = new Set([
     'procurement', 'attendance', 'employee_hierarchy', 'notifications',
     'documents', 'announcements', 'announcement_reads', 'calendar_events',
     'performance_reviews', 'communication_logs', 'signatures', 'roles',
-    'asset_far', 'social_accounts', 'bank_accounts'
+    'asset_far', 'social_accounts', 'bank_accounts', 'payment_programs'
 ]);
 
 // Column names allowed in dynamic INSERTs. Built lazily per-table from the
@@ -105,6 +109,33 @@ safeAddColumn('audit_logs', 'level', 'TEXT', 'INFO');
 // Procurement workflow extras (location for routing, reportsTo for team scope, deliveryDate for ETA)
 safeAddColumn('procurement', 'location', 'TEXT');
 safeAddColumn('procurement', 'reportsTo', 'TEXT');
+
+// Seed default payment programs only if the table is empty. Editing/adding
+// later is done via the Payment Programs admin page — these are not re-seeded.
+try {
+    const seedRow = db.prepare('SELECT COUNT(*) AS n FROM payment_programs').get();
+    if (seedRow && seedRow.n === 0) {
+        const now = new Date().toISOString();
+        const HDFC_EMAIL = 'ashajyothi@kalike.org';
+        const seeds = [
+            ['edu_hdfc',      'Salary Education HDFC',      'hdfc', 'HDFC', '',                'Education',          HDFC_EMAIL, 10],
+            ['csa_hdfc',      'Salary CSA HDFC',            'hdfc', 'HDFC', '',                'CSA',                HDFC_EMAIL, 20],
+            ['titan_tn_hdfc', 'Salary Titan TN HDFC',       'hdfc', 'HDFC', '',                'Titan TN',           HDFC_EMAIL, 30],
+            ['titan_ka_hdfc', 'Salary Titan KA HDFC',       'hdfc', 'HDFC', '',                'Titan KA',           HDFC_EMAIL, 40],
+            ['htpf_axis',     'Salary HTPF Axis',           'axis', 'AXIS', '919010089947452', 'HTParekhFoundation', '',         50],
+            ['tesco_axis',    'Salary TESCO Axis',          'axis', 'AXIS', '919010084929941', 'TESCO',              '',         60],
+            ['water_axis',    'Salary Water Security Axis', 'axis', 'AXIS', '919010089727339', 'WashWaterSecurity',  '',         70],
+            ['parag',         'PARAG',                      'axis', 'AXIS', '919010089727339', 'Parag',              '',         80]
+        ];
+        const insert = db.prepare(`INSERT INTO payment_programs
+            (id, label, format, debitBank, debitAccount, entity, email, sortOrder, archived, createdAt, updatedAt)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`);
+        for (const s of seeds) insert.run(s[0], s[1], s[2], s[3], s[4], s[5], s[6], s[7], now, now);
+        console.log(`Seeded ${seeds.length} default payment programs.`);
+    }
+} catch (e) {
+    console.error('payment_programs seed failed:', e.message);
+}
 
 // Users last login
 safeAddColumn('users', 'lastLogin', 'TEXT');
@@ -190,6 +221,7 @@ const WRITE_ROLES = {
     performance_reviews:new Set(['superadmin', 'hr', 'director', 'manager']),
     social_accounts:    new Set(['superadmin']),
     bank_accounts:      new Set(['superadmin', 'finance', 'director']),
+    payment_programs:   new Set(['superadmin', 'finance', 'director']),
     audit_logs:         new Set(['superadmin', 'director']) // mostly written by server itself
 };
 
@@ -1104,6 +1136,32 @@ app.delete('/api/social_accounts/:id', (req, res) => handleDelete(req, res, 'soc
 app.get('/api/bank_accounts', (req, res) => handleGet(req, res, 'bank_accounts'));
 app.post('/api/bank_accounts', (req, res) => handlePost(req, res, 'bank_accounts'));
 app.delete('/api/bank_accounts/:id', (req, res) => handleDelete(req, res, 'bank_accounts'));
+
+// Payment programs (debit sources) — managed via the Payment Programs admin page.
+app.get('/api/payment_programs', (req, res) => handleGet(req, res, 'payment_programs'));
+app.post('/api/payment_programs', (req, res) => handlePost(req, res, 'payment_programs'));
+app.delete('/api/payment_programs/:id', (req, res) => handleDelete(req, res, 'payment_programs'));
+
+// Payment-export audit. Finance/superadmin/director may log an export event.
+// User identity is taken from the JWT, never the request body.
+const PAYMENT_EXPORT_ROLES = new Set(['superadmin', 'finance', 'director']);
+app.post('/api/payment_export_audit', (req, res) => {
+    if (!PAYMENT_EXPORT_ROLES.has(req.user.role)) {
+        logAuditEvent('AUTHZ_DENIED', req.user.id, req.user.id, `Tried to log payment export with role '${req.user.role}'`, 'WARN');
+        return res.status(403).json({ error: 'forbidden' });
+    }
+    const { programId, programLabel, format, rowCount, totalAmount, beneficiaryIds } = req.body || {};
+    const details = JSON.stringify({
+        programId: String(programId || ''),
+        programLabel: String(programLabel || ''),
+        format: String(format || ''),
+        rowCount: Number(rowCount) || 0,
+        totalAmount: Number(totalAmount) || 0,
+        beneficiaryIds: Array.isArray(beneficiaryIds) ? beneficiaryIds.slice(0, 500) : []
+    });
+    logAuditEvent('PAYMENT_EXPORT', req.user.id, req.user.id, details, 'INFO');
+    res.json({ ok: true });
+});
 
 // YouTube RSS proxy. Reads the first active social_accounts row with
 // platform='youtube' AND non-empty youtubeChannelId, fetches the public

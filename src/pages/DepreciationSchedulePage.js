@@ -121,29 +121,29 @@ function renderHeader(filteredRowsArr) {
     const nbvN   = fmtShort(tot.P);
 
     const statChip = (bg, border, iconColor, labelColor, valueColor, icon, label, value) => `
-        <div class="${bg} ${border} border rounded-lg px-2.5 py-1.5 flex items-center gap-2 flex-1 min-w-[110px]">
-            <span class="material-symbols-outlined ${iconColor} text-[18px]">${icon}</span>
-            <div class="leading-tight">
-                <p class="text-[8px] font-black uppercase tracking-widest ${labelColor}">${label}</p>
-                <p class="text-sm font-black ${valueColor} leading-none">${value}</p>
+        <div class="${bg} ${border} border rounded-lg px-2.5 py-1.5 flex items-center gap-2 min-w-0 md:flex-1 md:min-w-[110px]">
+            <span class="material-symbols-outlined ${iconColor} text-[18px] shrink-0">${icon}</span>
+            <div class="leading-tight min-w-0">
+                <p class="text-[8px] font-black uppercase tracking-widest ${labelColor} truncate">${label}</p>
+                <p class="text-sm font-black ${valueColor} leading-none truncate">${value}</p>
             </div>
         </div>`;
 
     return `
-    <header class="flex items-center gap-3 flex-wrap flex-shrink-0">
+    <header class="flex flex-col gap-2 md:flex-row md:items-center md:flex-wrap md:gap-3 flex-shrink-0">
         <div class="flex-shrink-0">
-            <h2 class="text-xl text-slate-900 font-black tracking-tight leading-tight">Fixed Asset Register</h2>
+            <h2 class="text-lg md:text-xl text-slate-900 font-black tracking-tight leading-tight">Fixed Asset Register</h2>
             <p class="text-slate-500 text-[10px] font-bold tracking-[.15em] uppercase mt-0.5">Per-FY Schedule · ${editable ? 'Edit Mode' : 'View Only'}</p>
         </div>
 
-        <div class="flex items-center gap-2 flex-1 flex-wrap min-w-0">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full md:flex md:items-center md:flex-1 md:flex-wrap md:min-w-0">
             ${statChip('bg-slate-50',   'border-slate-200',   'text-slate-300',   'text-slate-500',   'text-slate-900',   'view_list', 'FY Rows', fyRowsLabel)}
             ${statChip('bg-emerald-50', 'border-emerald-200', 'text-emerald-400', 'text-emerald-700', 'text-emerald-900', 'savings',   'Gross Block', `₹${grossN}`)}
             ${statChip('bg-rose-50',    'border-rose-200',    'text-rose-400',    'text-rose-700',    'text-rose-900',    'trending_down', 'Accum Dep', `₹${accumN}`)}
             ${statChip('bg-violet-50',  'border-violet-200',  'text-violet-400',  'text-violet-700',  'text-violet-900',  'account_balance', 'Net Block', `₹${nbvN}`)}
         </div>
 
-        <div class="flex items-center gap-1.5 flex-shrink-0 flex-wrap justify-end">
+        <div class="flex items-center gap-1.5 flex-wrap md:flex-shrink-0 justify-start md:justify-end w-full md:w-auto">
             <select onchange="app.farSelectFY(this.value)" class="far-select" style="height:30px; padding:4px 28px 4px 10px; font-size:10px;">
                 ${yearsOptions}
             </select>
@@ -433,7 +433,7 @@ export function renderDepreciationSchedulePage(user) {
         <div id="far-editbar">${renderEditBar()}</div>
 
         <div class="flex flex-col md:flex-row gap-3 flex-1 min-h-0">
-            <aside id="far-toolbar" class="hidden md:block md:w-60 md:flex-shrink-0">${renderSidebar(allFilterRows, filteredFilterRows)}</aside>
+            <aside id="far-toolbar" class="hidden md:block md:w-60 md:flex-shrink-0 max-h-[55vh] md:max-h-none overflow-y-auto md:overflow-visible">${renderSidebar(allFilterRows, filteredFilterRows)}</aside>
 
             <div class="bg-white rounded-xl border border-accent/30 overflow-hidden shadow-sm flex flex-col flex-1 min-h-0 min-w-0">
                 <div id="far-body" class="flex-1 min-h-0 overflow-hidden flex flex-col">${renderTable()}</div>

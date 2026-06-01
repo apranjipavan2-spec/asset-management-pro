@@ -1,18 +1,13 @@
-// Bank payment export — search employee, pick account + program, export in
-// the exact bank-required column layout. Finance/superadmin/director only.
+// Bank payment export. Two-step flow:
+//   1) pick program / debit source        (state.stage = 'pick_program')
+//   2) search + multi-select beneficiaries (state.stage = 'cart')
+// Then export N rows in one CSV/XLSX matching the bank's exact column layout.
+// Finance/superadmin/director only — gated server-side too.
 
-const PROGRAMS = [
-    { id: 'edu_hdfc',      label: 'Salary Education HDFC',      format: 'hdfc', debitBank: 'HDFC', debitAccount: '',                entity: 'Education',         email: '' },
-    { id: 'csa_hdfc',      label: 'Salary CSA HDFC',            format: 'hdfc', debitBank: 'HDFC', debitAccount: '',                entity: 'CSA',               email: 'ashajyothi@kalike.org' },
-    { id: 'titan_tn_hdfc', label: 'Salary Titan TN HDFC',       format: 'hdfc', debitBank: 'HDFC', debitAccount: '',                entity: 'Titan TN',          email: '' },
-    { id: 'titan_ka_hdfc', label: 'Salary Titan KA HDFC',       format: 'hdfc', debitBank: 'HDFC', debitAccount: '',                entity: 'Titan KA',          email: '' },
-    { id: 'htpf_axis',     label: 'Salary HTPF Axis',           format: 'axis', debitBank: 'AXIS', debitAccount: '919010089947452', entity: 'HTParekhFoundation',email: '' },
-    { id: 'tesco_axis',    label: 'Salary TESCO Axis',          format: 'axis', debitBank: 'AXIS', debitAccount: '919010084929941', entity: 'TESCO',             email: '' },
-    { id: 'water_axis',    label: 'Salary Water Security Axis', format: 'axis', debitBank: 'AXIS', debitAccount: '919010089727339', entity: 'WashWaterSecurity', email: '' },
-    { id: 'parag',         label: 'PARAG',                      format: 'axis', debitBank: 'AXIS', debitAccount: '919010089727339', entity: 'Parag',             email: '' }
-];
+// Programs are loaded from /api/payment_programs at page open. The list is
+// editable via the Payment Programs admin page.
 
-// Maps a debit-bank label to the IFSC prefix of that bank. Used to decide I/N.
+// Used to decide intra-bank (I) vs NEFT (N).
 const INTRA_BANK_PREFIX = { HDFC: 'HDFC', AXIS: 'UTIB' };
 
 const stripSpaces = s => String(s || '').replace(/\s+/g, '');
@@ -27,14 +22,14 @@ function flagFor(program, ifsc) {
     return (prefix && String(ifsc || '').toUpperCase().startsWith(prefix)) ? 'I' : 'N';
 }
 
-// Build the row array matching the bank's expected layout for the given program.
+// Build one bank-format row for a single beneficiary + amount.
 function buildRow(program, account, amount) {
     const name = stripSpaces(account.name);
     const flag = flagFor(program, account.ifsc);
     const amt = Number.isFinite(+amount) ? +amount : 0;
 
     if (program.format === 'hdfc') {
-        // 29 columns; only the indices listed below carry data.
+        // 29 columns; only the indices below carry data, the rest stay empty.
         const row = Array(29).fill('');
         row[0]  = flag;
         row[2]  = account.accountNumber;
@@ -64,6 +59,14 @@ function buildRow(program, account, amount) {
     ];
 }
 
+function toCsv(rows) {
+    const esc = v => {
+        const s = v === null || v === undefined ? '' : String(v);
+        return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    return rows.map(r => r.map(esc).join(',')).join('\r\n');
+}
+
 function downloadBlob(blob, filename) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -75,170 +78,518 @@ function downloadBlob(blob, filename) {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-function toCsv(rows) {
-    const esc = v => {
-        const s = v === null || v === undefined ? '' : String(v);
-        return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-    };
-    return rows.map(r => r.map(esc).join(',')).join('\r\n');
-}
-
+// ── state ──────────────────────────────────────────────────────────
 window.payexState = window.payexState || {
-    accounts: [],          // all bank_accounts from server
-    matches: [],           // search results
-    selected: null,        // currently selected account
-    programId: PROGRAMS[0].id,
-    amount: ''
+    stage: 'pick_program',  // or 'cart'
+    programId: null,
+    programs: [],           // payment_programs from server
+    accounts: [],           // all bank_accounts from server
+    query: '',
+    matches: [],            // search results
+    cart: []                // [{ accountId, amount }]
 };
+
+const stOf = () => window.payexState;
+const programOf = () => stOf().programs.find(p => p.id === stOf().programId) || null;
+const accountById = id => stOf().accounts.find(a => a.id === id) || null;
 
 async function loadAccounts() {
     const res = await fetch('/api/bank_accounts', {
         headers: { Authorization: `Bearer ${localStorage.getItem('amp_token')}` }
     });
     if (!res.ok) throw new Error('Failed to load bank accounts');
-    window.payexState.accounts = await res.json();
+    stOf().accounts = await res.json();
 }
 
-window.payexSearch = (query) => {
-    const q = String(query || '').toLowerCase().trim();
-    const st = window.payexState;
-    if (!q) { st.matches = []; }
-    else {
-        st.matches = st.accounts.filter(a =>
-            (a.name || '').toLowerCase().includes(q)
-        ).slice(0, 50);
+async function loadPrograms() {
+    const res = await fetch('/api/payment_programs', {
+        headers: { Authorization: `Bearer ${localStorage.getItem('amp_token')}` }
+    });
+    if (!res.ok) throw new Error('Failed to load payment programs');
+    const rows = await res.json();
+    stOf().programs = (Array.isArray(rows) ? rows : [])
+        .filter(p => !p.archived)
+        .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0) || String(a.label).localeCompare(String(b.label)));
+}
+
+async function postAuditEvent(extra) {
+    try {
+        const program = programOf();
+        await fetch('/api/payment_export_audit', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${localStorage.getItem('amp_token')}`
+            },
+            body: JSON.stringify({
+                programId: program?.id,
+                programLabel: program?.label,
+                format: program?.format,
+                rowCount: extra.rowCount,
+                totalAmount: extra.totalAmount,
+                beneficiaryIds: extra.beneficiaryIds
+            })
+        });
+    } catch (e) {
+        // Audit must never block the export. Log to console only.
+        console.warn('Audit log failed:', e.message);
     }
+}
+
+// ── handlers ──────────────────────────────────────────────────────
+window.payexPickProgram = (id) => {
+    stOf().programId = id;
+    stOf().stage = 'cart';
+    stOf().query = '';
+    stOf().matches = [];
+    stOf().cart = [];
+    rerender();
+};
+
+window.payexChangeProgram = () => {
+    stOf().stage = 'pick_program';
+    rerender();
+};
+
+// Multi-field search: matches against name, account number, IFSC, or bank name.
+// Numeric-only queries (no letters) skip the name field so digits don't
+// accidentally hit names containing those digits — keeps account search clean.
+// Each match carries `_matchedOn` so the row can render a "matched on …" hint.
+function matchAccount(a, raw) {
+    if (!raw) return null;
+    const needle = raw.toLowerCase();
+    const digitsOnly = /^\d+$/.test(raw.replace(/\s+/g, ''));
+    const compactNeedle = needle.replace(/\s+/g, '');
+    if (!digitsOnly && (a.name || '').toLowerCase().includes(needle)) return 'Name';
+    if ((a.accountNumber || '').toLowerCase().includes(compactNeedle)) return 'Account';
+    if (!digitsOnly) {
+        if ((a.ifsc || '').toLowerCase().includes(needle)) return 'IFSC';
+        if ((a.bankName || '').toLowerCase().includes(needle)) return 'Bank';
+    }
+    return null;
+}
+
+window.payexSearch = (q) => {
+    const st = stOf();
+    st.query = q;
+    const raw = String(q || '').trim();
+    if (!raw) { st.matches = []; document.getElementById('payex-results').innerHTML = renderResults(); return; }
+    const out = [];
+    for (const a of st.accounts) {
+        const on = matchAccount(a, raw);
+        if (on) { out.push({ ...a, _matchedOn: on }); if (out.length >= 100) break; }
+    }
+    st.matches = out;
     document.getElementById('payex-results').innerHTML = renderResults();
 };
 
-window.payexSelect = (id) => {
-    const st = window.payexState;
-    st.selected = st.accounts.find(a => a.id === id) || null;
-    document.getElementById('payex-detail').innerHTML = renderDetail();
+window.payexAdd = (accountId) => {
+    const st = stOf();
+    if (st.cart.some(c => c.accountId === accountId)) return;  // already in cart
+    st.cart.push({ accountId, amount: '' });
+    document.getElementById('payex-cart').innerHTML = renderCart();
+    document.getElementById('payex-results').innerHTML = renderResults();
 };
 
-window.payexSetProgram = (id) => { window.payexState.programId = id; };
-window.payexSetAmount = (v) => { window.payexState.amount = v; };
-window.payexRerenderDetail = () => {
-    const el = document.getElementById('payex-detail');
-    if (el) el.innerHTML = renderDetail();
+window.payexRemove = (accountId) => {
+    stOf().cart = stOf().cart.filter(c => c.accountId !== accountId);
+    document.getElementById('payex-cart').innerHTML = renderCart();
+    document.getElementById('payex-results').innerHTML = renderResults();
 };
+
+window.payexSetAmount = (accountId, v) => {
+    const line = stOf().cart.find(c => c.accountId === accountId);
+    if (line) line.amount = v;
+    // update totals row only — don't blow away the input field
+    const t = document.getElementById('payex-cart-total');
+    if (t) t.textContent = cartTotalString();
+};
+
+window.payexClearCart = () => {
+    if (!stOf().cart.length) return;
+    if (!confirm('Clear all selected beneficiaries?')) return;
+    stOf().cart = [];
+    document.getElementById('payex-cart').innerHTML = renderCart();
+    document.getElementById('payex-results').innerHTML = renderResults();
+};
+
+function buildExport() {
+    const program = programOf();
+    const st = stOf();
+    if (!program) { alert('Pick a program first.'); return null; }
+    if (!st.cart.length) { alert('Add at least one beneficiary.'); return null; }
+
+    const zeroRows = st.cart.filter(c => !(+c.amount > 0)).length;
+    if (zeroRows > 0) {
+        const proceed = confirm(`${zeroRows} of ${st.cart.length} row(s) have amount = 0. Export anyway?`);
+        if (!proceed) return null;
+    }
+
+    const rows = st.cart
+        .map(c => {
+            const acc = accountById(c.accountId);
+            return acc ? buildRow(program, acc, c.amount) : null;
+        })
+        .filter(Boolean);
+
+    const total = st.cart.reduce((s, c) => s + (Number.isFinite(+c.amount) ? +c.amount : 0), 0);
+    postAuditEvent({
+        rowCount: rows.length,
+        totalAmount: total,
+        beneficiaryIds: st.cart.map(c => c.accountId)
+    });
+
+    return { program, rows };
+}
 
 window.payexExportCsv = () => {
-    const { selected, programId, amount } = window.payexState;
-    if (!selected) return alert('Select an account first.');
-    const program = PROGRAMS.find(p => p.id === programId);
-    const row = buildRow(program, selected, amount);
-    const csv = toCsv([row]);
-    const fname = `${stripSpaces(selected.name)}_${program.id}_${stamp()}.csv`;
+    const built = buildExport();
+    if (!built) return;
+    const csv = toCsv(built.rows);
+    const fname = `${built.program.id}_${stamp()}.csv`;
     downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), fname);
 };
 
 window.payexExportXlsx = () => {
     if (typeof XLSX === 'undefined') return alert('Excel library still loading — try again.');
-    const { selected, programId, amount } = window.payexState;
-    if (!selected) return alert('Select an account first.');
-    const program = PROGRAMS.find(p => p.id === programId);
-    const row = buildRow(program, selected, amount);
+    const built = buildExport();
+    if (!built) return;
     const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet([row]);
-    XLSX.utils.book_append_sheet(wb, ws, program.label.slice(0, 31));
-    const fname = `${stripSpaces(selected.name)}_${program.id}_${stamp()}.xlsx`;
+    const ws = XLSX.utils.aoa_to_sheet(built.rows);
+    XLSX.utils.book_append_sheet(wb, ws, built.program.label.slice(0, 31));
+    const fname = `${built.program.id}_${stamp()}.xlsx`;
     XLSX.writeFile(wb, fname);
 };
 
-function renderResults() {
-    const st = window.payexState;
-    if (!st.matches.length) {
-        return `<div class="text-sm text-gray-500 italic">Start typing a name above to see matching accounts.</div>`;
+// ── render helpers ─────────────────────────────────────────────────
+function cartTotal() {
+    return stOf().cart.reduce((s, c) => s + (Number.isFinite(+c.amount) ? +c.amount : 0), 0);
+}
+function cartTotalString() {
+    const total = cartTotal();
+    return `${stOf().cart.length} selected · ₹${total.toLocaleString('en-IN')}`;
+}
+
+// Step indicator at top of both stages. `current` is 1 or 2.
+function renderStepper(current) {
+    const dot = (n, label, active, done) => {
+        const numCls = active ? 'pay-step__num pay-step__num--active' : (done ? 'pay-step__num pay-step__num--done' : 'pay-step__num');
+        const lblCls = active ? 'pay-step__label pay-step__label--active' : (done ? 'pay-step__label pay-step__label--done' : 'pay-step__label');
+        return `<div class="pay-step"><span class="${numCls}">${done ? '✓' : n}</span><span class="${lblCls}">${label}</span></div>`;
+    };
+    const barCls = current > 1 ? 'pay-step__bar pay-step__bar--done' : 'pay-step__bar';
+    return `
+        <div class="flex items-center gap-3">
+            ${dot(1, 'Pick program', current === 1, current > 1)}
+            <div class="${barCls}"></div>
+            ${dot(2, 'Select & export', current === 2, false)}
+        </div>`;
+}
+
+function renderProgramPicker() {
+    const programs = stOf().programs;
+    if (!programs.length) {
+        return `
+            <div class="pay-section">
+                <div class="p-8 text-center space-y-3">
+                    <span class="material-symbols-outlined text-[40px] text-slate-300">tune</span>
+                    <div class="text-sm text-slate-700 font-semibold">No active payment programs yet.</div>
+                    <div class="text-xs text-slate-500">Ask Finance/Superadmin to add one from <strong>Finance → Payment Programs</strong>.</div>
+                </div>
+            </div>`;
     }
     return `
-        <div class="overflow-x-auto border rounded">
-            <table class="min-w-full text-sm">
-                <thead class="bg-gray-100 text-left">
-                    <tr><th class="p-2">Name</th><th class="p-2">Bank</th><th class="p-2">Account</th><th class="p-2">IFSC</th><th class="p-2"></th></tr>
+        <div class="pay-section">
+            <div class="pay-section__head">
+                <span class="pay-section__title"><span class="material-symbols-outlined text-[16px] text-slate-500">looks_one</span> Pick program · Debit source</span>
+                ${renderStepper(1)}
+            </div>
+            <div class="p-5">
+                <p class="text-xs text-slate-500 mb-4">Pick where the salary is being paid from. Bank format, debit account, and intra-bank routing all follow from this.</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    ${programs.map((p, i) => {
+                        const isHdfc = p.format === 'hdfc';
+                        const stripColor = isHdfc ? 'bg-blue-500' : 'bg-violet-500';
+                        const tileMod = isHdfc ? '' : 'pay-tile--axis';
+                        const badgeMod = isHdfc ? 'pay-badge--hdfc' : 'pay-badge--axis';
+                        const icon = isHdfc ? 'account_balance' : 'currency_rupee';
+                        return `
+                            <button onclick="payexPickProgram('${p.id}')"
+                                class="pay-tile pay-anim ${tileMod} group focus:outline-none focus:ring-2 focus:ring-blue-300/40"
+                                style="--pay-delay: ${i * 40}ms">
+                                <span class="pay-tile__strip ${stripColor}"></span>
+                                <div class="space-y-2.5">
+                                    <div class="flex items-start justify-between gap-2">
+                                        <div class="flex items-center gap-2 min-w-0">
+                                            <span class="material-symbols-outlined text-slate-400 text-[20px]">${icon}</span>
+                                            <span class="font-bold text-slate-900 text-[15px] truncate">${p.label}</span>
+                                        </div>
+                                        <span class="pay-badge ${badgeMod}">${(p.format || '').toUpperCase()}</span>
+                                    </div>
+                                    <div class="grid grid-cols-1 gap-1 text-[12px]">
+                                        <div class="flex items-center gap-1.5 text-slate-600">
+                                            <span class="material-symbols-outlined text-[15px] text-slate-400">payments</span>
+                                            <span class="font-semibold">${p.debitBank || '—'}</span>
+                                            ${p.debitAccount ? `<span class="font-mono text-slate-500">· ${p.debitAccount}</span>` : ''}
+                                        </div>
+                                        <div class="flex items-center gap-1.5 text-slate-500">
+                                            <span class="material-symbols-outlined text-[15px] text-slate-400">domain</span>
+                                            <span>${p.entity || '—'}</span>
+                                        </div>
+                                    </div>
+                                    <div class="pt-1 text-[10px] font-bold uppercase tracking-widest text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                                        Select <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+                                    </div>
+                                </div>
+                            </button>`;
+                    }).join('')}
+                </div>
+            </div>
+        </div>`;
+}
+
+function renderResults() {
+    const st = stOf();
+    const program = programOf();
+    if (!st.query.trim()) {
+        return `
+            <div class="p-8 text-center text-xs text-slate-400 italic">
+                <span class="material-symbols-outlined text-[28px] text-slate-300 block mb-2">search</span>
+                Start typing a name, account number, IFSC, or bank above to find beneficiaries.
+            </div>`;
+    }
+    if (!st.matches.length) {
+        return `
+            <div class="p-8 text-center text-xs text-slate-500 italic">
+                <span class="material-symbols-outlined text-[28px] text-slate-300 block mb-2">search_off</span>
+                No matches in the master file for "<strong>${st.query}</strong>".
+            </div>`;
+    }
+    const cartIds = new Set(st.cart.map(c => c.accountId));
+    return `
+        <div class="overflow-x-auto">
+            <table class="pay-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Bank</th>
+                        <th>Account</th>
+                        <th>IFSC</th>
+                        <th>Matched</th>
+                        <th class="text-center">Route</th>
+                        <th></th>
+                    </tr>
                 </thead>
                 <tbody>
-                    ${st.matches.map(a => `
-                        <tr class="border-t hover:bg-blue-50">
-                            <td class="p-2">${a.name || ''}</td>
-                            <td class="p-2">${a.bankName || ''}</td>
-                            <td class="p-2 font-mono text-xs">${a.accountNumber || ''}</td>
-                            <td class="p-2 font-mono text-xs">${a.ifsc || ''}</td>
-                            <td class="p-2"><button class="px-2 py-1 bg-blue-600 text-white rounded text-xs" onclick="payexSelect('${a.id}')">Select</button></td>
-                        </tr>
-                    `).join('')}
+                    ${st.matches.map(a => {
+                        const inCart = cartIds.has(a.id);
+                        const flag = program ? flagFor(program, a.ifsc) : '';
+                        const flagBadge = flag === 'I' ? 'pay-badge pay-badge--i' : 'pay-badge pay-badge--n';
+                        return `
+                            <tr class="${inCart ? 'is-added' : ''}">
+                                <td class="font-semibold text-slate-800">${a.name || ''}</td>
+                                <td class="text-slate-600">${a.bankName || '—'}</td>
+                                <td class="font-mono text-[11.5px] text-slate-700">${a.accountNumber || ''}</td>
+                                <td class="font-mono text-[11.5px] text-slate-500">${a.ifsc || ''}</td>
+                                <td><span class="text-[9.5px] font-bold uppercase tracking-widest text-slate-500 bg-slate-100 px-2 py-0.5 rounded">${a._matchedOn || ''}</span></td>
+                                <td class="text-center">
+                                    <span class="${flagBadge}" title="${flag === 'I' ? 'Intra-bank (same bank, instant)' : 'NEFT (different bank)'}">${flag || '—'}</span>
+                                </td>
+                                <td class="text-right">
+                                    ${inCart
+                                        ? `<span class="text-[10px] font-bold uppercase tracking-widest text-emerald-600 flex items-center gap-1 justify-end"><span class="material-symbols-outlined text-[14px]">check</span> Added</span>`
+                                        : `<button onclick="payexAdd('${a.id}')" class="pay-pill pay-pill--primary ml-auto"><span class="material-symbols-outlined text-[14px]">add</span> Add</button>`}
+                                </td>
+                            </tr>`;
+                    }).join('')}
                 </tbody>
             </table>
         </div>`;
 }
 
-function renderDetail() {
-    const st = window.payexState;
-    const a = st.selected;
-    if (!a) return `<div class="text-sm text-gray-500 italic">No account selected.</div>`;
-    const program = PROGRAMS.find(p => p.id === st.programId);
-    const flag = flagFor(program, a.ifsc);
+function renderCart() {
+    const st = stOf();
+    if (!st.cart.length) {
+        return `
+            <div class="pay-section">
+                <div class="pay-section__head">
+                    <span class="pay-section__title"><span class="material-symbols-outlined text-[16px] text-slate-500">shopping_cart</span> Selected beneficiaries</span>
+                    <span class="pay-section__meta">0 selected</span>
+                </div>
+                <div class="p-8 text-center text-xs text-slate-400 italic">
+                    <span class="material-symbols-outlined text-[28px] text-slate-300 block mb-2">shopping_cart</span>
+                    Search above and click <strong>Add</strong> to include beneficiaries in the export.
+                </div>
+            </div>`;
+    }
+    const program = programOf();
     return `
-        <div class="bg-white border rounded p-4 space-y-3">
-            <div class="flex justify-between items-start">
-                <div>
-                    <div class="text-lg font-semibold">${a.name}</div>
-                    <div class="text-sm text-gray-600">${a.bankName || '—'}</div>
-                </div>
-                <div class="text-right">
-                    <div class="text-xs text-gray-500">Transfer type</div>
-                    <div class="font-mono text-sm"><span class="px-2 py-0.5 rounded ${flag === 'I' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}">${flag}</span> ${flag === 'I' ? '(intra-bank)' : '(NEFT)'}</div>
-                </div>
+        <div class="pay-section">
+            <div class="pay-section__head">
+                <span class="pay-section__title"><span class="material-symbols-outlined text-[16px] text-slate-500">shopping_cart</span> Selected beneficiaries</span>
+                <button onclick="payexClearCart()" class="pay-pill pay-pill--danger-soft">
+                    <span class="material-symbols-outlined text-[14px]">delete_sweep</span> Clear all
+                </button>
             </div>
-            <div class="grid grid-cols-2 gap-3 text-sm">
-                <div><div class="text-xs text-gray-500">Account Number</div><div class="font-mono">${a.accountNumber}</div></div>
-                <div><div class="text-xs text-gray-500">IFSC</div><div class="font-mono">${a.ifsc || '—'}</div></div>
+            <div class="overflow-x-auto">
+                <table class="pay-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Account</th>
+                            <th>IFSC</th>
+                            <th class="text-center">Route</th>
+                            <th>Amount (₹)</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${st.cart.map(c => {
+                            const a = accountById(c.accountId);
+                            if (!a) return '';
+                            const flag = program ? flagFor(program, a.ifsc) : '';
+                            const flagBadge = flag === 'I' ? 'pay-badge pay-badge--i' : 'pay-badge pay-badge--n';
+                            return `
+                                <tr>
+                                    <td class="font-semibold text-slate-800">${a.name || ''}</td>
+                                    <td class="font-mono text-[11.5px] text-slate-700">${a.accountNumber || ''}</td>
+                                    <td class="font-mono text-[11.5px] text-slate-500">${a.ifsc || ''}</td>
+                                    <td class="text-center"><span class="${flagBadge}">${flag || '—'}</span></td>
+                                    <td>
+                                        <div class="relative">
+                                            <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">₹</span>
+                                            <input type="number" min="0" step="0.01" value="${c.amount}" placeholder="0"
+                                                oninput="payexSetAmount('${a.id}', this.value)"
+                                                class="w-36 pl-7 pr-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all" />
+                                        </div>
+                                    </td>
+                                    <td class="text-right">
+                                        <button onclick="payexRemove('${a.id}')" class="pay-icon-btn pay-icon-btn--danger" title="Remove">
+                                            <span class="material-symbols-outlined text-[18px]">close</span>
+                                        </button>
+                                    </td>
+                                </tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>
             </div>
-
-            <div class="border-t pt-3 grid grid-cols-2 gap-3">
-                <div>
-                    <label class="text-xs text-gray-500 block mb-1">Program / Debit Source</label>
-                    <select onchange="payexSetProgram(this.value); payexRerenderDetail()" class="w-full border rounded px-2 py-1 text-sm">
-                        ${PROGRAMS.map(p => `<option value="${p.id}" ${p.id === st.programId ? 'selected' : ''}>${p.label}</option>`).join('')}
-                    </select>
-                </div>
-                <div>
-                    <label class="text-xs text-gray-500 block mb-1">Amount (optional)</label>
-                    <input type="number" value="${st.amount || ''}" placeholder="0" oninput="payexSetAmount(this.value)" class="w-full border rounded px-2 py-1 text-sm" />
-                </div>
-            </div>
-
-            <div class="flex gap-2 pt-2">
-                <button onclick="payexExportCsv()" class="px-3 py-2 bg-blue-600 text-white rounded text-sm">Export CSV</button>
-                <button onclick="payexExportXlsx()" class="px-3 py-2 bg-emerald-600 text-white rounded text-sm">Export Excel</button>
+            <div class="border-t border-slate-100 px-4 py-3 bg-slate-50/60 text-right">
+                <span id="payex-cart-total" class="text-sm font-bold text-slate-800">${cartTotalString()}</span>
             </div>
         </div>`;
 }
 
+function renderCartStage() {
+    const program = programOf();
+    if (!program) return renderProgramPicker();
+    const isHdfc = program.format === 'hdfc';
+    const stripColor = isHdfc ? 'bg-blue-500' : 'bg-violet-500';
+    const tileMod = isHdfc ? '' : 'pay-tile--axis';
+    const badgeMod = isHdfc ? 'pay-badge--hdfc' : 'pay-badge--axis';
+    const st = stOf();
+    return `
+        <!-- Selected program hero -->
+        <div class="pay-tile ${tileMod}">
+            <span class="pay-tile__strip ${stripColor}"></span>
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-2 mb-1.5">
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Selected program</span>
+                        <span class="pay-badge ${badgeMod}">${(program.format || '').toUpperCase()}</span>
+                    </div>
+                    <div class="font-headline font-extrabold text-slate-900 text-[17px]">${program.label}</div>
+                    <div class="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] text-slate-600">
+                        <span class="flex items-center gap-1"><span class="material-symbols-outlined text-[15px] text-slate-400">payments</span><strong>${program.debitBank}</strong>${program.debitAccount ? ` · <span class="font-mono">${program.debitAccount}</span>` : ''}</span>
+                        <span class="flex items-center gap-1"><span class="material-symbols-outlined text-[15px] text-slate-400">domain</span>${program.entity || '—'}</span>
+                        ${program.email ? `<span class="flex items-center gap-1 text-slate-500"><span class="material-symbols-outlined text-[15px] text-slate-400">mail</span>${program.email}</span>` : ''}
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    ${renderStepper(2)}
+                    <button onclick="payexChangeProgram()" class="pay-pill pay-pill--ghost">
+                        <span class="material-symbols-outlined text-[14px]">swap_horiz</span> Change
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search -->
+        <div class="pay-section">
+            <div class="pay-section__head">
+                <span class="pay-section__title"><span class="material-symbols-outlined text-[16px] text-slate-500">search</span> Search beneficiaries</span>
+                <span id="payex-count" class="pay-section__meta">${st.accounts.length} loaded</span>
+            </div>
+            <div class="p-5">
+                <div class="pay-search">
+                    <span class="pay-search__icon material-symbols-outlined text-[20px]">search</span>
+                    <input type="text" value="${st.query || ''}" oninput="payexSearch(this.value)" placeholder="Name, account number, IFSC, or bank…" autofocus />
+                    <span class="pay-search__hint">Name · Account · IFSC</span>
+                </div>
+            </div>
+            <div id="payex-results" class="border-t border-slate-100">${renderResults()}</div>
+        </div>
+
+        <!-- Cart -->
+        <div id="payex-cart">${renderCart()}</div>
+
+        <!-- Export action bar -->
+        <div class="pay-action-bar">
+            <div>
+                <div class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Ready to export</div>
+                <div class="font-bold text-[14px] text-slate-800">${cartTotalString()} · Format: ${(program.format || '').toUpperCase()}</div>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="payexExportCsv()" class="pay-pill pay-pill--primary">
+                    <span class="material-symbols-outlined text-[14px]">csv</span> Export CSV
+                </button>
+                <button onclick="payexExportXlsx()" class="pay-pill pay-pill--success">
+                    <span class="material-symbols-outlined text-[14px]">table_chart</span> Export Excel
+                </button>
+            </div>
+        </div>`;
+}
+
+function rerender() {
+    const root = document.getElementById('payex-root');
+    if (!root) return;
+    root.innerHTML = stOf().stage === 'pick_program' ? renderProgramPicker() : renderCartStage();
+}
+
 export async function renderPaymentExportPage() {
-    // kick off async load; user can start typing once it resolves
-    if (!window.payexState.accounts.length) {
+    // Fire-and-forget loads. Programs always reload so newly-added ones show.
+    loadPrograms()
+        .then(() => { rerender(); })
+        .catch(e => {
+            const root = document.getElementById('payex-root');
+            if (root) root.innerHTML = `<div class="bg-red-50 border border-red-200 text-red-700 rounded p-3 text-sm">Failed to load payment programs: ${e.message}</div>`;
+        });
+
+    if (!stOf().accounts.length) {
         loadAccounts()
-            .then(() => { document.getElementById('payex-count').textContent = `${window.payexState.accounts.length} accounts loaded.`; })
-            .catch(e => { document.getElementById('payex-count').textContent = `Load failed: ${e.message}`; });
+            .then(() => {
+                const c = document.getElementById('payex-count');
+                if (c) c.textContent = `${stOf().accounts.length} beneficiaries loaded.`;
+            })
+            .catch(e => {
+                const c = document.getElementById('payex-count');
+                if (c) c.textContent = `Load failed: ${e.message}`;
+            });
     }
 
     return `
-        <div class="w-full space-y-4 pb-10 font-sans">
-            <header>
-                <h2 class="page-title">Salary Payment Export</h2>
-                <p class="page-subtitle">Search an employee, pick their account, choose the program, and export in the bank's required format.</p>
+        <div class="pay-page w-full space-y-5 pb-10 font-sans">
+            <header class="flex items-start justify-between gap-4">
+                <div>
+                    <h2 class="page-title flex items-center gap-2"><span class="material-symbols-outlined text-[22px] text-slate-400">account_balance</span> Salary Payment Export</h2>
+                    <p class="page-subtitle">Bank-Ready Disbursement Builder</p>
+                </div>
+                <a href="#payment_programs" class="pay-pill pay-pill--ghost">
+                    <span class="material-symbols-outlined text-[14px]">tune</span> Manage Programs
+                </a>
             </header>
-
-            <div class="bg-white border rounded p-4 space-y-2">
-                <label class="text-xs text-gray-500 block">Search by name</label>
-                <input type="text" oninput="payexSearch(this.value)" placeholder="Type a name…" class="w-full border rounded px-3 py-2" autofocus />
-                <div id="payex-count" class="text-xs text-gray-500">Loading bank master…</div>
+            <div id="payex-root" class="space-y-5">
+                ${stOf().stage === 'pick_program' ? renderProgramPicker() : renderCartStage()}
             </div>
-
-            <div id="payex-results">${renderResults()}</div>
-            <div id="payex-detail">${renderDetail()}</div>
         </div>
     `;
 }

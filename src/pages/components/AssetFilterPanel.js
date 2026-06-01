@@ -190,7 +190,7 @@ export function renderAssetFilterPanel({ state, allRows, onChange, resetFn, tota
         val ? qChip(String(state.acqFy) === String(val), label, `${onChange}('acqFy', '${val}')`) : '';
 
     return `
-        <div class="bg-white border border-slate-200 rounded-xl shadow-sm md:h-full flex flex-col overflow-hidden">
+        <div class="bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col md:h-full md:overflow-hidden">
             <!-- Sticky header inside the panel: title + counts + clear-all -->
             <div class="px-3 pt-3 pb-2 border-b border-slate-100 flex-shrink-0">
                 <div class="flex items-center justify-between gap-2 mb-1">
@@ -206,7 +206,7 @@ export function renderAssetFilterPanel({ state, allRows, onChange, resetFn, tota
                 </p>
             </div>
 
-            <div class="px-3 py-3 flex-1 min-h-0 overflow-y-auto">
+            <div class="px-3 py-3 md:flex-1 md:min-h-0 md:overflow-y-auto">
                 ${activeChipsHtml(state, onChange)}
 
                 <!-- Search -->
