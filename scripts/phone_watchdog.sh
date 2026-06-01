@@ -15,8 +15,8 @@
 
 cd "$(dirname "$0")/.."
 
-IDLE=${WATCHDOG_INTERVAL_IDLE:-60}
-HOT=${WATCHDOG_INTERVAL_HOT:-15}
+IDLE=${WATCHDOG_INTERVAL_IDLE:-30}
+HOT=${WATCHDOG_INTERVAL_HOT:-10}
 HOT_DURATION=300   # seconds to stay in hot mode after a change
 HEALTH_URL=${WATCHDOG_HEALTH_URL:-http://localhost:3000}
 LOG_MAX_MB=${WATCHDOG_LOG_MAX:-5}
@@ -67,9 +67,29 @@ ensure_server_alive() {
 }
 
 ensure_tunnel_alive() {
+    # 1. Process must exist
     if ! pgrep -f "cloudflared tunnel" >/dev/null; then
-        log "Cloudflare tunnel is down. Restarting..."
+        log "Cloudflare tunnel process is down. Restarting..."
         start_tunnel
+        hot_until=$(( $(date +%s) + HOT_DURATION ))
+        return
+    fi
+    # 2. Process is up but is the tunnel actually reachable from the internet?
+    #    A hung-but-alive cloudflared causes Error 1033 on the public URL —
+    #    pgrep can't catch that, only an end-to-end curl can.
+    command -v curl >/dev/null 2>&1 || return
+    local public_url
+    [ -f current_url.txt ] && public_url=$(cat current_url.txt 2>/dev/null)
+    [ -z "$public_url" ] && return
+    if ! curl -fsS -m 8 -o /dev/null "$public_url"; then
+        sleep 3
+        if ! curl -fsS -m 8 -o /dev/null "$public_url"; then
+            log "Tunnel unreachable through $public_url (Error 1033 territory). Restarting..."
+            pkill -f "cloudflared tunnel" 2>/dev/null
+            sleep 2
+            start_tunnel
+            hot_until=$(( $(date +%s) + HOT_DURATION ))
+        fi
     fi
 }
 
