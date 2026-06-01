@@ -250,12 +250,39 @@ window.payexExportCsv = () => {
     downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), fname);
 };
 
+// Force the given column indices to be stored as text cells in the worksheet.
+// SheetJS auto-types all-digit strings as numbers, which makes Excel render
+// long account numbers in scientific notation and drop leading zeros. We
+// override the cell type and number format so the value survives intact.
+function coerceColumnsToText(sheet, cols) {
+    if (!sheet || !sheet['!ref']) return;
+    const range = XLSX.utils.decode_range(sheet['!ref']);
+    for (const c of cols) {
+        for (let r = range.s.r; r <= range.e.r; r++) {
+            const ref = XLSX.utils.encode_cell({ r, c });
+            const cell = sheet[ref];
+            if (!cell || cell.v === undefined || cell.v === null || cell.v === '') continue;
+            cell.v = String(cell.v);
+            cell.t = 's';
+            cell.z = '@';   // text format code
+        }
+    }
+}
+
+// Text-typed column indices per bank format (account #, IFSC, etc.).
+function textColumnsFor(format) {
+    if (format === 'hdfc') return [2, 25, 26, 28]; // accountNumber, ifsc, bankName, email
+    if (format === 'axis') return [4, 7, 9, 11];   // accountNumber, debitAccount, ifsc, entity
+    return [];
+}
+
 window.payexExportXlsx = () => {
     if (typeof XLSX === 'undefined') return alert('Excel library still loading — try again.');
     const built = buildExport();
     if (!built) return;
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet(built.rows);
+    coerceColumnsToText(ws, textColumnsFor(built.program.format));
     XLSX.utils.book_append_sheet(wb, ws, built.program.label.slice(0, 31));
     const fname = `${built.program.id}_${stamp()}.xlsx`;
     XLSX.writeFile(wb, fname);
