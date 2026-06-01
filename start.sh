@@ -17,12 +17,17 @@ echo "║   Kalike Asset Server        ║"
 echo "╚══════════════════════════════╝"
 echo ""
 
-# Stop any pre-existing instances
+# Stop any pre-existing instances (use -9 as a fallback so a wedged
+# process can't squat on port 3000 and silently break the new server).
 echo "▶ Stopping any running server / tunnel / watchdog..."
 pkill -f "node server.js"     2>/dev/null || true
 pkill -f "cloudflared tunnel" 2>/dev/null || true
 pkill -f "phone_watchdog.sh"  2>/dev/null || true
 sleep 2
+pkill -9 -f "node server.js"     2>/dev/null || true
+pkill -9 -f "cloudflared tunnel" 2>/dev/null || true
+pkill -9 -f "phone_watchdog.sh"  2>/dev/null || true
+sleep 1
 
 # Keep Termux alive across screen-off (no-op on non-Termux systems)
 termux-wake-lock 2>/dev/null || true
@@ -91,30 +96,71 @@ echo "✓ Build done."
 echo "▶ Starting server (background → server.log)..."
 NODE_ENV=production nohup node server.js > server.log 2>&1 &
 SERVER_PID=$!
-sleep 3
-if ! kill -0 "$SERVER_PID" 2>/dev/null; then
-    echo "✗ Server failed to start. Last 20 lines of server.log:"
-    tail -n 20 server.log
+
+# Wait for the server to actually accept HTTP — not just be a live PID.
+# A process can be alive but stuck on a require() error or DB init.
+echo "  Waiting for HTTP on :3000..."
+SERVER_OK=0
+for i in $(seq 1 20); do
+    sleep 1
+    if ! kill -0 "$SERVER_PID" 2>/dev/null; then
+        echo "✗ Server process died. Last 30 lines of server.log:"
+        tail -n 30 server.log
+        exit 1
+    fi
+    if curl -fsS -m 2 -o /dev/null http://127.0.0.1:3000/ 2>/dev/null \
+       || curl -fsS -m 2 -o /dev/null http://127.0.0.1:3000/api/login 2>/dev/null \
+       || curl -sS  -m 2 -o /dev/null -w '%{http_code}' http://127.0.0.1:3000/ 2>/dev/null | grep -qE '^(200|301|302|401|404|405)$'; then
+        SERVER_OK=1
+        break
+    fi
+done
+if [ "$SERVER_OK" != "1" ]; then
+    echo "✗ Server PID is alive but not answering HTTP on :3000. Last 30 lines of server.log:"
+    tail -n 30 server.log
     exit 1
 fi
-echo "✓ Server running on http://localhost:3000 (pid $SERVER_PID)"
+echo "✓ Server responding on http://localhost:3000 (pid $SERVER_PID)"
 
 # Start Cloudflare tunnel in background and capture URL
 if command -v cloudflared >/dev/null 2>&1; then
     echo "▶ Starting Cloudflare tunnel (background → cloudflared.log)..."
-    nohup cloudflared tunnel --url http://localhost:3000 > cloudflared.log 2>&1 &
+    # Truncate the old log so we only see this run's URL.
+    : > cloudflared.log
+    nohup cloudflared tunnel --no-autoupdate --url http://localhost:3000 > cloudflared.log 2>&1 &
     TUNNEL_PID=$!
     PUBLIC_URL=""
-    for i in $(seq 1 25); do
+    for i in $(seq 1 40); do
         sleep 1
+        if ! kill -0 "$TUNNEL_PID" 2>/dev/null; then
+            echo "✗ cloudflared process died. Last 30 lines of cloudflared.log:"
+            tail -n 30 cloudflared.log
+            break
+        fi
         PUBLIC_URL=$(grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' cloudflared.log 2>/dev/null | head -1)
         [ -n "$PUBLIC_URL" ] && break
     done
     if [ -n "$PUBLIC_URL" ]; then
         echo "$PUBLIC_URL" > current_url.txt
-        echo "✓ Tunnel up: $PUBLIC_URL  (pid $TUNNEL_PID)"
+        echo "  Verifying tunnel responds end-to-end..."
+        TUNNEL_OK=0
+        for i in $(seq 1 15); do
+            sleep 2
+            CODE=$(curl -sS -o /dev/null -m 6 -w '%{http_code}' "$PUBLIC_URL/" 2>/dev/null || echo 000)
+            case "$CODE" in
+                200|301|302|401|404|405) TUNNEL_OK=1; break ;;
+            esac
+        done
+        if [ "$TUNNEL_OK" = "1" ]; then
+            echo "✓ Tunnel up + reachable: $PUBLIC_URL  (pid $TUNNEL_PID)"
+        else
+            echo "⚠ Tunnel URL captured ($PUBLIC_URL) but not reachable (last code: $CODE)."
+            echo "  Watchdog will retry. Last 15 lines of cloudflared.log:"
+            tail -n 15 cloudflared.log
+        fi
     else
-        echo "⚠ Tunnel started but URL not captured yet — check cloudflared.log."
+        echo "⚠ Tunnel started but URL not captured. Last 30 lines of cloudflared.log:"
+        tail -n 30 cloudflared.log
     fi
 else
     echo "⚠ cloudflared not installed. Server is local-only. Install with: pkg install cloudflared"
