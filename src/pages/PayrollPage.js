@@ -378,7 +378,7 @@ export function renderPayrollPage(user) {
                             </div>
                         </div>
                         <div class="mt-4 pt-3 border-t border-slate-100 flex gap-2">
-                            <button onclick="window.exportPayslip('${p.id}')" class="btn-primary"><span class="material-symbols-outlined text-[12px]">download</span> Export PDF</button>
+                            <button onclick="window.exportPayslip('${p.id}')" class="btn-primary pdf-export-btn"><span class="material-symbols-outlined text-[12px]">picture_as_pdf</span> Export PDF</button>
                             ${isAdmin && p.status !== 'Sent' ? `
                                 <button onclick="db.markPayslipSent('${p.id}');app.navigateTo('payroll')" class="btn-primary bg-emerald-600 hover:bg-emerald-700"><span class="material-symbols-outlined text-sm">send</span>Mark as Sent</button>
                             ` : ''}

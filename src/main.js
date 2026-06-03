@@ -24,6 +24,11 @@ const loadDynamicPage = async (pageName) => {
 // asset_home picks a dashboard variant based on the user's permissions.
 const renderAssetHome = async (user) => {
     const app = window.app;
+    // Managers land on the new Team Dashboard (program-scoped).
+    if (user?.role === 'manager') {
+        const mod = await import('./pages/TeamDashboard.js');
+        return mod.renderTeamDashboard(user);
+    }
     if (app.hasPermission('all') || app.hasPermission('view_reports')) {
         const fn = await loadDynamicPage('AnalyticsDashboard');
         return fn(user);
@@ -38,6 +43,14 @@ const renderAssetHome = async (user) => {
     }
     const fn = await loadDynamicPage('EmployeeDashboard');
     return fn(user);
+};
+
+// Standalone Team Dashboard route. Used by superadmin/director/hr from the
+// workspace tile so they can pick any program. Managers also reach the same
+// page via asset_home but auto-scoped to their own program.
+const renderTeamDashboard = async (user) => {
+    const mod = await import('./pages/TeamDashboard.js');
+    return mod.renderTeamDashboard(user);
 };
 
 // Sidebar group ordering + labels. Pages reference these by `group`.
@@ -89,6 +102,8 @@ const PAGE_REGISTRY = {
     org_chart:       { group: 'people',    label: 'Org Chart',       icon: 'account_tree',          perm: null,                                                     render: 'OrgChartPage' },
     performance:     { group: 'people',    label: 'Reviews',         icon: 'workspace_premium',     perm: null,                                                     render: 'PerformanceReviewsPage' },
     team:            { group: 'people',    label: 'My Team',         icon: 'groups',                perm: ['manage_team', 'manage_users'],                          render: 'TeamManagementPage' },
+    team_dashboard:  { group: 'people',    label: 'Team Dashboard',  icon: 'monitoring',            perm: ['manage_team', 'view_reports', 'manage_users'],          render: renderTeamDashboard },
+    program_dashboard:{ group: 'people',   label: 'Program Dashboard',icon: 'donut_large',          perm: ['manage_users', 'manage_team'],                          render: 'ProgramDashboard' },
     users:           { group: 'people',    label: 'Users',           icon: 'admin_panel_settings',  perm: 'manage_users',                                           render: 'UserManagement' },
 
     announcements:   { group: 'comm',      label: 'Board',           icon: 'campaign',              perm: null,                                                     render: 'AnnouncementsPage' },
@@ -909,7 +924,7 @@ class App {
                         </div>
                         <div class="flex items-center gap-2">
                             ${canExport ? `
-                            <button onclick="app.exportAssetPDF('${asset.id.replace(/'/g, "\\'")}')" class="px-3 py-2 bg-rose-50 text-rose-600 border border-rose-200 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-rose-100 transition-all flex items-center gap-1.5">
+                            <button onclick="app.exportAssetPDF('${asset.id.replace(/'/g, "\\'")}')" class="px-3 py-2 bg-rose-50 text-rose-600 border border-rose-200 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-rose-100 transition-all flex items-center gap-1.5 pdf-export-btn">
                                 <span class="material-symbols-outlined text-sm">picture_as_pdf</span> PDF
                             </button>
                             <button onclick="app.exportAssetExcel('${asset.id.replace(/'/g, "\\'")}')" class="px-3 py-2 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-emerald-100 transition-all flex items-center gap-1.5">

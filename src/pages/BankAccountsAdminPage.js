@@ -23,8 +23,14 @@ window.baaState = window.baaState || {
     error: '',
     bulkOpen: false,
     bulkBusy: false,
-    bulkProgress: ''
+    bulkProgress: '',
+    selectedIds: new Set(),
+    bulkEditOpen: false,
+    bulkActionBusy: false
 };
+
+// Carry over selectedIds if state pre-existed without it (hot reload safety).
+if (!(window.baaState.selectedIds instanceof Set)) window.baaState.selectedIds = new Set();
 
 const stOf = () => window.baaState;
 
@@ -203,20 +209,157 @@ window.baaGoto = (page) => {
     rerender();
 };
 
+// ── Selection ──────────────────────────────────────────────────────
+window.baaToggleSelect = (id) => {
+    const sel = stOf().selectedIds;
+    if (sel.has(id)) sel.delete(id); else sel.add(id);
+    rerender();
+};
+
+// Toggle every row currently shown on the active page.
+// If all visible rows are already selected → unselect them. Else select them.
+window.baaToggleSelectPage = () => {
+    const st = stOf();
+    const filtered = applyFilters();
+    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    const cur = Math.min(Math.max(1, st.page), totalPages);
+    const slice = filtered.slice((cur - 1) * PAGE_SIZE, cur * PAGE_SIZE);
+    const allOn = slice.length > 0 && slice.every(r => st.selectedIds.has(r.id));
+    if (allOn) slice.forEach(r => st.selectedIds.delete(r.id));
+    else slice.forEach(r => st.selectedIds.add(r.id));
+    rerender();
+};
+
+// Select every row across all pages currently passing the filters.
+window.baaSelectAllFiltered = () => {
+    const filtered = applyFilters();
+    filtered.forEach(r => stOf().selectedIds.add(r.id));
+    rerender();
+};
+
+window.baaClearSelection = () => {
+    stOf().selectedIds.clear();
+    rerender();
+};
+
+// ── Bulk actions on selection ──────────────────────────────────────
+async function runBulkOverSelection(fnPerId, label) {
+    const ids = [...stOf().selectedIds];
+    if (!ids.length) return;
+    stOf().bulkActionBusy = true;
+    rerender();
+    let ok = 0, fail = 0;
+    for (const id of ids) {
+        try { await fnPerId(id); ok++; } catch (e) { fail++; console.warn(`Bulk ${label} failed for`, id, e); }
+    }
+    try { await loadAccounts(); } catch {}
+    stOf().bulkActionBusy = false;
+    stOf().selectedIds.clear();
+    rerender();
+    alert(`${label}: ${ok} succeeded${fail ? `, ${fail} failed (see console)` : ''}.`);
+}
+
+window.baaBulkArchive = async (archived) => {
+    const n = stOf().selectedIds.size;
+    if (!n) return;
+    const verb = archived ? 'Archive' : 'Unarchive';
+    if (!confirm(`${verb} ${n} selected record${n === 1 ? '' : 's'}?`)) return;
+    const now = new Date().toISOString();
+    await runBulkOverSelection(async (id) => {
+        const row = stOf().accounts.find(a => a.id === id);
+        if (!row) return;
+        await savePayload({ ...row, archived: archived ? 1 : 0, updatedAt: now });
+    }, verb);
+};
+
+window.baaBulkDelete = async () => {
+    const n = stOf().selectedIds.size;
+    if (!n) return;
+    if (!confirm(`Delete ${n} selected record${n === 1 ? '' : 's'}? This cannot be undone. Prefer Archive if you only want to hide them.`)) return;
+    if (!confirm(`Really delete ${n}? Final confirmation.`)) return;
+    await runBulkOverSelection(deleteAccount, 'Delete');
+};
+
+// ── Bulk edit modal ────────────────────────────────────────────────
+window.baaBulkEditOpen = () => {
+    if (!stOf().selectedIds.size) return;
+    stOf().bulkEditOpen = true;
+    rerender();
+};
+
+window.baaBulkEditClose = () => {
+    if (stOf().bulkActionBusy) return;
+    stOf().bulkEditOpen = false;
+    rerender();
+};
+
+window.baaBulkEditApply = async () => {
+    const getField = id => document.getElementById(id);
+    const setBank   = getField('baa-be-set-bank')?.checked;
+    const setSheet  = getField('baa-be-set-sheet')?.checked;
+    const setNotes  = getField('baa-be-set-notes')?.checked;
+    if (!setBank && !setSheet && !setNotes) {
+        alert('Tick at least one field to bulk-edit.');
+        return;
+    }
+    const patch = {};
+    if (setBank)  patch.bankName    = getField('baa-be-bank')?.value.trim()  || '';
+    if (setSheet) patch.sourceSheet = getField('baa-be-sheet')?.value.trim() || '';
+    if (setNotes) patch.reviewNotes = getField('baa-be-notes')?.value.trim() || '';
+
+    const n = stOf().selectedIds.size;
+    if (!confirm(`Apply changes to ${n} record${n === 1 ? '' : 's'}?`)) return;
+    const now = new Date().toISOString();
+    stOf().bulkEditOpen = false;
+    await runBulkOverSelection(async (id) => {
+        const row = stOf().accounts.find(a => a.id === id);
+        if (!row) return;
+        await savePayload({ ...row, ...patch, updatedAt: now });
+    }, 'Bulk edit');
+};
+
 // ── Bulk import ────────────────────────────────────────────────────
-// Parse tab-separated values pasted from Excel: one row per line, columns
+// Parse pasted rows in either TSV (from Excel) or CSV format. Columns
 // expected in order: Name, Bank, Account #, IFSC, Notes, Source Sheet
 // (the last two are optional). Blank lines are skipped; a header row whose
-// first cell is "Name" is also skipped automatically so users can paste
-// with or without headers.
+// first cell is "Name" is also skipped automatically. Delimiter is
+// auto-detected per-text (tab wins if any line has a tab, otherwise comma).
+// CSV mode handles "double quoted" cells including embedded commas.
+function detectDelimiter(text) {
+    return /\t/.test(text) ? '\t' : ',';
+}
+
+function splitCsvLine(line) {
+    const out = [];
+    let cur = '';
+    let inQ = false;
+    for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (inQ) {
+            if (ch === '"' && line[i + 1] === '"') { cur += '"'; i++; }
+            else if (ch === '"') { inQ = false; }
+            else { cur += ch; }
+        } else {
+            if (ch === '"') { inQ = true; }
+            else if (ch === ',') { out.push(cur); cur = ''; }
+            else { cur += ch; }
+        }
+    }
+    out.push(cur);
+    return out.map(s => s.trim());
+}
+
 function parseBulkText(text) {
     const valid = [];
     const errors = [];
+    const delim = detectDelimiter(text);
     const lines = String(text || '').split(/\r?\n/);
     for (let i = 0; i < lines.length; i++) {
         const raw = lines[i].replace(/\s+$/, '');
         if (!raw.trim()) continue;
-        const cells = raw.split('\t').map(s => s.trim());
+        const cells = delim === '\t'
+            ? raw.split('\t').map(s => s.trim())
+            : splitCsvLine(raw);
         if (i === 0 && /^name$/i.test(cells[0] || '')) continue; // header row
         const [name, bankName, accountNumber, ifsc, reviewNotes, sourceSheet] = cells;
         if (!name || !accountNumber) {
@@ -326,7 +469,7 @@ window.baaBulkImport = async () => {
 function renderBulkModal() {
     const st = stOf();
     if (!st.bulkOpen) return '';
-    const sample = `Anand Kumar\tHDFC\t50100123456789\tHDFC0001234\t\tSalary HDFC\nMeera S\tAXIS\t910010012345678\tUTIB0000123\tPart-time\tCSA`;
+    const sample = `Anand Kumar,HDFC,50100123456789,HDFC0001234,,Salary HDFC\nMeera S,AXIS,910010012345678,UTIB0000123,Part-time,CSA\n— or paste straight from Excel (tab-separated) —`;
     return `
         <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onclick="if(event.target===this) baaBulkClose()">
             <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
@@ -341,9 +484,11 @@ function renderBulkModal() {
                 </div>
                 <div class="p-5 space-y-3 overflow-auto flex-1">
                     <div class="text-xs text-slate-600">
-                        Paste rows directly from Excel. Expected column order
-                        (tab-separated): <strong>Name → Bank → Account # → IFSC → Notes → Source Sheet</strong>.
+                        Paste rows in <strong>TSV</strong> (straight from Excel) or <strong>CSV</strong> (comma-separated) format —
+                        delimiter is auto-detected. Expected column order:
+                        <strong>Name → Bank → Account # → IFSC → Notes → Source Sheet</strong>.
                         Notes and Source Sheet are optional. Header row is auto-detected and skipped.
+                        CSV cells containing commas can be wrapped in <code>"double quotes"</code>.
                     </div>
                     <textarea id="baa-bulk-textarea"
                         oninput="baaBulkPreview()"
@@ -415,6 +560,7 @@ function renderEditableRow(rowKey, source) {
     const isNew = rowKey === '__new__';
     return `
         <tr data-baa-row="${rowKey}" style="background: rgba(254, 243, 199, 0.35); border-top: 1px solid rgba(245, 158, 11, 0.3);">
+            <td class="text-center"></td>
             <td>
                 <input data-field="id" value="${a.id || ''}" ${isNew ? '' : 'readonly'} placeholder="${isNew ? 'auto' : 'id'}"
                     class="w-full px-2 py-1.5 border ${isNew ? 'border-slate-200 bg-white' : 'border-slate-100 bg-slate-100 text-slate-500'} rounded-lg text-[11.5px] font-mono outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
@@ -458,8 +604,12 @@ function renderReadOnlyRow(a) {
         ? '<span class="pay-badge pay-badge--archived pay-badge--dot">Archived</span>'
         : '<span class="pay-badge pay-badge--active pay-badge--dot">Active</span>';
     const safeName = esc(a.name);
+    const isSelected = stOf().selectedIds.has(a.id);
     return `
-        <tr class="${a.archived ? 'is-archived' : ''}">
+        <tr class="${a.archived ? 'is-archived' : ''} ${isSelected ? 'baa-row--selected' : ''}">
+            <td class="text-center">
+                <input type="checkbox" ${isSelected ? 'checked' : ''} onclick="baaToggleSelect('${esc(a.id)}')" class="w-4 h-4 accent-blue-600" title="Select row" />
+            </td>
             <td class="font-mono text-[11.5px] text-slate-600">${esc(a.id)}</td>
             <td class="text-sm font-semibold text-slate-800">${safeName}</td>
             <td class="text-sm text-slate-700">${esc(a.bankName) || '—'}</td>
@@ -517,23 +667,28 @@ function renderTable() {
     if (!rows.length) {
         rows.push(`
             <tr>
-                <td colspan="9" class="p-10 text-center">
+                <td colspan="10" class="p-10 text-center">
                     <span class="material-symbols-outlined text-[40px] text-slate-300 block mb-2">savings</span>
                     <div class="text-sm text-slate-600 font-semibold">${st.query || st.sheetFilter || st.notesOnly ? 'No matches.' : 'No bank accounts yet.'}</div>
                     <div class="text-xs text-slate-500 mt-1">${st.query || st.sheetFilter || st.notesOnly ? 'Try clearing filters or a different search term.' : 'Click <strong>Add Record</strong> above to create one.'}</div>
                 </td>
             </tr>`);
     }
+    const pageAllSelected = slice.length > 0 && slice.every(r => st.selectedIds.has(r.id));
     return `
         <div class="pay-section">
             <div class="pay-section__head">
                 <span class="pay-section__title"><span class="material-symbols-outlined text-[16px] text-slate-500">list_alt</span> Bank accounts</span>
-                <span class="pay-section__meta">${filtered.length} of ${st.accounts.length} matching</span>
+                <span class="pay-section__meta">${filtered.length} of ${st.accounts.length} matching${st.selectedIds.size ? ` · ${st.selectedIds.size} selected` : ''}</span>
             </div>
+            ${renderBulkActionBar(filtered.length)}
             <div class="overflow-x-auto">
                 <table class="pay-table">
                     <thead>
                         <tr>
+                            <th class="text-center" style="width:36px">
+                                <input type="checkbox" ${pageAllSelected ? 'checked' : ''} onclick="baaToggleSelectPage()" class="w-4 h-4 accent-blue-600" title="Select all rows on this page" />
+                            </th>
                             <th>ID</th>
                             ${sortableTh('name',          'Name')}
                             ${sortableTh('bankName',      'Bank')}
@@ -549,6 +704,95 @@ function renderTable() {
                 </table>
             </div>
             ${renderPagination(filtered.length)}
+        </div>`;
+}
+
+function renderBulkActionBar(filteredCount) {
+    const st = stOf();
+    const n = st.selectedIds.size;
+    if (!n) return '';
+    const busy = st.bulkActionBusy;
+    const dis = busy ? 'disabled' : '';
+    const showSelectAllFiltered = n < filteredCount;
+    return `
+        <div class="baa-bulk-bar">
+            <div class="baa-bulk-bar__count">
+                <span class="material-symbols-outlined text-[18px] text-blue-600">check_circle</span>
+                <strong>${n}</strong> selected
+                ${showSelectAllFiltered ? `<button onclick="baaSelectAllFiltered()" ${dis} class="text-blue-600 hover:underline ml-2">Select all ${filteredCount} matching</button>` : ''}
+            </div>
+            <div class="baa-bulk-bar__actions">
+                <button onclick="baaBulkEditOpen()" ${dis} class="pay-pill pay-pill--ghost" title="Bulk edit bank / sheet / notes">
+                    <span class="material-symbols-outlined text-[14px]">edit</span> Edit
+                </button>
+                <button onclick="baaBulkArchive(1)" ${dis} class="pay-pill pay-pill--ghost" title="Archive selected">
+                    <span class="material-symbols-outlined text-[14px]">archive</span> Archive
+                </button>
+                <button onclick="baaBulkArchive(0)" ${dis} class="pay-pill pay-pill--ghost" title="Unarchive selected">
+                    <span class="material-symbols-outlined text-[14px]">unarchive</span> Unarchive
+                </button>
+                <button onclick="baaBulkDelete()" ${dis} class="pay-pill pay-pill--danger-soft" title="Delete selected">
+                    <span class="material-symbols-outlined text-[14px]">delete</span> Delete
+                </button>
+                <button onclick="baaClearSelection()" ${dis} class="pay-pill pay-pill--ghost" title="Clear selection">
+                    <span class="material-symbols-outlined text-[14px]">close</span> Clear
+                </button>
+            </div>
+        </div>`;
+}
+
+function renderBulkEditModal() {
+    const st = stOf();
+    if (!st.bulkEditOpen) return '';
+    const n = st.selectedIds.size;
+    const busy = st.bulkActionBusy;
+    return `
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onclick="if(event.target===this) baaBulkEditClose()">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col overflow-hidden">
+                <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                    <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-[20px] text-slate-500">edit</span>
+                        Bulk edit ${n} record${n === 1 ? '' : 's'}
+                    </h3>
+                    <button onclick="baaBulkEditClose()" ${busy ? 'disabled' : ''} class="pay-icon-btn">
+                        <span class="material-symbols-outlined text-[18px]">close</span>
+                    </button>
+                </div>
+                <div class="p-5 space-y-4">
+                    <div class="text-xs text-slate-600">
+                        Only fields you tick will be overwritten. Empty value clears the field.
+                    </div>
+                    <div class="space-y-3">
+                        <div class="flex items-start gap-3">
+                            <input type="checkbox" id="baa-be-set-bank" class="w-4 h-4 mt-2 accent-blue-600" />
+                            <div class="flex-1">
+                                <label for="baa-be-set-bank" class="block text-xs font-semibold text-slate-700 mb-1">Bank name</label>
+                                <input id="baa-be-bank" type="text" placeholder="HDFC / AXIS / SBI…" class="${inputCls} py-1.5 text-sm" />
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <input type="checkbox" id="baa-be-set-sheet" class="w-4 h-4 mt-2 accent-blue-600" />
+                            <div class="flex-1">
+                                <label for="baa-be-set-sheet" class="block text-xs font-semibold text-slate-700 mb-1">Source sheet</label>
+                                <input id="baa-be-sheet" type="text" placeholder="Salary HDFC / CSA / …" class="${inputCls} py-1.5 text-sm" />
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <input type="checkbox" id="baa-be-set-notes" class="w-4 h-4 mt-2 accent-blue-600" />
+                            <div class="flex-1">
+                                <label for="baa-be-set-notes" class="block text-xs font-semibold text-slate-700 mb-1">Notes</label>
+                                <input id="baa-be-notes" type="text" placeholder="Any internal note…" class="${inputCls} py-1.5 text-sm" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="px-5 py-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                    <button onclick="baaBulkEditClose()" ${busy ? 'disabled' : ''} class="pay-pill pay-pill--ghost">Cancel</button>
+                    <button onclick="baaBulkEditApply()" ${busy ? 'disabled' : ''} class="pay-pill pay-pill--primary">
+                        <span class="material-symbols-outlined text-[14px]">save</span> Apply to ${n}
+                    </button>
+                </div>
+            </div>
         </div>`;
 }
 
@@ -619,7 +863,7 @@ function rerender() {
     const root = document.getElementById('baa-root');
     if (root) root.innerHTML = renderBody();
     const modal = document.getElementById('baa-modal-root');
-    if (modal) modal.innerHTML = renderBulkModal();
+    if (modal) modal.innerHTML = renderBulkModal() + renderBulkEditModal();
 }
 
 function renderBody() {
@@ -683,7 +927,7 @@ export async function renderBankAccountsAdminPage() {
             <div id="baa-root" class="space-y-5">
                 ${renderBody()}
             </div>
-            <div id="baa-modal-root">${renderBulkModal()}</div>
+            <div id="baa-modal-root">${renderBulkModal()}${renderBulkEditModal()}</div>
         </div>
     `;
 }

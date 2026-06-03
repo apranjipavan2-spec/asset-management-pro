@@ -1,4 +1,5 @@
 import { db } from '../mock/db.js';
+import { PROGRAMS, programLabel } from '../data/programs.js';
 
 export function renderUserManagement() {
     const user = window.app.user;
@@ -162,7 +163,7 @@ export function renderUserManagement() {
                                     <th>Identity Name</th>
                                     <th>ID / Emp Code</th>
                                     <th>Governance Role</th>
-                                    <th>Security Key</th>
+                                    <th>Program</th>
                                     <th>Last Activity</th>
                                     <th class="text-right px-6">Actions</th>
                                 </tr>
@@ -190,10 +191,7 @@ export function renderUserManagement() {
                                             </span>
                                         </td>
                                         <td>
-                                            <div class="flex items-center gap-2">
-                                                <span class="text-[10px] font-black text-slate-400 blur-[2px] group-hover:blur-0 transition-all cursor-help" title="Hover to reveal">${u.password}</span>
-                                                <span class="material-symbols-outlined text-slate-300 text-[14px]">visibility_off</span>
-                                            </div>
+                                            ${u.program ? `<span class="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-emerald-50 text-emerald-700 border border-emerald-100">${programLabel(u.program)}</span>` : `<span class="text-[9px] font-black text-slate-300 uppercase tracking-widest">— Unassigned —</span>`}
                                         </td>
                                         <td>
                                             <span class="text-[9px] font-black text-slate-400 uppercase tabular-nums">${u.lastLogin ? new Date(u.lastLogin).toLocaleDateString() : 'Never'}</span>
@@ -291,37 +289,141 @@ export function renderUserManagement() {
 
         <!-- Role Config Modal -->
         <div id="role-modal" class="fixed inset-0 z-[60] bg-slate-900/40 backdrop-blur-sm hidden flex-col items-center justify-center opacity-0 transition-opacity duration-300">
-             <div id="role-modal-content" class="bg-white w-full max-w-lg rounded-2xl shadow-2xl scale-95 transition-transform duration-300 flex flex-col overflow-hidden mx-4">
+             <div id="role-modal-content" class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl scale-95 transition-transform duration-300 flex flex-col overflow-hidden mx-4 max-h-[90vh]">
                  <div class="card-header">
                     <h3 id="role-modal-title" class="card-title">Configure Role</h3>
                     <button onclick="window.hideRoleModal()" class="w-8 h-8 flex items-center justify-center rounded-full text-slate-400 hover:bg-rose-100 hover:text-rose-500 transition-colors">
                         <span class="material-symbols-outlined">close</span>
                     </button>
                  </div>
-                 
-                 <div class="p-4 space-y-3">
-                    <div class="form-row">
-                        <label class="form-label">Role Name</label>
-                        <input type="text" id="role-name" class="form-input" />
+
+                 <div class="p-5 space-y-4 overflow-y-auto" id="role-modal-body">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="form-row">
+                            <label class="form-label">Role Name</label>
+                            <input type="text" id="role-name" class="form-input" />
+                        </div>
+                        <div class="form-row">
+                            <label class="form-label">Authority Level (0-10)</label>
+                            <input type="number" id="role-level" class="form-input" />
+                        </div>
                     </div>
 
-                    <div class="form-row">
-                        <label class="form-label">Authority Level (0-10)</label>
-                        <input type="number" id="role-level" class="form-input" />
+                    ${user.role === 'superadmin' ? `
+                    <!-- Super Admin shortcut — only visible to superadmin -->
+                    <label class="flex items-start gap-3 p-3 rounded-xl border-2 border-rose-200 bg-rose-50/60 cursor-pointer hover:bg-rose-50 transition-colors">
+                        <input type="checkbox" value="all" class="role-perm-checkbox accent-rose-600 mt-0.5 w-4 h-4" />
+                        <div class="flex-1 min-w-0">
+                            <div class="text-xs font-black text-rose-700 uppercase tracking-wider">Super Admin Powers</div>
+                            <div class="text-[10px] text-rose-600/80 font-medium mt-0.5">Grants access to everything, including Analytics &amp; Audit Log.</div>
+                        </div>
+                    </label>
+                    ` : ''}
+
+                    <!-- ASSETS -->
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-[14px] text-slate-400">inventory_2</span>
+                            <div class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Assets</div>
+                        </div>
+                        <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors">
+                            <input type="checkbox" value="manage_assets" class="role-perm-checkbox accent-slate-900 mt-0.5 w-4 h-4" />
+                            <div class="flex-1 min-w-0">
+                                <div class="text-xs font-bold text-slate-800">Manage Assets</div>
+                                <div class="text-[10px] text-slate-500 mt-1">Unlocks: Registry · Transfers · Maintenance</div>
+                            </div>
+                        </label>
                     </div>
 
-                    <div class="space-y-3 pt-3 border-t border-slate-100">
-                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Default Feature Allotments</label>
-                        <div class="grid grid-cols-2 gap-3" id="role-permissions-matrix">
-                            <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer"><input type="checkbox" value="manage_team" class="role-perm-checkbox accent-slate-900" /> Manage Team / Subordinates</label>
-                            <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer"><input type="checkbox" value="approve_requests" class="role-perm-checkbox accent-slate-900" /> Approve Basic Requests</label>
-                            <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer"><input type="checkbox" value="manage_assets" class="role-perm-checkbox accent-slate-900" /> Manage Assets Registry</label>
-                            <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer"><input type="checkbox" value="manage_transfers" class="role-perm-checkbox accent-slate-900" /> Authorize Transfers</label>
-                            <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer"><input type="checkbox" value="manage_users" class="role-perm-checkbox accent-slate-900" /> Manage User Hierarchy</label>
-                            <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer"><input type="checkbox" value="manage_payroll" class="role-perm-checkbox accent-slate-900" /> Access Payroll & Leaves</label>
-                            <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer"><input type="checkbox" value="approve_finance" class="role-perm-checkbox accent-slate-900" /> Final Finance Approvals</label>
-                            <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer"><input type="checkbox" value="view_reports" class="role-perm-checkbox accent-slate-900" /> View Analytics & Reports</label>
-                            <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer"><input type="checkbox" value="all" class="role-perm-checkbox accent-rose-600" /> Super Admin Powers</label>
+                    <!-- FINANCE -->
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-[14px] text-slate-400">account_balance_wallet</span>
+                            <div class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Finance</div>
+                        </div>
+                        <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors">
+                            <input type="checkbox" value="approve_finance" class="role-perm-checkbox accent-slate-900 mt-0.5 w-4 h-4" />
+                            <div class="flex-1 min-w-0">
+                                <div class="text-xs font-bold text-slate-800">Finance Approvals</div>
+                                <div class="text-[10px] text-slate-500 mt-1">
+                                    <span class="font-bold text-slate-600">Finance:</span> Bank Payment · Payment Programs · Bank Accounts<br/>
+                                    <span class="font-bold text-slate-600">Assets:</span> Registry · Fixed Assets · Depreciation · FAR · Grants<br/>
+                                    <span class="font-bold text-slate-600">Work:</span> Procurement
+                                </div>
+                            </div>
+                        </label>
+                        <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors">
+                            <input type="checkbox" value="manage_payroll" class="role-perm-checkbox accent-slate-900 mt-0.5 w-4 h-4" />
+                            <div class="flex-1 min-w-0">
+                                <div class="text-xs font-bold text-slate-800">Manage Payroll</div>
+                                <div class="text-[10px] text-slate-500 mt-1">Unlocks: Payroll</div>
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- WORK -->
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-[14px] text-slate-400">work</span>
+                            <div class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Work</div>
+                        </div>
+                        <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors">
+                            <input type="checkbox" value="approve_requests" class="role-perm-checkbox accent-slate-900 mt-0.5 w-4 h-4" />
+                            <div class="flex-1 min-w-0">
+                                <div class="text-xs font-bold text-slate-800">Approve Requests</div>
+                                <div class="text-[10px] text-slate-500 mt-1">Procurement (also opens with Finance Approvals or Manage Assets)</div>
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- PEOPLE -->
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-[14px] text-slate-400">group</span>
+                            <div class="text-[10px] font-black text-slate-500 uppercase tracking-widest">People</div>
+                        </div>
+                        <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors">
+                            <input type="checkbox" value="manage_team" class="role-perm-checkbox accent-slate-900 mt-0.5 w-4 h-4" />
+                            <div class="flex-1 min-w-0">
+                                <div class="text-xs font-bold text-slate-800">Manage Team</div>
+                                <div class="text-[10px] text-slate-500 mt-1">Unlocks: My Team · Team Dashboard · Program Dashboard</div>
+                            </div>
+                        </label>
+                        <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors">
+                            <input type="checkbox" value="manage_users" class="role-perm-checkbox accent-slate-900 mt-0.5 w-4 h-4" />
+                            <div class="flex-1 min-w-0">
+                                <div class="text-xs font-bold text-slate-800">Manage Users</div>
+                                <div class="text-[10px] text-slate-500 mt-1">Unlocks: Users · My Team · Team Dashboard · Program Dashboard</div>
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- ADMINISTRATION -->
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-[14px] text-slate-400">shield_person</span>
+                            <div class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Administration</div>
+                        </div>
+                        <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors">
+                            <input type="checkbox" value="view_reports" class="role-perm-checkbox accent-slate-900 mt-0.5 w-4 h-4" />
+                            <div class="flex-1 min-w-0">
+                                <div class="text-xs font-bold text-slate-800">View Reports</div>
+                                <div class="text-[10px] text-slate-500 mt-1">Unlocks: Reports · Team Dashboard</div>
+                            </div>
+                        </label>
+                        <div class="p-3 rounded-xl bg-slate-50 border border-dashed border-slate-200">
+                            <div class="text-[10px] text-slate-500"><span class="font-bold text-slate-600">Analytics &amp; Audit Log</span> require Super Admin Powers.</div>
+                        </div>
+                    </div>
+
+                    <!-- Always available -->
+                    <div class="space-y-2 pt-2 border-t border-slate-100">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-[14px] text-emerald-500">check_circle</span>
+                            <div class="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Always available (no permission needed)</div>
+                        </div>
+                        <div class="p-3 rounded-xl bg-emerald-50/60 border border-emerald-100 text-[10px] text-slate-600 leading-relaxed">
+                            Home · Request Asset · Report Issue · Attendance · Leave · Calendar · Worklog · Tasks · Expenses · Org Chart · Reviews · Board · Social Hub · Data Collection · Vault
                         </div>
                     </div>
                  </div>
@@ -335,7 +437,7 @@ export function renderUserManagement() {
 
         <!-- Add/Edit User Modal -->
         <div id="user-modal" class="fixed inset-0 z-[60] bg-slate-900/40 backdrop-blur-sm hidden flex-col items-center justify-center opacity-0 transition-opacity duration-300">
-             <div id="user-modal-content" class="bg-white w-full max-w-lg rounded-2xl shadow-2xl scale-95 transition-transform duration-300 flex flex-col overflow-hidden mx-4">
+             <div id="user-modal-content" class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl scale-95 transition-transform duration-300 flex flex-col overflow-hidden mx-4 max-h-[90vh]">
                  <div class="card-header">
                     <h3 id="user-modal-title" class="card-title">Register Identity</h3>
                     <button onclick="window.hideUserModal()" class="w-8 h-8 flex items-center justify-center rounded-full text-slate-400 hover:bg-rose-100 hover:text-rose-500 transition-colors">
@@ -343,7 +445,7 @@ export function renderUserManagement() {
                     </button>
                  </div>
 
-                 <div class="p-4 space-y-3">
+                 <div class="p-4 space-y-3 overflow-y-auto">
                     <div class="form-row">
                         <label class="form-label">Display Name</label>
                         <input type="text" id="user-name" class="form-input" placeholder="Enter Full Name" />
@@ -367,18 +469,138 @@ export function renderUserManagement() {
                         <input type="text" id="user-password" class="form-input" placeholder="Set Secure Password" />
                     </div>
 
-                    <div class="space-y-3 pt-3 border-t border-slate-100">
-                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Identity-Specific Allotments (Overrides Role)</label>
-                        <div class="grid grid-cols-2 gap-3" id="permissions-matrix">
-                            <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer"><input type="checkbox" value="manage_team" class="perm-checkbox accent-slate-900" /> Manage Team / Subordinates</label>
-                            <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer"><input type="checkbox" value="approve_requests" class="perm-checkbox accent-slate-900" /> Approve Basic Requests</label>
-                            <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer"><input type="checkbox" value="manage_assets" class="perm-checkbox accent-slate-900" /> Manage Assets Registry</label>
-                            <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer"><input type="checkbox" value="manage_transfers" class="perm-checkbox accent-slate-900" /> Authorize Transfers</label>
-                            <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer"><input type="checkbox" value="manage_users" class="perm-checkbox accent-slate-900" /> Manage User Hierarchy</label>
-                            <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer"><input type="checkbox" value="manage_payroll" class="perm-checkbox accent-slate-900" /> Access Payroll & Leaves</label>
-                            <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer"><input type="checkbox" value="approve_finance" class="perm-checkbox accent-slate-900" /> Final Finance Approvals</label>
-                            <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer"><input type="checkbox" value="view_reports" class="perm-checkbox accent-slate-900" /> View Analytics & Reports</label>
-                            <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer"><input type="checkbox" value="all" class="perm-checkbox accent-rose-600" /> Super Admin Powers</label>
+                    ${['superadmin', 'hr'].includes(user.role) ? `
+                    <div class="form-row">
+                        <label class="form-label">Program Assignment <span class="text-[9px] text-slate-400 font-bold normal-case tracking-normal">(scopes Team Dashboard for managers)</span></label>
+                        <select id="user-program" class="form-input">
+                            <option value="">— Unassigned —</option>
+                            ${PROGRAMS.map(p => `<option value="${p.id}">${p.label}</option>`).join('')}
+                        </select>
+                    </div>
+                    ` : ''}
+
+                    <div class="space-y-3 pt-3 border-t border-slate-100" id="permissions-matrix">
+                        <div>
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Identity-Specific Allotments</label>
+                            <div class="text-[10px] text-slate-500 mt-1">Overrides this user's role. Leave all unchecked to fall back to role defaults.</div>
+                        </div>
+
+                        ${user.role === 'superadmin' ? `
+                        <!-- Super Admin — only visible to superadmin -->
+                        <label class="flex items-start gap-3 p-3 rounded-xl border-2 border-rose-200 bg-rose-50/60 cursor-pointer hover:bg-rose-50 transition-colors">
+                            <input type="checkbox" value="all" class="perm-checkbox accent-rose-600 mt-0.5 w-4 h-4" />
+                            <div class="flex-1 min-w-0">
+                                <div class="text-xs font-black text-rose-700 uppercase tracking-wider">Super Admin Powers</div>
+                                <div class="text-[10px] text-rose-600/80 font-medium mt-0.5">Grants access to everything, including Analytics &amp; Audit Log.</div>
+                            </div>
+                        </label>
+                        ` : ''}
+
+                        <!-- ASSETS -->
+                        <div class="space-y-2">
+                            <div class="flex items-center gap-2">
+                                <span class="material-symbols-outlined text-[14px] text-slate-400">inventory_2</span>
+                                <div class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Assets</div>
+                            </div>
+                            <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors">
+                                <input type="checkbox" value="manage_assets" class="perm-checkbox accent-slate-900 mt-0.5 w-4 h-4" />
+                                <div class="flex-1 min-w-0">
+                                    <div class="text-xs font-bold text-slate-800">Manage Assets</div>
+                                    <div class="text-[10px] text-slate-500 mt-1">Unlocks: Registry · Transfers · Maintenance</div>
+                                </div>
+                            </label>
+                        </div>
+
+                        <!-- FINANCE -->
+                        <div class="space-y-2">
+                            <div class="flex items-center gap-2">
+                                <span class="material-symbols-outlined text-[14px] text-slate-400">account_balance_wallet</span>
+                                <div class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Finance</div>
+                            </div>
+                            <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors">
+                                <input type="checkbox" value="approve_finance" class="perm-checkbox accent-slate-900 mt-0.5 w-4 h-4" />
+                                <div class="flex-1 min-w-0">
+                                    <div class="text-xs font-bold text-slate-800">Finance Approvals</div>
+                                    <div class="text-[10px] text-slate-500 mt-1">
+                                        <span class="font-bold text-slate-600">Finance:</span> Bank Payment · Payment Programs · Bank Accounts<br/>
+                                        <span class="font-bold text-slate-600">Assets:</span> Registry · Fixed Assets · Depreciation · FAR · Grants<br/>
+                                        <span class="font-bold text-slate-600">Work:</span> Procurement
+                                    </div>
+                                </div>
+                            </label>
+                            <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors">
+                                <input type="checkbox" value="manage_payroll" class="perm-checkbox accent-slate-900 mt-0.5 w-4 h-4" />
+                                <div class="flex-1 min-w-0">
+                                    <div class="text-xs font-bold text-slate-800">Manage Payroll</div>
+                                    <div class="text-[10px] text-slate-500 mt-1">Unlocks: Payroll</div>
+                                </div>
+                            </label>
+                        </div>
+
+                        <!-- WORK -->
+                        <div class="space-y-2">
+                            <div class="flex items-center gap-2">
+                                <span class="material-symbols-outlined text-[14px] text-slate-400">work</span>
+                                <div class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Work</div>
+                            </div>
+                            <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors">
+                                <input type="checkbox" value="approve_requests" class="perm-checkbox accent-slate-900 mt-0.5 w-4 h-4" />
+                                <div class="flex-1 min-w-0">
+                                    <div class="text-xs font-bold text-slate-800">Approve Requests</div>
+                                    <div class="text-[10px] text-slate-500 mt-1">Procurement (also opens with Finance Approvals or Manage Assets)</div>
+                                </div>
+                            </label>
+                        </div>
+
+                        <!-- PEOPLE -->
+                        <div class="space-y-2">
+                            <div class="flex items-center gap-2">
+                                <span class="material-symbols-outlined text-[14px] text-slate-400">group</span>
+                                <div class="text-[10px] font-black text-slate-500 uppercase tracking-widest">People</div>
+                            </div>
+                            <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors">
+                                <input type="checkbox" value="manage_team" class="perm-checkbox accent-slate-900 mt-0.5 w-4 h-4" />
+                                <div class="flex-1 min-w-0">
+                                    <div class="text-xs font-bold text-slate-800">Manage Team</div>
+                                    <div class="text-[10px] text-slate-500 mt-1">Unlocks: My Team · Team Dashboard · Program Dashboard</div>
+                                </div>
+                            </label>
+                            <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors">
+                                <input type="checkbox" value="manage_users" class="perm-checkbox accent-slate-900 mt-0.5 w-4 h-4" />
+                                <div class="flex-1 min-w-0">
+                                    <div class="text-xs font-bold text-slate-800">Manage Users</div>
+                                    <div class="text-[10px] text-slate-500 mt-1">Unlocks: Users · My Team · Team Dashboard · Program Dashboard</div>
+                                </div>
+                            </label>
+                        </div>
+
+                        <!-- ADMINISTRATION -->
+                        <div class="space-y-2">
+                            <div class="flex items-center gap-2">
+                                <span class="material-symbols-outlined text-[14px] text-slate-400">shield_person</span>
+                                <div class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Administration</div>
+                            </div>
+                            <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors">
+                                <input type="checkbox" value="view_reports" class="perm-checkbox accent-slate-900 mt-0.5 w-4 h-4" />
+                                <div class="flex-1 min-w-0">
+                                    <div class="text-xs font-bold text-slate-800">View Reports</div>
+                                    <div class="text-[10px] text-slate-500 mt-1">Unlocks: Reports · Team Dashboard</div>
+                                </div>
+                            </label>
+                            <div class="p-3 rounded-xl bg-slate-50 border border-dashed border-slate-200">
+                                <div class="text-[10px] text-slate-500"><span class="font-bold text-slate-600">Analytics &amp; Audit Log</span> require Super Admin Powers.</div>
+                            </div>
+                        </div>
+
+                        <!-- Always available -->
+                        <div class="space-y-2 pt-2 border-t border-slate-100">
+                            <div class="flex items-center gap-2">
+                                <span class="material-symbols-outlined text-[14px] text-emerald-500">check_circle</span>
+                                <div class="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Always available (no permission needed)</div>
+                            </div>
+                            <div class="p-3 rounded-xl bg-emerald-50/60 border border-emerald-100 text-[10px] text-slate-600 leading-relaxed">
+                                Home · Request Asset · Report Issue · Attendance · Leave · Calendar · Worklog · Tasks · Expenses · Org Chart · Reviews · Board · Social Hub · Data Collection · Vault
+                            </div>
                         </div>
                     </div>
                  </div>
@@ -474,11 +696,15 @@ export function renderUserManagement() {
         document.querySelectorAll('.role-perm-checkbox:checked').forEach(cb => {
             permissions.push(cb.value);
         });
+        // Only an actual superadmin can grant `all` — strip it otherwise.
+        const safePerms = window.app.user?.role === 'superadmin'
+            ? permissions
+            : permissions.filter(p => p !== 'all');
 
         await db.updateRole(editingRoleId, {
             name,
             level: parseInt(level),
-            permissions: JSON.stringify(permissions)
+            permissions: JSON.stringify(safePerms)
         });
         
         db._logActivity('Role Configuration Updated', `Updated permissions and level for ${name}`);
@@ -500,7 +726,9 @@ export function renderUserManagement() {
         document.getElementById('user-name').value = '';
         document.getElementById('user-password').value = '';
         document.getElementById('user-role').value = 'employee';
-        
+        const addProgEl = document.getElementById('user-program');
+        if (addProgEl) addProgEl.value = '';
+
         document.querySelectorAll('.perm-checkbox').forEach(cb => cb.checked = false);
 
         setTimeout(() => {
@@ -523,7 +751,9 @@ export function renderUserManagement() {
         document.getElementById('user-name').value = u.name;
         document.getElementById('user-role').value = u.role;
         document.getElementById('user-password').value = u.password;
-        
+        const editProgEl = document.getElementById('user-program');
+        if (editProgEl) editProgEl.value = u.program || '';
+
         const perms = JSON.parse(u.permissions || '[]');
         document.querySelectorAll('.perm-checkbox').forEach(cb => {
             cb.checked = perms.includes(cb.value);
@@ -550,24 +780,34 @@ export function renderUserManagement() {
         const name = document.getElementById('user-name').value;
         const role = document.getElementById('user-role').value;
         const password = document.getElementById('user-password').value;
-        
+        const progEl = document.getElementById('user-program');
+        const program = progEl ? (progEl.value || null) : undefined;
+
         const permissions = [];
         document.querySelectorAll('.perm-checkbox:checked').forEach(cb => {
             permissions.push(cb.value);
         });
+        // Only an actual superadmin can grant `all` — strip it otherwise.
+        const safePerms = window.app.user?.role === 'superadmin'
+            ? permissions
+            : permissions.filter(p => p !== 'all');
 
         if (editingUserId) {
             const idx = db.users.findIndex(u => u.id === editingUserId);
             if (idx !== -1) {
-                db.users[idx] = { ...db.users[idx], name, role, password, permissions: JSON.stringify(permissions) };
+                const patch = { name, role, password, permissions: JSON.stringify(safePerms) };
+                if (program !== undefined) patch.program = program;
+                db.users[idx] = { ...db.users[idx], ...patch };
                 db._logActivity('Identity Modified', `Updated authority for ${name} (${id})`);
             }
         } else {
             if (db.users.find(u => u.id === id)) return alert('Identity ID already exists.');
-            db.users.push({ id, name, role, password, permissions: JSON.stringify(permissions) });
+            const newUser = { id, name, role, password, permissions: JSON.stringify(safePerms) };
+            if (program !== undefined) newUser.program = program;
+            db.users.push(newUser);
             db._logActivity('Identity Created', `Registered new identity: ${name} (${id})`);
         }
-        
+
         await db.syncToCloud();
         window.hideUserModal();
         window.renderPage('user_management');

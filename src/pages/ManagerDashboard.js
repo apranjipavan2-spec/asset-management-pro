@@ -290,7 +290,7 @@ window.openAssetDetailModal = (assetId) => {
         </div>
 
         <div class="mt-6 pt-6 border-t border-slate-100">
-             <button onclick="window.exportAssetPDF('${asset.id}')" class="w-full py-3 bg-slate-900 text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-slate-800 transition-colors flex items-center justify-center gap-2 shadow-xl shadow-slate-900/10">
+             <button onclick="window.exportAssetPDF('${asset.id}')" class="w-full py-3 bg-slate-900 text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-slate-800 transition-colors flex items-center justify-center gap-2 shadow-xl shadow-slate-900/10 pdf-export-btn">
                  <span class="material-symbols-outlined text-sm">picture_as_pdf</span> Generate Dossier
              </button>
         </div>

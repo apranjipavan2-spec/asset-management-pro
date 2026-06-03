@@ -149,6 +149,8 @@ try {
 
 // Users last login
 safeAddColumn('users', 'lastLogin', 'TEXT');
+// Program assignment — used by Manager Dashboard to scope team metrics per program.
+safeAddColumn('users', 'program', 'TEXT');
 
 // Assets operational register fields (sourced from merged Excel; finance fields live in asset_far)
 safeAddColumn('assets', 'parentAssetId', 'TEXT');
@@ -372,10 +374,29 @@ const handlePost = (req, res, table) => {
             if (!keys.includes(ownerCol)) keys.push(ownerCol);
             data[ownerCol] = targetOwnerId;
         }
-        const columns = keys.map(quoteIdent).join(', ');
-        const placeholders = keys.map(() => '?').join(', ');
-        const values = keys.map(k => data[k]);
-        db.prepare(`INSERT OR REPLACE INTO ${quoteIdent(table)} (${columns}) VALUES (${placeholders})`).run(...values);
+        // Upsert: UPDATE only the supplied columns if the row exists, else INSERT a new row.
+        // Using INSERT-OR-REPLACE here would null out NOT NULL columns on partial PATCH-style
+        // writes (e.g. {id, program}). All ALLOWED_TABLES use `id` as PRIMARY KEY.
+        const rowId = data.id;
+        const exists = rowId != null
+            ? db.prepare(`SELECT 1 FROM ${quoteIdent(table)} WHERE id = ?`).get(rowId)
+            : null;
+
+        if (exists) {
+            const updatable = keys.filter(k => k !== 'id');
+            if (updatable.length === 0) {
+                // Nothing to change (client sent only the id) — treat as no-op success.
+                return res.json({ success: true, unchanged: true });
+            }
+            const setClause = updatable.map(k => `${quoteIdent(k)} = ?`).join(', ');
+            const values = updatable.map(k => data[k]);
+            db.prepare(`UPDATE ${quoteIdent(table)} SET ${setClause} WHERE id = ?`).run(...values, rowId);
+        } else {
+            const columns = keys.map(quoteIdent).join(', ');
+            const placeholders = keys.map(() => '?').join(', ');
+            const values = keys.map(k => data[k]);
+            db.prepare(`INSERT INTO ${quoteIdent(table)} (${columns}) VALUES (${placeholders})`).run(...values);
+        }
         res.json({ success: true });
     } catch (err) {
         console.error(`POST ${table}:`, err);
@@ -652,6 +673,10 @@ app.get('/api/far/years', (req, res) => {
 
 // POST /api/far — upsert a single FAR row. Body must include assetId + fy.
 // Computed columns in the body are dropped; server recomputes on read.
+//
+// Partial-update safe: on update, only fields explicitly present in req.body
+// are written — fields the client did not send are left untouched. On insert,
+// missing fields fall back to historical defaults (null / 0 / 1 for quantity).
 app.post('/api/far', (req, res) => {
     if (!assertWritePermission('asset_far', req, res)) return;
     try {
@@ -659,47 +684,61 @@ app.post('/api/far', (req, res) => {
         if (!data.assetId || data.fy == null) {
             return res.status(400).json({ error: 'assetId and fy are required' });
         }
-        const row = db.prepare('SELECT id, locked FROM asset_far WHERE assetId = ? AND fy = ?').get(data.assetId, data.fy);
-        if (row && row.locked === 1) {
+        const existing = db.prepare('SELECT * FROM asset_far WHERE assetId = ? AND fy = ?').get(data.assetId, data.fy);
+        if (existing && existing.locked === 1) {
             return res.status(403).json({ error: 'This FY is closed and read-only' });
         }
-        const id = data.id || row?.id || `far_${data.fy}_${data.assetId.replace(/[^A-Za-z0-9]/g, '_').slice(0, 60)}_${Date.now().toString(36)}`;
+        const id = data.id || existing?.id || `far_${data.fy}_${data.assetId.replace(/[^A-Za-z0-9]/g, '_').slice(0, 60)}_${Date.now().toString(36)}`;
         const now = new Date().toISOString();
-        const payload = {
-            id, assetId: data.assetId, fy: Number(data.fy),
-            assetClass: data.assetClass ?? null,
-            description: data.description ?? null,
-            location: data.location ?? null,
-            purchaseOrKind: data.purchaseOrKind ?? null,
-            acqDate: data.acqDate ?? null,
-            supplierName: data.supplierName ?? null,
-            billNo: data.billNo ?? null,
-            installationDate: data.installationDate ?? null,
-            datePutToUse: data.datePutToUse ?? null,
-            quantity: data.quantity != null ? Number(data.quantity) || 0 : 1,
-            voucherNo: data.voucherNo ?? null,
-            depRate: data.depRate != null ? Number(data.depRate) : 0,
-            usefulLifeYears: data.usefulLifeYears ?? null,
-            refinedAcqDate: data.refinedAcqDate ?? data.acqDate ?? null,
-            grossBlockOpening: Number(data.grossBlockOpening) || 0,
-            additions: Number(data.additions) || 0,
-            disposalsGross: Number(data.disposalsGross) || 0,
-            accDepOpening: Number(data.accDepOpening) || 0,
-            disposalsAccDep: Number(data.disposalsAccDep) || 0,
-            netBlockPrevFY: Number(data.netBlockPrevFY) || 0,
-            disposalDate: data.disposalDate ?? null,
-            proceedsOnDisposal: Number(data.proceedsOnDisposal) || 0,
-            donor: data.donor ?? null,
-            status: data.status ?? null,
-            locked: data.locked ? 1 : 0,
-            createdAt: row ? undefined : now,
-            updatedAt: now
+        const has = (k) => Object.prototype.hasOwnProperty.call(data, k);
+
+        // Per-column coercion. Only invoked when client supplied the key.
+        const NULLABLE_STR = ['assetClass','description','location','purchaseOrKind','acqDate','supplierName','billNo','installationDate','datePutToUse','voucherNo','usefulLifeYears','disposalDate','donor','status'];
+        const NUM_OR_ZERO = ['grossBlockOpening','additions','disposalsGross','accDepOpening','disposalsAccDep','netBlockPrevFY','proceedsOnDisposal'];
+        const coerce = {
+            quantity: (v) => v != null ? Number(v) || 0 : 1,
+            depRate: (v) => v != null ? Number(v) : 0,
+            refinedAcqDate: (v) => v ?? data.acqDate ?? null,
+            locked: (v) => v ? 1 : 0,
         };
-        const cols = Object.entries(payload).filter(([, v]) => v !== undefined);
-        db.prepare(
-            `INSERT OR REPLACE INTO asset_far (${cols.map(([k]) => quoteIdent(k)).join(', ')}) VALUES (${cols.map(() => '?').join(', ')})`
-        ).run(...cols.map(([, v]) => v));
-        res.json({ success: true, id, computed: computeFarRow(payload) });
+        NULLABLE_STR.forEach(k => { coerce[k] = (v) => v ?? null; });
+        NUM_OR_ZERO.forEach(k => { coerce[k] = (v) => Number(v) || 0; });
+
+        const ALL_COLS = [
+            'assetClass','description','location','purchaseOrKind','acqDate',
+            'supplierName','billNo','installationDate','datePutToUse','quantity',
+            'voucherNo','depRate','usefulLifeYears','refinedAcqDate',
+            'grossBlockOpening','additions','disposalsGross','accDepOpening',
+            'disposalsAccDep','netBlockPrevFY','disposalDate','proceedsOnDisposal',
+            'donor','status','locked'
+        ];
+
+        if (existing) {
+            // UPDATE only fields the client explicitly sent — preserves
+            // anything else from the existing row.
+            const patch = { updatedAt: now };
+            for (const col of ALL_COLS) {
+                if (has(col)) patch[col] = coerce[col](data[col]);
+            }
+            const updateKeys = Object.keys(patch);
+            const setClause = updateKeys.map(k => `${quoteIdent(k)} = ?`).join(', ');
+            const values = updateKeys.map(k => patch[k]);
+            db.prepare(`UPDATE asset_far SET ${setClause} WHERE id = ?`).run(...values, existing.id);
+            const merged = { ...existing, ...patch };
+            res.json({ success: true, id: existing.id, computed: computeFarRow(merged) });
+        } else {
+            // INSERT: use historical defaults for any field not supplied.
+            const payload = {
+                id, assetId: data.assetId, fy: Number(data.fy),
+                createdAt: now, updatedAt: now,
+            };
+            for (const col of ALL_COLS) payload[col] = coerce[col](data[col]);
+            const cols = Object.entries(payload);
+            db.prepare(
+                `INSERT INTO asset_far (${cols.map(([k]) => quoteIdent(k)).join(', ')}) VALUES (${cols.map(() => '?').join(', ')})`
+            ).run(...cols.map(([, v]) => v));
+            res.json({ success: true, id, computed: computeFarRow(payload) });
+        }
     } catch (err) {
         console.error('POST /api/far:', err);
         res.status(500).json({ error: err.message });
@@ -1152,6 +1191,62 @@ app.get('/api/payment_programs', (req, res) => handleGet(req, res, 'payment_prog
 app.post('/api/payment_programs', (req, res) => handlePost(req, res, 'payment_programs'));
 app.delete('/api/payment_programs/:id', (req, res) => handleDelete(req, res, 'payment_programs'));
 
+// Program Dashboard data — single-row JSON blob.
+// GET: any authenticated user (used to render the dashboard).
+// PUT: superadmin only. Stores the full programs + initiatives overrides.
+app.get('/api/program-overrides', (req, res) => {
+    try {
+        const row = db.prepare('SELECT programs_json, initiatives_json, updatedAt, updatedBy FROM program_overrides WHERE id = ?').get('current');
+        if (!row) return res.json({ programs: null, initiatives: null, updatedAt: null, updatedBy: null });
+        res.json({
+            programs: row.programs_json ? JSON.parse(row.programs_json) : null,
+            initiatives: row.initiatives_json ? JSON.parse(row.initiatives_json) : null,
+            updatedAt: row.updatedAt,
+            updatedBy: row.updatedBy
+        });
+    } catch (err) {
+        console.error('GET /api/program-overrides:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.put('/api/program-overrides', (req, res) => {
+    if (req.user.role !== 'superadmin') {
+        logAuditEvent('AUTHZ_DENIED', req.user.id, req.user.id, `Tried to update program overrides with role '${req.user.role}'`, 'WARN');
+        return res.status(403).json({ error: 'Only superadmin can edit program data.' });
+    }
+    try {
+        const body = req.body || {};
+        const programs = body.programs ?? null;
+        const initiatives = body.initiatives ?? null;
+        if (programs !== null && !Array.isArray(programs)) {
+            return res.status(400).json({ error: '`programs` must be an array or null' });
+        }
+        if (initiatives !== null && (typeof initiatives !== 'object' || Array.isArray(initiatives))) {
+            return res.status(400).json({ error: '`initiatives` must be an object (id → details) or null' });
+        }
+        const now = new Date().toISOString();
+        const exists = db.prepare('SELECT 1 FROM program_overrides WHERE id = ?').get('current');
+        if (exists) {
+            db.prepare(`UPDATE program_overrides SET programs_json = ?, initiatives_json = ?, updatedAt = ?, updatedBy = ? WHERE id = ?`)
+              .run(programs ? JSON.stringify(programs) : null,
+                   initiatives ? JSON.stringify(initiatives) : null,
+                   now, req.user.id, 'current');
+        } else {
+            db.prepare(`INSERT INTO program_overrides (id, programs_json, initiatives_json, updatedAt, updatedBy) VALUES (?, ?, ?, ?, ?)`)
+              .run('current',
+                   programs ? JSON.stringify(programs) : null,
+                   initiatives ? JSON.stringify(initiatives) : null,
+                   now, req.user.id);
+        }
+        logAuditEvent('PROGRAM_DATA_UPDATED', req.user.id, 'current', `Programs:${programs ? programs.length : 0} · Initiatives:${initiatives ? Object.keys(initiatives).length : 0}`, 'INFO');
+        res.json({ success: true, updatedAt: now, updatedBy: req.user.id });
+    } catch (err) {
+        console.error('PUT /api/program-overrides:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Payment-export audit. Finance/superadmin/director may log an export event.
 // User identity is taken from the JWT, never the request body.
 const PAYMENT_EXPORT_ROLES = new Set(['superadmin', 'finance', 'director']);
@@ -1219,6 +1314,252 @@ app.get('/api/payment_export_audit', (req, res) => {
         res.status(500).json({ error: 'history fetch failed' });
     }
 });
+
+// ─── Manager / ED Dashboard aggregation ─────────────────────────────
+// Returns team-level rollups (tasks, leaves, reimbursements, worklog hours,
+// attendance %, perf scores, assets) scoped by program.
+//
+// Scoping rules:
+//   • superadmin + director → may pass any ?program=… or omit for org-wide
+//   • manager → forced to their own users.program; ?program is ignored
+//   • everyone else → 403
+//
+// Team membership: users in the chosen program. Manager-only views are
+// further narrowed to reportsTo === manager.empId (or =id when empId blank).
+const DASHBOARD_ROLES = new Set(['superadmin', 'director', 'manager', 'hr']);
+
+app.get('/api/manager/dashboard', (req, res) => {
+    if (!DASHBOARD_ROLES.has(req.user.role)) {
+        return res.status(403).json({ error: 'forbidden' });
+    }
+    try {
+        const me = db.prepare('SELECT id, empId, role, program FROM users WHERE id = ?').get(req.user.id) || {};
+        const isElevatedRole = ['superadmin', 'director', 'hr'].includes(req.user.role);
+        const requestedProgram = String(req.query.program || '').trim();
+        const program = isElevatedRole ? requestedProgram : String(me.program || '');
+
+        // Team selection
+        // - manager: only their direct reports in their program
+        // - elevated + program: everyone in that program
+        // - elevated + no program: every active user (organisation-wide)
+        let teamQuery, params;
+        if (req.user.role === 'manager') {
+            const myKey = me.empId || me.id;
+            teamQuery = `SELECT id, name, empId, role, designation, department, location, program, reportsTo
+                         FROM users
+                         WHERE reportsTo = ? ${program ? 'AND program = ?' : ''}`;
+            params = program ? [myKey, program] : [myKey];
+        } else if (program) {
+            teamQuery = `SELECT id, name, empId, role, designation, department, location, program, reportsTo
+                         FROM users WHERE program = ?`;
+            params = [program];
+        } else {
+            teamQuery = `SELECT id, name, empId, role, designation, department, location, program, reportsTo
+                         FROM users`;
+            params = [];
+        }
+        const team = db.prepare(teamQuery).all(...params);
+        if (!team.length) {
+            return res.json({
+                program, scope: req.user.role === 'manager' ? 'team' : (program ? 'program' : 'org'),
+                team: [], tiles: emptyTiles(), charts: emptyCharts(), generatedAt: new Date().toISOString()
+            });
+        }
+
+        const empIds = team.map(t => t.empId).filter(Boolean);
+        const userIds = team.map(t => t.id);
+        const allKeys = [...new Set([...empIds, ...userIds])];
+        if (!allKeys.length) {
+            return res.json({
+                program, scope: 'team', team: [],
+                tiles: emptyTiles(), charts: emptyCharts(), generatedAt: new Date().toISOString()
+            });
+        }
+        const placeholders = allKeys.map(() => '?').join(',');
+
+        // Tasks
+        const taskRows = db.prepare(
+            `SELECT status, COUNT(*) AS c FROM tasks WHERE assignedTo IN (${placeholders}) GROUP BY status`
+        ).all(...allKeys);
+        const tasks = { total: 0, completed: 0, inProgress: 0, pending: 0, overdue: 0 };
+        for (const r of taskRows) {
+            const s = String(r.status || '').toLowerCase();
+            tasks.total += r.c;
+            if (s === 'completed' || s === 'done') tasks.completed += r.c;
+            else if (s === 'in progress' || s === 'in-progress' || s === 'inprogress') tasks.inProgress += r.c;
+            else tasks.pending += r.c;
+        }
+        const overdueRow = db.prepare(
+            `SELECT COUNT(*) AS c FROM tasks
+             WHERE assignedTo IN (${placeholders})
+               AND dueDate IS NOT NULL AND dueDate != ''
+               AND date(dueDate) < date('now')
+               AND LOWER(COALESCE(status,'')) NOT IN ('completed','done')`
+        ).get(...allKeys);
+        tasks.overdue = overdueRow?.c || 0;
+        tasks.completionPct = tasks.total ? Math.round((tasks.completed / tasks.total) * 100) : 0;
+
+        // Leaves (this calendar year)
+        const yr = new Date().getFullYear();
+        const leaveRows = db.prepare(
+            `SELECT status, COUNT(*) AS c, SUM(COALESCE(days,0)) AS d
+             FROM leaves
+             WHERE empId IN (${placeholders}) AND substr(COALESCE(appliedOn, fromDate, ''), 1, 4) = ?
+             GROUP BY status`
+        ).all(...allKeys, String(yr));
+        const leaves = { pending: 0, approved: 0, rejected: 0, daysTaken: 0 };
+        for (const r of leaveRows) {
+            const s = String(r.status || '').toLowerCase();
+            if (s === 'pending') leaves.pending += r.c;
+            else if (s === 'approved') { leaves.approved += r.c; leaves.daysTaken += r.d || 0; }
+            else if (s === 'rejected') leaves.rejected += r.c;
+        }
+
+        // Reimbursements
+        const reimbRows = db.prepare(
+            `SELECT status, COUNT(*) AS c, SUM(COALESCE(amount,0)) AS amt
+             FROM reimbursements WHERE empId IN (${placeholders}) GROUP BY status`
+        ).all(...allKeys);
+        const reimb = { pending: 0, approved: 0, paid: 0, rejected: 0, pendingAmt: 0, paidAmt: 0 };
+        for (const r of reimbRows) {
+            const s = String(r.status || '').toLowerCase();
+            if (s === 'pending')        { reimb.pending += r.c;  reimb.pendingAmt += r.amt || 0; }
+            else if (s === 'approved')  { reimb.approved += r.c; reimb.pendingAmt += r.amt || 0; }
+            else if (s === 'settled' || s === 'paid') { reimb.paid += r.c; reimb.paidAmt += r.amt || 0; }
+            else if (s === 'rejected')  { reimb.rejected += r.c; }
+        }
+
+        // Worklog hours — current month
+        const worklogRow = db.prepare(
+            `SELECT COUNT(*) AS entries, COALESCE(SUM(hoursWorked),0) AS hours
+             FROM worklogs
+             WHERE empId IN (${placeholders})
+               AND substr(COALESCE(date,''), 1, 7) = strftime('%Y-%m', 'now')`
+        ).get(...allKeys);
+
+        // Worklog last 6 months — for line chart
+        const worklogTrend = db.prepare(
+            `SELECT substr(date, 1, 7) AS ym, COALESCE(SUM(hoursWorked), 0) AS hours
+             FROM worklogs
+             WHERE empId IN (${placeholders})
+               AND date >= date('now', '-6 months')
+             GROUP BY ym ORDER BY ym ASC`
+        ).all(...allKeys);
+
+        // Attendance % (last 30 days)
+        const attRow = db.prepare(
+            `SELECT
+                SUM(CASE WHEN LOWER(COALESCE(status,'')) IN ('present','wfh','work from home') THEN 1 ELSE 0 END) AS present,
+                COUNT(*) AS total
+             FROM attendance
+             WHERE empId IN (${placeholders})
+               AND date >= date('now', '-30 days')`
+        ).get(...allKeys);
+        const attendancePct = attRow?.total ? Math.round((attRow.present / attRow.total) * 100) : 0;
+
+        // Performance — latest published review per person
+        const perfRows = db.prepare(
+            `SELECT empId, taskScore, managerRating
+             FROM performance_reviews
+             WHERE empId IN (${placeholders}) AND LOWER(COALESCE(status,'')) = 'published'`
+        ).all(...allKeys);
+        const perfByEmp = new Map();
+        for (const r of perfRows) {
+            // last one wins (table doesn't have a strict createdAt sort here, but the
+            // few duplicates we have are rare; for the avg we just take any).
+            perfByEmp.set(r.empId, r);
+        }
+        let perfSum = 0, perfCount = 0;
+        for (const v of perfByEmp.values()) {
+            const s = Number(v.managerRating || v.taskScore || 0);
+            if (s > 0) { perfSum += s; perfCount++; }
+        }
+        const avgScore = perfCount ? +(perfSum / perfCount).toFixed(1) : 0;
+
+        // Assets assigned to team
+        const assetRow = db.prepare(
+            `SELECT COUNT(*) AS c FROM assets WHERE assignedToId IN (${placeholders})`
+        ).get(...allKeys);
+
+        // Per-member mini stats (used by the roster table)
+        const memberStats = team.map(m => {
+            const key = m.empId || m.id;
+            const t = db.prepare(
+                `SELECT SUM(CASE WHEN LOWER(COALESCE(status,'')) IN ('completed','done') THEN 1 ELSE 0 END) AS done,
+                        COUNT(*) AS total
+                 FROM tasks WHERE assignedTo = ?`
+            ).get(key) || { done: 0, total: 0 };
+            const wh = db.prepare(
+                `SELECT COALESCE(SUM(hoursWorked),0) AS hours FROM worklogs
+                 WHERE empId = ? AND substr(COALESCE(date,''),1,7) = strftime('%Y-%m','now')`
+            ).get(key)?.hours || 0;
+            const review = perfByEmp.get(key);
+            return {
+                id: m.id, empId: m.empId, name: m.name, role: m.role,
+                designation: m.designation || '', department: m.department || '',
+                program: m.program || '',
+                tasksDone: t.done || 0, tasksTotal: t.total || 0,
+                tasksPct: t.total ? Math.round((t.done / t.total) * 100) : 0,
+                hoursThisMonth: Math.round(wh),
+                score: review ? +(review.managerRating || review.taskScore || 0).toFixed(1) : null
+            };
+        }).sort((a, b) => (b.tasksPct || 0) - (a.tasksPct || 0));
+
+        res.json({
+            program,
+            scope: req.user.role === 'manager' ? 'team' : (program ? 'program' : 'org'),
+            generatedAt: new Date().toISOString(),
+            generatedBy: req.user.name || req.user.id,
+            team: memberStats,
+            tiles: {
+                headcount: team.length,
+                tasks,
+                leaves,
+                reimb,
+                worklogHoursMonth: Math.round(worklogRow?.hours || 0),
+                worklogEntriesMonth: worklogRow?.entries || 0,
+                attendancePct,
+                attendanceDaysSampled: attRow?.total || 0,
+                avgScore,
+                perfReviewed: perfCount,
+                assets: assetRow?.c || 0
+            },
+            charts: {
+                taskStatus: [
+                    { label: 'Completed',   value: tasks.completed },
+                    { label: 'In Progress', value: tasks.inProgress },
+                    { label: 'Pending',     value: tasks.pending },
+                    { label: 'Overdue',     value: tasks.overdue }
+                ],
+                worklogTrend: worklogTrend.map(r => ({ month: r.ym, hours: Math.round(r.hours) })),
+                reimbPipeline: [
+                    { label: 'Pending',  value: reimb.pending },
+                    { label: 'Approved', value: reimb.approved },
+                    { label: 'Paid',     value: reimb.paid },
+                    { label: 'Rejected', value: reimb.rejected }
+                ]
+            }
+        });
+    } catch (err) {
+        console.error('GET /api/manager/dashboard:', err);
+        res.status(500).json({ error: 'dashboard query failed' });
+    }
+});
+
+function emptyTiles() {
+    return {
+        headcount: 0,
+        tasks: { total: 0, completed: 0, inProgress: 0, pending: 0, overdue: 0, completionPct: 0 },
+        leaves: { pending: 0, approved: 0, rejected: 0, daysTaken: 0 },
+        reimb: { pending: 0, approved: 0, paid: 0, rejected: 0, pendingAmt: 0, paidAmt: 0 },
+        worklogHoursMonth: 0, worklogEntriesMonth: 0,
+        attendancePct: 0, attendanceDaysSampled: 0,
+        avgScore: 0, perfReviewed: 0, assets: 0
+    };
+}
+function emptyCharts() {
+    return { taskStatus: [], worklogTrend: [], reimbPipeline: [] };
+}
 
 // YouTube RSS proxy. Reads the first active social_accounts row with
 // platform='youtube' AND non-empty youtubeChannelId, fetches the public

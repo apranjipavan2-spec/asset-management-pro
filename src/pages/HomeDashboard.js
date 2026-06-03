@@ -49,6 +49,7 @@ export function renderHomeDashboard(user) {
         { id: 'org_chart', group: 'people', label: 'Org Chart', icon: 'account_tree', desc: 'Employee hierarchy & teams', color: 'from-slate-600 to-gray-700', stat: `${db.hierarchy.length} Mapped`, permission: 'any' },
         { id: 'performance', group: 'people', label: 'Reviews', icon: 'workspace_premium', desc: 'Performance reviews & feedback', color: 'from-rose-500 to-pink-600', stat: `${db.performanceReviews.length} Reviews`, permission: 'any' },
         { id: 'users', group: 'people', label: 'User Management', icon: 'admin_panel_settings', desc: 'Manage permissions & users', color: 'from-rose-700 to-red-900', stat: 'Governance', permission: 'manage_users' },
+        { id: 'team_dashboard', group: 'people', label: 'Team Dashboard', icon: 'monitoring', desc: 'Team progress & program rollup', color: 'from-emerald-600 to-teal-700', stat: 'Live', permission: ['manage_team', 'view_reports', 'manage_users'] },
         // COMMUNICATION
         { id: 'announcements', group: 'comm', label: 'Board', icon: 'campaign', desc: 'Official announcements & feed', color: 'from-amber-500 to-orange-600', stat: `${db.announcements.length} Posts`, permission: 'any' },
         { id: 'social_hub', group: 'comm', label: 'Social Hub', icon: 'share', desc: 'Kalike social media & advocacy', color: 'from-cyan-500 to-blue-600', stat: 'Engage', permission: 'any' },

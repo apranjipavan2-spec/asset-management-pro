@@ -137,7 +137,8 @@ CREATE TABLE IF NOT EXISTS users (
     baseConveyance REAL DEFAULT 0,
     baseSpecial REAL DEFAULT 0,
     baseComm REAL DEFAULT 0,
-    lastLogin TEXT
+    lastLogin TEXT,
+    program TEXT
 );
 
 -- Settings Table
@@ -576,3 +577,15 @@ CREATE TABLE IF NOT EXISTS payment_programs (
     updatedAt TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_payment_programs_archived ON payment_programs(archived);
+
+-- Program Dashboard override blob. Single row (id='current') stores the
+-- superadmin-edited overrides for programs + initiatives data. Front-end
+-- merges this on top of the bundled defaults from src/data/*.js so that
+-- empty / missing entries fall back gracefully.
+CREATE TABLE IF NOT EXISTS program_overrides (
+    id TEXT PRIMARY KEY,
+    programs_json TEXT,
+    initiatives_json TEXT,
+    updatedAt TEXT,
+    updatedBy TEXT
+);

@@ -386,8 +386,8 @@ export function renderProcurementPage(user) {
                                     </div>
                                     <div class="flex items-center gap-3">
                                         ${p.step === 'admin_approved' || p.step === 'delivered' || p.step === 'asset_registered' ? `
-                                            <button onclick="window.exportPO('${p.id}')" class="px-3 py-2 bg-slate-900 text-white text-[9px] font-black rounded-lg uppercase tracking-widest hover:bg-slate-800 transition-all shadow-md flex items-center gap-2">
-                                                <span class="material-symbols-outlined text-[12px]">download</span> Export PO (PDF)
+                                            <button onclick="window.exportPO('${p.id}')" class="px-3 py-2 bg-slate-900 text-white text-[9px] font-black rounded-lg uppercase tracking-widest hover:bg-slate-800 transition-all shadow-md flex items-center gap-2 pdf-export-btn">
+                                                <span class="material-symbols-outlined text-[12px]">picture_as_pdf</span> Export PO (PDF)
                                             </button>
                                         ` : ''}
                                         <div class="h-10 bg-slate-50 rounded-lg p-1 border border-slate-100">
