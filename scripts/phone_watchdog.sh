@@ -15,6 +15,10 @@
 
 cd "$(dirname "$0")/.."
 
+# Absolute path to this script so we can re-exec ourselves after a self-update
+# (a running bash process keeps the old code in memory until re-exec'd).
+SELF="$(pwd)/scripts/phone_watchdog.sh"
+
 IDLE=${WATCHDOG_INTERVAL_IDLE:-30}
 HOT=${WATCHDOG_INTERVAL_HOT:-10}
 HOT_DURATION=300   # seconds to stay in hot mode after a change
@@ -167,6 +171,11 @@ check_updates() {
         return
     fi
 
+    # Which files did this update touch? Used below to decide whether the
+    # watchdog must re-exec itself to load its own new logic.
+    local changed
+    changed=$(git diff --name-only "$local_head" HEAD 2>/dev/null)
+
     run_migrations_if_any
 
     log "Rebuilding frontend..."
@@ -183,6 +192,15 @@ check_updates() {
 
     # Go hot: poll fast for the next HOT_DURATION seconds in case more pushes are coming
     hot_until=$(( $(date +%s) + HOT_DURATION ))
+
+    # If this update changed the watchdog itself, the running process is still
+    # executing the OLD code. Re-exec so the new logic takes effect immediately
+    # — server + tunnel are already up, so the fresh instance just resumes
+    # supervising them (no manual kill/restart ever needed for watchdog fixes).
+    if echo "$changed" | grep -q 'scripts/phone_watchdog.sh'; then
+        log "Watchdog script changed in ${remote_head:0:7} — re-executing self to load new logic."
+        exec bash "$SELF"
+    fi
 }
 
 rotate_logs() {
