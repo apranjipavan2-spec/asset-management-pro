@@ -1,6 +1,6 @@
 // Team / Program Dashboard.
 // Same page is used by managers (auto-scoped to their own program) and by
-// superadmin / director / hr (program dropdown — pick any, or "All programs").
+// superadmin / director / hr / finance (program dropdown — pick any, or "All programs").
 // Data comes from GET /api/manager/dashboard?program=… (see server.js).
 //
 // Charts: ApexCharts (loaded from CDN in index.html). If the lib hasn't
@@ -28,7 +28,7 @@ window.tdState = window.tdState || {
 const stOf = () => window.tdState;
 
 function canPickProgram(role) {
-    return ['superadmin', 'director', 'hr'].includes(role);
+    return ['superadmin', 'director', 'hr', 'finance'].includes(role);
 }
 
 async function fetchDashboard() {

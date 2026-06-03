@@ -1326,7 +1326,7 @@ app.get('/api/payment_export_audit', (req, res) => {
 //
 // Team membership: users in the chosen program. Manager-only views are
 // further narrowed to reportsTo === manager.empId (or =id when empId blank).
-const DASHBOARD_ROLES = new Set(['superadmin', 'director', 'manager', 'hr']);
+const DASHBOARD_ROLES = new Set(['superadmin', 'director', 'manager', 'hr', 'finance']);
 
 app.get('/api/manager/dashboard', (req, res) => {
     if (!DASHBOARD_ROLES.has(req.user.role)) {
@@ -1334,7 +1334,7 @@ app.get('/api/manager/dashboard', (req, res) => {
     }
     try {
         const me = db.prepare('SELECT id, empId, role, program FROM users WHERE id = ?').get(req.user.id) || {};
-        const isElevatedRole = ['superadmin', 'director', 'hr'].includes(req.user.role);
+        const isElevatedRole = ['superadmin', 'director', 'hr', 'finance'].includes(req.user.role);
         const requestedProgram = String(req.query.program || '').trim();
         const program = isElevatedRole ? requestedProgram : String(me.program || '');
 

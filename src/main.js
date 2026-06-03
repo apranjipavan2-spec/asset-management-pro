@@ -45,7 +45,7 @@ const renderAssetHome = async (user) => {
     return fn(user);
 };
 
-// Standalone Team Dashboard route. Used by superadmin/director/hr from the
+// Standalone Team Dashboard route. Used by superadmin/director/hr/finance from the
 // workspace tile so they can pick any program. Managers also reach the same
 // page via asset_home but auto-scoped to their own program.
 const renderTeamDashboard = async (user) => {
