@@ -20,9 +20,18 @@ HOT=${WATCHDOG_INTERVAL_HOT:-10}
 HOT_DURATION=300   # seconds to stay in hot mode after a change
 HEALTH_URL=${WATCHDOG_HEALTH_URL:-http://localhost:3000}
 LOG_MAX_MB=${WATCHDOG_LOG_MAX:-5}
+# Cloudflare quick tunnels print "it may take some time to be reachable" —
+# edge propagation routinely takes 30-60s after the connection registers.
+# Don't let the reachability check kill a tunnel inside this window, or we
+# create an endless churn: kill -> new URL -> killed again before it can go
+# live -> no URL ever survives long enough to work (the 1033 you keep seeing).
+TUNNEL_GRACE=${WATCHDOG_TUNNEL_GRACE:-90}
 LOG=watchdog.log
 
 hot_until=0
+# When the live tunnel was last (re)started. start.sh launches the first one
+# immediately before this script, so treat "now" as its start time.
+tunnel_started_at=$(date +%s)
 
 log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" >> "$LOG"; }
 
@@ -33,6 +42,9 @@ start_server() {
 
 start_tunnel() {
     command -v cloudflared >/dev/null 2>&1 || return 0
+    # Reset the grace clock: a freshly-spawned tunnel needs time to propagate
+    # before the reachability check is allowed to judge (and kill) it.
+    tunnel_started_at=$(date +%s)
     # Truncate so a previous run's dead URL can't be grepped as the "current" one.
     : > cloudflared.log
     nohup cloudflared tunnel --url http://localhost:3000 > cloudflared.log 2>&1 &
@@ -77,22 +89,34 @@ ensure_tunnel_alive() {
         hot_until=$(( $(date +%s) + HOT_DURATION ))
         return
     fi
-    # 2. Process is up but is the tunnel actually reachable from the internet?
-    #    A hung-but-alive cloudflared causes Error 1033 on the public URL —
-    #    pgrep can't catch that, only an end-to-end curl can.
+    # 2. Don't health-check-kill a tunnel that's still inside its propagation
+    #    grace window. The process is up; the Cloudflare edge just hasn't routed
+    #    it yet. Killing here is what caused the endless new-URL churn.
+    if [ $(( $(date +%s) - tunnel_started_at )) -lt "$TUNNEL_GRACE" ]; then
+        return
+    fi
+    # 3. Process is up and past grace — is it actually reachable from the
+    #    internet? A hung-but-alive cloudflared causes Error 1033 on the public
+    #    URL; pgrep can't catch that, only an end-to-end curl can. Require three
+    #    spaced failures so a transient blip doesn't trigger a needless restart.
     command -v curl >/dev/null 2>&1 || return
     local public_url
     [ -f current_url.txt ] && public_url=$(cat current_url.txt 2>/dev/null)
     [ -z "$public_url" ] && return
-    if ! curl -fsS -m 8 -o /dev/null "$public_url"; then
-        sleep 3
-        if ! curl -fsS -m 8 -o /dev/null "$public_url"; then
-            log "Tunnel unreachable through $public_url (Error 1033 territory). Restarting..."
-            pkill -f "cloudflared tunnel" 2>/dev/null
-            sleep 2
-            start_tunnel
-            hot_until=$(( $(date +%s) + HOT_DURATION ))
+    local fails=0 i
+    for i in 1 2 3; do
+        if curl -fsS -m 8 -o /dev/null "$public_url"; then
+            return   # reachable — all good
         fi
+        fails=$(( fails + 1 ))
+        [ "$i" -lt 3 ] && sleep 3
+    done
+    if [ "$fails" -ge 3 ]; then
+        log "Tunnel unreachable through $public_url after 3 checks (Error 1033 territory). Restarting..."
+        pkill -f "cloudflared tunnel" 2>/dev/null
+        sleep 2
+        start_tunnel
+        hot_until=$(( $(date +%s) + HOT_DURATION ))
     fi
 }
 

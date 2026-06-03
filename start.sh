@@ -143,10 +143,13 @@ if command -v cloudflared >/dev/null 2>&1; then
     done
     if [ -n "$PUBLIC_URL" ]; then
         echo "$PUBLIC_URL" > current_url.txt
-        echo "  Verifying tunnel responds end-to-end..."
+        # Cloudflare quick tunnels warn "it may take some time to be reachable" —
+        # edge propagation routinely takes 30-60s. Probe for up to ~90s so we
+        # don't print a false "unreachable" warning while it's just propagating.
+        echo "  Verifying tunnel responds end-to-end (may take up to ~90s to propagate)..."
         TUNNEL_OK=0
-        for i in $(seq 1 15); do
-            sleep 2
+        for i in $(seq 1 30); do
+            sleep 3
             # Re-read latest URL each cycle — cloudflared may have respawned
             # and minted a new hostname while we were probing the old one.
             LATEST=$(grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' cloudflared.log 2>/dev/null | tail -1)
@@ -163,8 +166,11 @@ if command -v cloudflared >/dev/null 2>&1; then
         if [ "$TUNNEL_OK" = "1" ]; then
             echo "✓ Tunnel up + reachable: $PUBLIC_URL  (pid $TUNNEL_PID)"
         else
-            echo "⚠ Tunnel URL captured ($PUBLIC_URL) but not reachable (last code: $CODE)."
-            echo "  Watchdog will retry. Last 15 lines of cloudflared.log:"
+            echo "⚠ Tunnel URL captured ($PUBLIC_URL) but not reachable yet (last code: $CODE)."
+            echo "  This is usually just slow edge propagation, NOT a failure."
+            echo "  → Do NOT re-run start.sh. Just wait ~1-2 min, then open the URL."
+            echo "    The watchdog leaves it alone during a ${TUNNEL_GRACE:-90}s grace window so it can go live."
+            echo "  Last 15 lines of cloudflared.log:"
             tail -n 15 cloudflared.log
         fi
     else
