@@ -33,13 +33,16 @@ start_server() {
 
 start_tunnel() {
     command -v cloudflared >/dev/null 2>&1 || return 0
+    # Truncate so a previous run's dead URL can't be grepped as the "current" one.
+    : > cloudflared.log
     nohup cloudflared tunnel --url http://localhost:3000 > cloudflared.log 2>&1 &
     sleep 3
-    # Capture URL into a file so the user can `cat current_url.txt` any time
+    # Capture URL into a file so the user can `cat current_url.txt` any time.
+    # Use tail -1 so we pick up the freshest URL if cloudflared re-announces.
     for i in $(seq 1 20); do
         sleep 1
         local url
-        url=$(grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' cloudflared.log 2>/dev/null | head -1)
+        url=$(grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' cloudflared.log 2>/dev/null | tail -1)
         if [ -n "$url" ]; then
             echo "$url" > current_url.txt
             log "Tunnel URL: $url"

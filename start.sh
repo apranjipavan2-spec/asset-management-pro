@@ -137,7 +137,8 @@ if command -v cloudflared >/dev/null 2>&1; then
             tail -n 30 cloudflared.log
             break
         fi
-        PUBLIC_URL=$(grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' cloudflared.log 2>/dev/null | head -1)
+        # tail -1: if cloudflared printed more than one URL line, take the freshest.
+        PUBLIC_URL=$(grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' cloudflared.log 2>/dev/null | tail -1)
         [ -n "$PUBLIC_URL" ] && break
     done
     if [ -n "$PUBLIC_URL" ]; then
@@ -146,6 +147,14 @@ if command -v cloudflared >/dev/null 2>&1; then
         TUNNEL_OK=0
         for i in $(seq 1 15); do
             sleep 2
+            # Re-read latest URL each cycle — cloudflared may have respawned
+            # and minted a new hostname while we were probing the old one.
+            LATEST=$(grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' cloudflared.log 2>/dev/null | tail -1)
+            if [ -n "$LATEST" ] && [ "$LATEST" != "$PUBLIC_URL" ]; then
+                echo "  Tunnel URL rotated: $PUBLIC_URL → $LATEST"
+                PUBLIC_URL="$LATEST"
+                echo "$PUBLIC_URL" > current_url.txt
+            fi
             CODE=$(curl -sS -o /dev/null -m 6 -w '%{http_code}' "$PUBLIC_URL/" 2>/dev/null || echo 000)
             case "$CODE" in
                 200|301|302|401|404|405) TUNNEL_OK=1; break ;;
